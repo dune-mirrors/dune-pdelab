@@ -186,11 +186,20 @@ namespace Dune::PDELab
     bool _acceptBest = false;
   };
 
+  #ifdef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_HH
+    #define DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_ENABLED
+    #include<dune/pdelab/solver/newtonlinesearchbounded.hh>
+  #endif
+
   //! Flags for different line search strategies
   enum LineSearchStrategy
   {
     noLineSearch,
     hackbuschReusken
+    #ifdef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_HH
+    , boundedNoLineSearch
+    , boundedHackbuschReusken
+    #endif
   };
 
 
@@ -206,6 +215,12 @@ namespace Dune::PDELab
       return LineSearchStrategy::noLineSearch;
     if (name == "hackbusch_reusken")
       return LineSearchStrategy::hackbuschReusken;
+    #ifdef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_HH
+    if (name == "boundedNoLineSearch")
+      return LineSearchStrategy::boundedNoLineSearch;
+    if (name == "boundedHackbuschReusken")
+      return LineSearchStrategy::boundedHackbuschReusken;
+    #endif
     DUNE_THROW(Exception,"Unkown line search strategy: " << name);
   }
 
@@ -219,6 +234,11 @@ namespace Dune::PDELab
    * \param name Identifier to choose line search. Possible values:
    * - "noLineSearch": Return pointer to LineSearchNone
    * - "hackbuschReusken": Return pointer to LineSearchHackbuschReusken
+   * - "boundedNoLineSearch": Return pointer to BoundedLineSearchNone
+   * - "boundedHackbuschReusken": Return pointer to BoundedLineSearchHackbuschReusken
+   *
+   * Note that BoundedLineSearch-es are implemented in separate file.
+   * Macro guard is placed to assure backward compatibility.
    */
   template <typename Newton>
   std::shared_ptr<LineSearchInterface<typename Newton::Domain>>
@@ -233,9 +253,18 @@ namespace Dune::PDELab
       auto lineSearch = std::make_shared<LineSearchHackbuschReusken<Newton>> (newton);
       return lineSearch;
     }
+    #ifdef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_HH
+    if (strategy == LineSearchStrategy::boundedNoLineSearch){
+      auto lineSearch = std::make_shared<BoundedLineSearchNone<Newton>> (newton);
+      return lineSearch;
+    }
+    if (strategy == LineSearchStrategy::boundedHackbuschReusken){
+      auto lineSearch = std::make_shared<BoundedLineSearchHackbuschReusken<Newton>> (newton);
+      return lineSearch;
+    }
+    #endif
     DUNE_THROW(Exception,"Unkown line search strategy");
   }
 
 } // namespace Dune::PDELab
-
 #endif
