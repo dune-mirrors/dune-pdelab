@@ -3,25 +3,30 @@
 #ifndef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_HH
 #define DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_HH
 #endif
-
 /* \brief BoundedLineSearch
  *
  * This file contains the implementation of the BoundedLineSearchNone
- * and BoundedLineSearchHackbuschReusken. It is included in the middle
- * of newtonlinesearch.hh -because it inherits from LineSearchInterface
- * and must defined for LineSearchStrategy, and both are in that file.
- * For brevity, the implementation is moved to a separate file (this one)
- * and guarded by macro, which also adjusts LineSearchStrategy so it
- * contains BoundedLineSearches.
+ * and BoundedLineSearchHackbuschReusken. They inherit from LineSearchInterface
+ * and must be defined before LineSearchStrategy. Both of them are in
+ * newtonlinesearch.hh, this code must be placed between them.
  *
  * To use this file, simply include it before newtonlinesearch.hh.
- * The "guard" macro on top will unlock parts of its code with
- * BoundedLineSearches and inludes the following code in the middle
- * between LineSearchInterface and LineSearchStrategy.
+ * The "guard" macro on top will unlock code parts dealing with
+ * BoundedLineSearches and #inlude the following code in between
+ * LineSearchInterface and LineSearchStrategy.
+ *
+ * Such construction necessitates usage of 3 guard macros:
+ * 1. Unlock: is on top of this file. Makes changes to newtonlineseach.hh
+ * invisible if unused, and makes this code accessible with #include.
+ * 2. Place: is in newtonlinesearch.hh ensuring BoundedLineSearches are
+ * loaded after LineSearchInterface and before LineSearchStrategy.
+ * 3. Guard: prevents loading BoundedLineSearches for the second time.
  */
 
 #ifdef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_ENABLED
-// Note: it is assumed this file is already in namespace Dune::PDELab
+#ifndef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_READ
+#define DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_READ
+// Note: it is assumed this file is included into namespace Dune::PDELab
 namespace Impl
 {
   // Simple struct for calculating the number of unknowns of the system.
@@ -48,14 +53,20 @@ namespace Impl
    *   CorrectSolutionEntityBlockedNoneBlocking: for PowerGFS with
    *     EntityBlocked OrderingTag and "none" Blocking.
    *
+   * Other options like bcrs blocking, InterleavedOrderingTag, or CompositeSpaces
+   * are not tested/implemented.
+   *
    * Heavily relies on ParameterClass = BoundedLineSearchParametersInterface<Newton>
    * which carries all information about which unknowns are bounded and how.
    */
-  template<typename ParameterClass>
+  template <typename Newton> class BoundedLineSearchParametersInterface;
+
+  template<typename Newton>
   class CorrectSolutionEntityBlockedFixedBlocking
   {
+    using ParameterClass = BoundedLineSearchParametersInterface<Newton>;
     const ParameterClass& pc;
-    using Domain = typename ParameterClass::Domain;
+    using Domain = typename Newton::Domain;
   public:
     CorrectSolutionEntityBlockedFixedBlocking(const ParameterClass& pc_)
       : pc(pc_)
@@ -76,11 +87,12 @@ namespace Impl
     }
   };
 
-  template<typename ParameterClass>
+  template<typename Newton>
   class CorrectSolutionEntityBlockedNoneBlocking
   {
+    using ParameterClass = BoundedLineSearchParametersInterface<Newton>;
     const ParameterClass& pc;
-    using Domain = typename ParameterClass::Domain;
+    using Domain = typename Newton::Domain;
   public:
     CorrectSolutionEntityBlockedNoneBlocking(const ParameterClass& pc_)
       : pc(pc_)
@@ -114,11 +126,12 @@ namespace Impl
     }
   };
 
-  template<typename ParameterClass>
+  template<typename Newton>
   class CorrectSolutionLexicographic
   {
+    using ParameterClass = BoundedLineSearchParametersInterface<Newton>;
     const ParameterClass& pc;
-    using Domain = typename ParameterClass::Domain;
+    using Domain = typename Newton::Domain;
   public:
     CorrectSolutionLexicographic(const ParameterClass& pc_)
       : pc(pc_)
@@ -140,11 +153,12 @@ namespace Impl
     }
   };
 
-  template<typename ParameterClass>
+  template<typename Newton>
   class CorrectSolutionSingle
   {
+    using ParameterClass = BoundedLineSearchParametersInterface<Newton>;
     const ParameterClass& pc;
-    using Domain = typename ParameterClass::Domain;
+    using Domain = typename Newton::Domain;
   public:
     CorrectSolutionSingle(const ParameterClass& pc_)
       : pc(pc_)
@@ -165,19 +179,13 @@ namespace Impl
 
   /* \brief SetCorrectSolution::type
    *
-   * This class outputs the correct type for CorrectSolution procedure
-   * based on Domain type. 4 types are specialized for different ordering of vector:
-   * Single, Lexicographic,and EntityBlocked with None or Fixed blocking.
-   * Single is for simple spaces with one unknown, other are for PowerGridFunctionSpace.
-   * PowerGFS are specialized based on the vector Ordering -Lexicographic or EntityBlocked.
-   * EntityBlocked with Fixed blocking allows further optimization.
-   *
-   * Other options like bcrs blocking, InterleavedOrderingTag, or CompositeSpaces
-   * are not tested/implemented.
+   * This class holds the correct type for CorrectSolution procedure.
+   * Picks one of above 4 types automatically from Domain type.
    */
-  template<typename Domain,typename ParameterClass>
+  template<typename Newton>
   class SetCorrectSolution
   {
+    using Domain = typename Newton::Domain;
     using currentOrderingTag = typename Domain::GridFunctionSpace::Traits::OrderingTag;
     using currentBlocking = typename Domain::GridFunctionSpace::Traits::Backend;
     static const bool isLexicographic = std::is_same<LexicographicOrderingTag,currentOrderingTag>::value;
@@ -185,31 +193,49 @@ namespace Impl
     static const bool isFixedBlocking = currentBlocking::Traits::blocked;
     using type0 = typename std::conditional<
       isLexicographic,
-      CorrectSolutionLexicographic<ParameterClass>,
-      CorrectSolutionSingle<ParameterClass>
+      CorrectSolutionLexicographic<Newton>,
+      CorrectSolutionSingle<Newton>
       >::type;
     using type1 = typename std::conditional<
       isEntityBlocked,
-      CorrectSolutionEntityBlockedNoneBlocking<ParameterClass>,
+      CorrectSolutionEntityBlockedNoneBlocking<Newton>,
       type0
       >::type;
   public:
     using type = typename std::conditional<
       isFixedBlocking,
-      CorrectSolutionEntityBlockedFixedBlocking<ParameterClass>,
+      CorrectSolutionEntityBlockedFixedBlocking<Newton>,
       type1
       >::type;
   };
 
+  // Forward declaration enabling (template specialized) friendship
+  // with BoundedLineSearchParametersInterface.
+  template <typename Newton> class BoundedLineSearchNone;
+  template <typename Newton> class BoundedLineSearchHackbuschReusken;
+
+  class ExceptionBoundedLineSearch : Dune::Exception {};
+
+  /* \brief BoundedLineSearchParametersInterface
+   *
+   * Class containing information about bounded unknowns. Stores which
+   * are constrained, and their upper or lower bounds.
+   *
+   * Bounds are set by setBoundedParameters function. Private data are
+   * accessible by declaring friendship with CorrectSolution. classes.
+   */
   template<typename Newton>
   class BoundedLineSearchParametersInterface
   {
   public:
+    friend class CorrectSolutionEntityBlockedFixedBlocking<Newton>;
+    friend class CorrectSolutionEntityBlockedNoneBlocking<Newton>;
+    friend class CorrectSolutionLexicographic<Newton>;
+    friend class CorrectSolutionSingle<Newton>;
     using Domain = typename Newton::Domain;
     using Real = typename Newton::Real;
-    using ThisType = BoundedLineSearchParametersInterface<Newton>;
 
-    /* \Brief set restrains
+    /* \brief set restrains
     *
     * Sets bounds for certain values, line search will keep them
     * inside the defined interval. Allows seeting lower bound, upper
@@ -271,21 +297,21 @@ namespace Impl
       }
     }
 
-  // private:
+  private:
     std::vector<std::size_t> blockLower; // stores which parts of block are restrained
     std::vector<std::size_t> blockUpper; // stores which parts of block are restrained
     std::size_t blocksize;
     std::vector<Real> boundLower; // remembers lower bounds
     std::vector<Real> boundUpper; // remembers upper bounds
-  }; // end BoundedLineSearchParametersInterface */
-} // end namespace Impl
+  }; // BoundedLineSearchParametersInterface
+} // namespace Impl
 
 //! Class for simply updating the solution without line search,
 //  after performing step, solution is changed to fit into given bounds
 template <typename Newton>
 class BoundedLineSearchNone : public LineSearchInterface<typename Newton::Domain>
 {
-  using ParameterClass = typename Impl::BoundedLineSearchParametersInterface<Newton>::ThisType;
+  using ParameterClass = typename Impl::BoundedLineSearchParametersInterface<Newton>;
 public:
   using Domain = typename Newton::Domain;
   using Real = typename Newton::Real;
@@ -310,7 +336,7 @@ public:
 private:
   Newton& _newton;
   ParameterClass param;
-  using CorSol = typename Impl::SetCorrectSolution<Domain,ParameterClass>::type;
+  using CorSol = typename Impl::SetCorrectSolution<Newton>::type;
   CorSol corSol;
 };
 
@@ -458,7 +484,7 @@ private:
   Newton& _newton;
   std::shared_ptr<Domain> _previousSolution;
   ParameterClass param;
-  using CorSol = typename Impl::SetCorrectSolution<Domain,ParameterClass>::type;
+  using CorSol = typename Impl::SetCorrectSolution<Newton>::type;
   CorSol corSol;
 
   // Line search parameters
@@ -466,4 +492,5 @@ private:
   Real _lineSearchDampingFactor = 0.5;
   bool _acceptBest = false;
 };
+#endif // #ifdef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_READ
 #endif // #ifdef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_ENABLED
