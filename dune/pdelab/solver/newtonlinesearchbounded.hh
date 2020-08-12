@@ -172,7 +172,7 @@ namespace Impl
             v = pc.boundUpper[0];
       if (pc.blockLower.size()>0)
         for (auto& v : solution)
-          if (v>pc.boundLower[0])
+          if (v<pc.boundLower[0])
             v = pc.boundLower[0];
     }
   };
