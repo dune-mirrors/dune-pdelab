@@ -32,9 +32,9 @@ namespace Impl
   // Simple struct for calculating the number of unknowns of the system.
   // This works for GFS which are not Powerspace, i.e. have no CHILDREN.
   // Simply putting this std::max(..) formula into code to calculate
-  // blocksize does not work.
+  // systemsize does not work.
   template<typename Domain>
-  struct BlockSizeExtractor
+  struct SystemSizeExtractor
   {
     std::size_t value = std::max(std::size_t(1),Domain::GridFunctionSpace::CHILDREN);
   };
@@ -77,12 +77,12 @@ namespace Impl
       using Dune::PDELab::Backend::native;
       for (auto& block : native(solution))
       {
-        for (std::size_t i=0; i<pc.blockLower.size(); ++i)
-          if (block[pc.blockLower[i]] < pc.boundLower[i])
-            block[pc.blockLower[i]] = pc.boundLower[i];
-        for (std::size_t i=0; i<pc.blockUpper.size(); ++i)
-          if (block[pc.blockUpper[i]] > pc.boundUpper[i])
-            block[pc.blockUpper[i]] = pc.boundUpper[i];
+        for (std::size_t i=0; i<pc.placeLower.size(); ++i)
+          if (block[pc.placeLower[i]] < pc.boundLower[i])
+            block[pc.placeLower[i]] = pc.boundLower[i];
+        for (std::size_t i=0; i<pc.placeUpper.size(); ++i)
+          if (block[pc.placeUpper[i]] > pc.boundUpper[i])
+            block[pc.placeUpper[i]] = pc.boundUpper[i];
       }
     }
   };
@@ -109,19 +109,19 @@ namespace Impl
       for (auto& block : native(solution))
       {
         // Firstly check whether it is one of the bounded variables.
-        if (i==pc.blockLower[low])
+        if (i==pc.placeLower[low])
         {
           if (block[0]<pc.boundLower[low])
             block[0] = pc.boundLower[low];
-          low = (low+1) % pc.blockLower.size();
+          low = (low+1) % pc.placeLower.size();
         }
-        if (i==pc.blockUpper[up])
+        if (i==pc.placeUpper[up])
         {
           if (block[0]>pc.boundUpper[up])
             block[0] = pc.boundUpper[up];
-          up = (up+1) % pc.blockUpper.size();
+          up = (up+1) % pc.placeUpper.size();
         }
-        i = (i+1) % pc.blocksize;
+        i = (i+1) % pc.systemsize;
       }
     }
   };
@@ -141,13 +141,13 @@ namespace Impl
     {
       using Dune::PDELab::Backend::native;
 
-      std::size_t sol_size = native(solution).size()/pc.blocksize;
-      for (std::size_t i=0; i<pc.blockLower.size(); ++i)
-        for (std::size_t j=sol_size*pc.blockLower[i]; j<sol_size*(pc.blockLower[i]+1); ++j)
+      std::size_t sol_size = native(solution).size()/pc.systemsize;
+      for (std::size_t i=0; i<pc.placeLower.size(); ++i)
+        for (std::size_t j=sol_size*pc.placeLower[i]; j<sol_size*(pc.placeLower[i]+1); ++j)
           if (native(solution)[j] < pc.boundLower[i])
             native(solution)[j] = pc.boundLower[i];
-      for (std::size_t i=0; i<pc.blockUpper.size(); ++i)
-        for (std::size_t j=sol_size*pc.blockUpper[i]; j<sol_size*(pc.blockUpper[i]+1); ++j)
+      for (std::size_t i=0; i<pc.placeUpper.size(); ++i)
+        for (std::size_t j=sol_size*pc.placeUpper[i]; j<sol_size*(pc.placeUpper[i]+1); ++j)
           if (native(solution)[j] > pc.boundUpper[i])
             native(solution)[j] = pc.boundUpper[i];
     }
@@ -166,11 +166,11 @@ namespace Impl
 
     void operator() (Domain& solution)
     {
-      if (pc.blockUpper.size()>0)
+      if (pc.placeUpper.size()>0)
         for (auto& v : solution)
           if (v>pc.boundUpper[0])
             v = pc.boundUpper[0];
-      if (pc.blockLower.size()>0)
+      if (pc.placeLower.size()>0)
         for (auto& v : solution)
           if (v<pc.boundLower[0])
             v = pc.boundLower[0];
@@ -255,52 +255,99 @@ namespace Impl
     * lowerBound0 = Real, templated type, lower bound for unknown number block0
     * upperBound1 = Real, templated type, upper bound for unknown number block1
     *
-    * Currectly works only for EntityBlockedOrdering.
+    */
+    // void setBoundedParameters(const ParameterTree& parameterTree)
+    // {
+    //   std::size_t numberOfRestrained = parameterTree.get<std::size_t>("number",0);
+    //   if (numberOfRestrained == 0)
+    //     DUNE_THROW(Exception,"BoundedLineSearch setParameters error: use normal LineSearch if no value is restrained");
+    //   Impl::SystemSizeExtractor<Domain> bse;
+    //   systemsize = bse.value;
+    //   for (std::size_t i=0; i < numberOfRestrained; ++i)
+    //   {
+    //     std::size_t tmpsizet = parameterTree.get<std::size_t>("block"+std::to_string(i),std::size_t(-1));
+    //     if (tmpsizet == std::size_t(-1))
+    //       DUNE_THROW(Exception,"BoundedLineSearch setParameters error: Missing line_search.block"+std::to_string(i)+" field");
+    //     if (tmpsizet >= systemsize)
+    //       DUNE_THROW(Exception,"BoundedLineSearch setParameters error: Restraining unknown "+std::to_string(tmpsizet)+" in a system of size "+std::to_string(systemsize));
+    //     auto tmpboolL = parameterTree.get<bool>("lowerType"+std::to_string(i),false);
+    //     auto tmpboolU = parameterTree.get<bool>("upperType"+std::to_string(i),false);
+    //     if (tmpboolL == false && tmpboolU == false)
+    //       DUNE_THROW(Exception,"BoundedLineSearch setParameters error: Invalid parameters, both lower and upper value are unrestrained in block"+std::to_string(i));
+    //     // bounds may be unused if not restrained (tmpbool==false)
+    //     Real tmpRealL = 0.;
+    //     Real tmpRealU = 0.;
+    //     if (tmpboolL)
+    //       tmpRealL = parameterTree.get<Real>("lowerBound"+std::to_string(i));
+    //     if (tmpboolU)
+    //       tmpRealU = parameterTree.get<Real>("upperBound"+std::to_string(i));
+    //     if (tmpboolL && tmpboolU && tmpRealL >= tmpRealU)
+    //       DUNE_THROW(Exception,"BoundedLineSearch setParameters error: Invalid parameters, block"+std::to_string(i)+" has lower bound greater than upper bound");
+    //     if (tmpboolL)
+    //     {
+    //       placeLower.push_back(tmpsizet);
+    //       boundLower.push_back(tmpRealL);
+    //     }
+    //     if (tmpboolU)
+    //     {
+    //       placeUpper.push_back(tmpsizet);
+    //       boundUpper.push_back(tmpRealU);
+    //     }
+    //   }
+    // }
+
+    /* \brief set restrains
+    *
+    * Sets bounds for certain values, which line search will keep
+    * inside the defined interval. Allows seeting lower bound, upper
+    * bound, or both.
+    *
+    * Bounds are loaded from ParameterTree, which is passed from Newton
+    * class via subtree "line_search". To restrain some values, these
+    * fields are expected (in subtree line_search passed to Newton class):
+    * lowerBound* = Real, templated type, lower bound for unknown number *
+    * upperBound* = Real, templated type, upper bound for unknown number *
+    * numberofrestraints = std:size_t, optional parameter, the total number
+    *   of restraints specified (good for avoiding typos)
+    *
+    * The system size is deduced automatically.
     */
     void setBoundedParameters(const ParameterTree& parameterTree)
     {
-      std::size_t numberOfRestrained = parameterTree.get<std::size_t>("number",0);
-      if (numberOfRestrained == 0)
-        DUNE_THROW(Exception,"BoundedLineSearch setParameters error: use normal LineSearch if no value is restrained");
-      Impl::BlockSizeExtractor<Domain> bse;
-      blocksize = bse.value;
-      for (std::size_t i=0; i < numberOfRestrained; ++i)
+      Impl::SystemSizeExtractor<Domain> bse;
+      systemsize = bse.value;
+      placeLower.clear();
+      placeUpper.clear();
+      boundLower.clear();
+      boundUpper.clear();
+      for (std::size_t i=0; i < systemsize; ++i)
       {
-        std::size_t tmpsizet = parameterTree.get<std::size_t>("block"+std::to_string(i),std::size_t(-1));
-        if (tmpsizet == std::size_t(-1))
-          DUNE_THROW(Exception,"BoundedLineSearch setParameters error: Missing line_search.block"+std::to_string(i)+" field");
-        if (tmpsizet >= blocksize)
-          DUNE_THROW(Exception,"BoundedLineSearch setParameters error: Restraining unknown "+std::to_string(tmpsizet)+" in a system of size "+std::to_string(blocksize));
-        auto tmpboolL = parameterTree.get<bool>("lowerType"+std::to_string(i),false);
-        auto tmpboolU = parameterTree.get<bool>("upperType"+std::to_string(i),false);
-        if (tmpboolL == false && tmpboolU == false)
-          DUNE_THROW(Exception,"BoundedLineSearch setParameters error: Invalid parameters, both lower and upper value are unrestrained in block"+std::to_string(i));
-        // bounds may be unused if not restrained (tmpbool==false)
-        Real tmpRealL = 0.;
-        Real tmpRealU = 0.;
-        if (tmpboolL)
-          tmpRealL = parameterTree.get<Real>("lowerBound"+std::to_string(i));
-        if (tmpboolU)
-          tmpRealU = parameterTree.get<Real>("upperBound"+std::to_string(i));
-        if (tmpboolL && tmpboolU && tmpRealL >= tmpRealU)
-          DUNE_THROW(Exception,"BoundedLineSearch setParameters error: Invalid parameters, block"+std::to_string(i)+" has lower bound greater than upper bound");
-        if (tmpboolL)
+        bool hasLower = parameterTree.haskey("lowerBound"+std::to_string(i));
+        bool hasUpper = parameterTree.haskey("upperBound"+std::to_string(i));
+        if (hasLower)
         {
-          blockLower.push_back(tmpsizet);
-          boundLower.push_back(tmpRealL);
+          placeLower.push_back(i);
+          boundLower.push_back(parameterTree.get<Real>("lowerBound"+std::to_string(i)));
         }
-        if (tmpboolU)
+        if (hasUpper)
         {
-          blockUpper.push_back(tmpsizet);
-          boundUpper.push_back(tmpRealU);
+          placeUpper.push_back(i);
+          boundUpper.push_back(parameterTree.get<Real>("upperBound"+std::to_string(i)));
         }
+        if (hasLower && hasUpper)
+          if (boundLower[boundLower.size()-1] > boundUpper[boundUpper.size()-1])
+            DUNE_THROW(Exception,"BoundedLineSearch parameters error: Unknown "+std::to_string(i)+std::string(" has lowerBound higher than upperBound."))
       }
+      // optional check
+      if (parameterTree.haskey("numberofrestraints"))
+        if (parameterTree.get<std::size_t>("numberofrestraints") != placeLower.size() + placeUpper.size())
+          DUNE_THROW(Exception,"BoundedLineSearch parameters error: The number of restraints is different to the specified number.")
     }
 
   private:
-    std::vector<std::size_t> blockLower; // stores which parts of block are restrained
-    std::vector<std::size_t> blockUpper; // stores which parts of block are restrained
-    std::size_t blocksize;
+    std::vector<std::size_t> placeLower; // stores which parts of block are restrained
+    std::vector<std::size_t> placeUpper; // stores which parts of block are restrained
+    std::size_t systemsize = 0; // if setBoundedParameters is not used (which definitely should), this leads to zero division error
     std::vector<Real> boundLower; // remembers lower bounds
     std::vector<Real> boundUpper; // remembers upper bounds
   }; // BoundedLineSearchParametersInterface
