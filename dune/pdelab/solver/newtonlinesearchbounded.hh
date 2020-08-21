@@ -322,8 +322,8 @@ namespace Impl
       boundUpper.clear();
       for (std::size_t i=0; i < systemsize; ++i)
       {
-        bool hasLower = parameterTree.haskey("lowerBound"+std::to_string(i));
-        bool hasUpper = parameterTree.haskey("upperBound"+std::to_string(i));
+        bool hasLower = parameterTree.hasKey("lowerBound"+std::to_string(i));
+        bool hasUpper = parameterTree.hasKey("upperBound"+std::to_string(i));
         if (hasLower)
         {
           placeLower.push_back(i);
@@ -336,12 +336,12 @@ namespace Impl
         }
         if (hasLower && hasUpper)
           if (boundLower[boundLower.size()-1] > boundUpper[boundUpper.size()-1])
-            DUNE_THROW(Exception,"BoundedLineSearch parameters error: Unknown "+std::to_string(i)+std::string(" has lowerBound higher than upperBound."))
+            DUNE_THROW(Exception,"BoundedLineSearch parameters error: Unknown "+std::to_string(i)+" has lowerBound higher than upperBound.");
       }
       // optional check
-      if (parameterTree.haskey("numberofrestraints"))
+      if (parameterTree.hasKey("numberofrestraints"))
         if (parameterTree.get<std::size_t>("numberofrestraints") != placeLower.size() + placeUpper.size())
-          DUNE_THROW(Exception,"BoundedLineSearch parameters error: The number of restraints is different to the specified number.")
+          DUNE_THROW(Exception,"BoundedLineSearch parameters error: The number of restraints is different to the specified number.");
     }
 
   private:
