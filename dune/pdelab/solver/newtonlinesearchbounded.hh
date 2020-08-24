@@ -312,7 +312,7 @@ namespace Impl
     *
     * The system size is deduced automatically.
     */
-    void setBoundedParameters(const ParameterTree& parameterTree)
+    void setBoundedParameters(const ParameterTree& parameterTree, unsigned int verbosity=0)
     {
       Impl::SystemSizeExtractor<Domain> bse;
       systemsize = bse.value;
@@ -340,8 +340,35 @@ namespace Impl
       }
       // optional check
       if (parameterTree.hasKey("numberofrestraints"))
-        if (parameterTree.get<std::size_t>("numberofrestraints") != placeLower.size() + placeUpper.size())
+      {
+        auto nrestr = parameterTree.get<std::size_t>("numberofrestraints");
+        if (nrestr != placeLower.size() + placeUpper.size())
           DUNE_THROW(Exception,"BoundedLineSearch parameters error: The number of restraints is different to the specified number.");
+        if (verbosity>=2)
+          std::cout << "The system has " << systemsize << " unknowns and "
+                    << nrestr << " restraints placed on them." << std::endl;
+      }
+      if (verbosity >=4)
+      {
+        if (placeLower.size()==0)
+          std::cout << "There are no lower bounds." << std::endl;
+        else
+        {
+          for (std::size_t i=0; i<placeLower.size(); ++i)
+          {
+            std::cout << "Lower bound of unknown " << placeLower[i] << " is " << boundLower[i] <<std::endl;
+          }
+        }
+        if (placeUpper.size()==0)
+          std::cout << "There are no upper bounds." << std::endl;
+        else
+        {
+          for (std::size_t i=0; i<placeUpper.size(); ++i)
+          {
+            std::cout << "Upper bound of unknown " << placeUpper[i] << " is " << boundUpper[i] <<std::endl;
+          }
+        }
+      }
     }
 
   private:
@@ -377,7 +404,7 @@ public:
 
   virtual void setParameters(const ParameterTree& parameterTree) override
   {
-    param.setBoundedParameters(parameterTree);
+    param.setBoundedParameters(parameterTree,_newton.getVerbosityLevel());
   }
 
 private:
