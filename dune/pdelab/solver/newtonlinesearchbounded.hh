@@ -547,8 +547,8 @@ public:
       if (not _acceptBest){
         solution = *_previousSolution;
         _newton.updateDefect(solution);
-        DUNE_THROW(NewtonLineSearchError,
-                   "NewtonLineSearch::line_search(): line search failed, "
+        DUNE_THROW(LineSearchError,
+                   "LineSearch::line_search(): line search failed, "
                    "max iteration count reached, "
                    "defect did not improve enough");
       }
@@ -556,8 +556,8 @@ public:
         if (bestLambda == 0.0){
           solution = *_previousSolution;
           _newton.updateDefect(solution);
-          DUNE_THROW(NewtonLineSearchError,
-                     "NewtonLineSearch::line_search(): line search failed, "
+          DUNE_THROW(LineSearchError,
+                     "LineSearch::line_search(): line search failed, "
                      "max iteration count reached, "
                      "defect did not improve in any of the iterations");
         }

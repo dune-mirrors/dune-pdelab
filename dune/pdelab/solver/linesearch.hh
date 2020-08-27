@@ -199,7 +199,7 @@ namespace Dune::PDELab
   {
     noLineSearch,
     hackbuschReusken,
-    hackbuschReuskenAcceptBest,
+    hackbuschReuskenAcceptBest
     #ifdef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_HH
     , boundedNoLineSearch
     , boundedHackbuschReusken
@@ -269,11 +269,11 @@ namespace Dune::PDELab
     }
     #ifdef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_HH
     if (strategy == LineSearchStrategy::boundedNoLineSearch){
-      auto lineSearch = std::make_shared<BoundedLineSearchNone<Newton>> (newton);
+      auto lineSearch = std::make_shared<BoundedLineSearchNone<Solver>> (solver);
       return lineSearch;
     }
     if (strategy == LineSearchStrategy::boundedHackbuschReusken){
-      auto lineSearch = std::make_shared<BoundedLineSearchHackbuschReusken<Newton>> (newton);
+      auto lineSearch = std::make_shared<BoundedLineSearchHackbuschReusken<Solver>> (solver);
       return lineSearch;
     }
     #endif
