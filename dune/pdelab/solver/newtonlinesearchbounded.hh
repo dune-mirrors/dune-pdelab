@@ -320,23 +320,69 @@ namespace Impl
       placeUpper.clear();
       boundLower.clear();
       boundUpper.clear();
-      for (std::size_t i=0; i < systemsize; ++i)
+      if (systemsize==1)
       {
-        bool hasLower = parameterTree.hasKey("lowerBound"+std::to_string(i));
-        bool hasUpper = parameterTree.hasKey("upperBound"+std::to_string(i));
+        bool hasLower = parameterTree.hasKey("lowerBound");
+        bool hasLower0 = parameterTree.hasKey("lowerBound0");
+        bool hasUpper = parameterTree.hasKey("upperBound");
+        bool hasUpper0 = parameterTree.hasKey("upperBound0");
         if (hasLower)
         {
-          placeLower.push_back(i);
-          boundLower.push_back(parameterTree.get<Real>("lowerBound"+std::to_string(i)));
+          placeLower.push_back(0);
+          Real bound = parameterTree.get<Real>("lowerBound");
+          boundLower.push_back(bound);
+          if (hasLower0)
+          {
+            if (bound != parameterTree.get<Real>("lowerBound0"))
+              DUNE_THROW(Exception,"BoundedLineSearch parameters error: Two different lower bounds are set!");
+          }
+        }
+        else if (hasLower0)
+        {
+          placeLower.push_back(0);
+          boundLower.push_back(parameterTree.get<Real>("lowerBound0"));
         }
         if (hasUpper)
         {
-          placeUpper.push_back(i);
-          boundUpper.push_back(parameterTree.get<Real>("upperBound"+std::to_string(i)));
+          placeUpper.push_back(0);
+          Real bound = parameterTree.get<Real>("upperBound");
+          boundUpper.push_back(bound);
+          if (hasUpper0)
+          {
+            if (bound != parameterTree.get<Real>("upperBound0"))
+              DUNE_THROW(Exception,"BoundedLineSearch parameters error: Two different upper bounds are set!");
+          }
         }
-        if (hasLower && hasUpper)
-          if (boundLower[boundLower.size()-1] > boundUpper[boundUpper.size()-1])
-            DUNE_THROW(Exception,"BoundedLineSearch parameters error: Unknown "+std::to_string(i)+" has lowerBound higher than upperBound.");
+        else if (hasUpper0)
+        {
+          placeUpper.push_back(0);
+          boundUpper.push_back(parameterTree.get<Real>("upperBound0"));
+        }
+        if ((hasLower || hasLower0) && (hasUpper || hasUpper0))
+          if (boundLower[0] > boundUpper[0])
+            DUNE_THROW(Exception,"BoundedLineSearch parameters error: LowerBound higher than upperBound.");
+
+      }
+      else // systemsize !=1
+      {
+        for (std::size_t i=0; i < systemsize; ++i)
+        {
+          bool hasLower = parameterTree.hasKey("lowerBound"+std::to_string(i));
+          bool hasUpper = parameterTree.hasKey("upperBound"+std::to_string(i));
+          if (hasLower)
+          {
+            placeLower.push_back(i);
+            boundLower.push_back(parameterTree.get<Real>("lowerBound"+std::to_string(i)));
+          }
+          if (hasUpper)
+          {
+            placeUpper.push_back(i);
+            boundUpper.push_back(parameterTree.get<Real>("upperBound"+std::to_string(i)));
+          }
+          if (hasLower && hasUpper)
+            if (boundLower[boundLower.size()-1] > boundUpper[boundUpper.size()-1])
+              DUNE_THROW(Exception,"BoundedLineSearch parameters error: Unknown "+std::to_string(i)+" has lowerBound higher than upperBound.");
+        }
       }
       // optional check
       if (parameterTree.hasKey("numberofrestraints"))
@@ -374,7 +420,7 @@ namespace Impl
   private:
     std::vector<std::size_t> placeLower; // stores which parts of block are restrained
     std::vector<std::size_t> placeUpper; // stores which parts of block are restrained
-    std::size_t systemsize = 0; // if setBoundedParameters is not used (which definitely should), this leads to zero division error
+    std::size_t systemsize = 0; // if setBoundedParameters is not used (which definitely should), this leads to zero division
     std::vector<Real> boundLower; // remembers lower bounds
     std::vector<Real> boundUpper; // remembers upper bounds
   }; // BoundedLineSearchParametersInterface
