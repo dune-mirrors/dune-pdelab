@@ -29,6 +29,23 @@ namespace Dune {
       }
     };
 
+    template <typename RFType>
+    struct NewtonResult : PDESolverResult<RFType>
+    {
+      double line_search_time;
+
+      NewtonResult()
+      {
+        clear();
+      }
+
+      void clear()
+      {
+        PDESolverResult::clear();
+        line_search_time = 0.0;
+      }
+    }
+
   } // namespace PDELab
 } // namespace Dune
 

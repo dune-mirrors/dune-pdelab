@@ -82,7 +82,8 @@ namespace Dune::PDELab
     using Real = typename Dune::FieldTraits<typename Domain::ElementType>::real_type;
 
     //! Type of results
-    using Result = PDESolverResult<Real>;
+    // using Result = PDESolverResult<Real>;
+    using Result = NewtonResult<Real>;
 
     //! Return results
     const Result& result() const
@@ -213,9 +214,19 @@ namespace Dune::PDELab
         // Prepare step
         //=============
         auto start = Clock::now();
-        prepareStep(solution);
+        try{
+          prepareStep(solution);
+        }
+        catch (...)
+        {
+          auto end = Clock::now();
+          assembler_time += end-start;
+          _result.assembler_time = to_seconds(assembler_time);
+          throw;
+        }
         auto end = Clock::now();
         assembler_time += end -start;
+        _result.assembler_time = to_seconds(assembler_time);
 
         // Store defect
         _previousDefect = _result.defect;
@@ -224,18 +235,40 @@ namespace Dune::PDELab
         // Solve linear system
         //====================
         start = Clock::now();
-        linearSolve();
+        try{
+          linearSolve();
+        }
+        catch (...)
+        {
+          end = Clock::now();
+          linear_solver_time += end-start;
+          _result.linear_solver_time = to_seconds(linear_solver_time);
+          _result.linear_solver_iterations = _linearSolver.result().iterations;
+          throw;
+        }
         end = Clock::now();
         linear_solver_time += end -start;
+        _result.linear_solver_time = to_seconds(linear_solver_time);
+        _result.linear_solver_iterations = _linearSolver.result().iterations;
 
         //===================================
         // Do line search and update solution
         //===================================
         start = Clock::now();
-        _lineSearch->lineSearch(solution, _correction);
+        try{
+          _lineSearch->lineSearch(solution, _correction);
+        }
+        catch (...)
+        {
+          end = Clock::now();
+          line_search_time += end-start;
+          _result.line_search_time = line_search_time;
+          throw;
+        }
         // lineSearch(solution);
         end = Clock::now();
         line_search_time += end -start;
+        _result.line_search_time = line_search_time;
 
         //========================================
         // Store statistics and create some output
