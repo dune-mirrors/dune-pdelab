@@ -41,10 +41,10 @@ namespace Dune {
 
       void clear()
       {
-        PDESolverResult::clear();
+        PDESolverResult<RFType>::clear();
         line_search_time = 0.0;
       }
-    }
+    };
 
   } // namespace PDELab
 } // namespace Dune

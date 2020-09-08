@@ -75,16 +75,30 @@ namespace Impl
     void operator() (Domain& solution)
     {
       using Dune::PDELab::Backend::native;
-      for (auto& block : native(solution))
-      {
-        for (std::size_t i=0; i<pc.placeLower.size(); ++i)
-          if (block[pc.placeLower[i]] < pc.boundLower[i])
-            block[pc.placeLower[i]] = pc.boundLower[i];
-        for (std::size_t i=0; i<pc.placeUpper.size(); ++i)
-          if (block[pc.placeUpper[i]] > pc.boundUpper[i])
-            block[pc.placeUpper[i]] = pc.boundUpper[i];
-      }
-    }
+      if (pc.placeLower.size()>0 && pc.placeUpper.size()>0)
+        for (auto& block : native(solution))
+        {
+          for (std::size_t i=0; i<pc.placeLower.size(); ++i)
+            if (block[pc.placeLower[i]] < pc.boundLower[i])
+              block[pc.placeLower[i]] = pc.boundLower[i];
+          for (std::size_t i=0; i<pc.placeUpper.size(); ++i)
+            if (block[pc.placeUpper[i]] > pc.boundUpper[i])
+              block[pc.placeUpper[i]] = pc.boundUpper[i];
+        }
+        else
+        {
+          if (pc.placeLower.size()>0)
+            for (auto& block : native(solution))
+              for (std::size_t i=0; i<pc.placeLower.size(); ++i)
+                if (block[pc.placeLower[i]] < pc.boundLower[i])
+                  block[pc.placeLower[i]] = pc.boundLower[i];
+          if (pc.placeUpper.size()>0)
+            for (auto& block : native(solution))
+              for (std::size_t i=0; i<pc.placeUpper.size(); ++i)
+                if (block[pc.placeUpper[i]] > pc.boundUpper[i])
+                  block[pc.placeUpper[i]] = pc.boundUpper[i];
+        }
+    } // end operator()
   };
 
   template<typename Newton>
@@ -104,26 +118,69 @@ namespace Impl
       // EntityBlocked with Blocking "none" is arranged in blocks, but
       // blocks have size 1. Variable i stores the position in the block.
       std::size_t i=0;
-      std::size_t low=0; // watches the next lower bound to be corrected
-      std::size_t up=0; // watches the next upper bound
-      for (auto& block : native(solution))
+      std::size_t systemsize = pc.systemsize;
+
+      // Check if both upper and lower bounds are active. Code is copied
+      // for cases when only one is active in order to avoid traversing
+      // the vector twice or asking frequently for nonemptyness.
+      if (pc.placeLower.size()>0 && pc.placeUpper.size()>0)
       {
-        // Firstly check whether it is one of the bounded variables.
-        if (i==pc.placeLower[low])
+        std::size_t low=0; // watches the next lower bound to be corrected
+        std::size_t up=0; // watches the next upper bound
+        std::size_t lowsize = pc.placeLower.size();
+        std::size_t upsize = pc.placeUpper.size();
+        for (auto& block : native(solution))
         {
-          if (block[0]<pc.boundLower[low])
-            block[0] = pc.boundLower[low];
-          low = (low+1) % pc.placeLower.size();
+          // Firstly check whether it is one of the bounded variables.
+          if (i==pc.placeLower[low])
+          {
+            if (block[0]<pc.boundLower[low])
+              block[0] = pc.boundLower[low];
+            low = (low+1) % lowsize;
+          }
+          if (i==pc.placeUpper[up])
+          {
+            if (block[0]>pc.boundUpper[up])
+              block[0] = pc.boundUpper[up];
+            up = (up+1) % upsize;
+          }
+          i = (i+1) % systemsize;
         }
-        if (i==pc.placeUpper[up])
-        {
-          if (block[0]>pc.boundUpper[up])
-            block[0] = pc.boundUpper[up];
-          up = (up+1) % pc.placeUpper.size();
-        }
-        i = (i+1) % pc.systemsize;
       }
-    }
+      else
+      {
+        if (pc.placeLower.size()>0)
+        {
+          std::size_t low=0; // watches the next lower bound to be corrected
+          std::size_t lowsize = pc.placeLower.size();
+          for (auto& block : native(solution))
+          {
+            if (i==pc.placeLower[low])
+            {
+              if (block[0]<pc.boundLower[low])
+                block[0] = pc.boundLower[low];
+              low = (low+1) % lowsize;
+            }
+            i = (i+1) % systemsize;
+          }
+        }
+        if (pc.placeUpper.size()>0)
+        {
+          std::size_t up=0; // watches the next lower bound to be corrected
+          std::size_t upsize = pc.placeUpper.size();
+          for (auto& block : native(solution))
+          {
+            if (i==pc.placeUpper[up])
+            {
+              if (block[0]>pc.boundUpper[up])
+                block[0] = pc.boundUpper[up];
+              up = (up+1) % upsize;
+            }
+            i = (i+1) % systemsize;
+          }
+        }
+      }
+    } // end operator()
   };
 
   template<typename Newton>
@@ -166,14 +223,26 @@ namespace Impl
 
     void operator() (Domain& solution)
     {
-      if (pc.placeUpper.size()>0)
+      // avoid traversing the vector twice (or multiple size()>0 checks)
+      if (pc.placeUpper.size()>0 && pc.placeLower.size()>0)
         for (auto& v : solution)
+        {
           if (v>pc.boundUpper[0])
             v = pc.boundUpper[0];
-      if (pc.placeLower.size()>0)
-        for (auto& v : solution)
           if (v<pc.boundLower[0])
             v = pc.boundLower[0];
+        }
+      else
+      {
+        if (pc.placeUpper.size()>0)
+          for (auto& v : solution)
+            if (v>pc.boundUpper[0])
+              v = pc.boundUpper[0];
+        if (pc.placeLower.size()>0)
+          for (auto& v : solution)
+            if (v<pc.boundLower[0])
+              v = pc.boundLower[0];
+      }
     }
   };
 

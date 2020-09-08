@@ -262,13 +262,13 @@ namespace Dune::PDELab
         {
           end = Clock::now();
           line_search_time += end-start;
-          _result.line_search_time = line_search_time;
+          _result.line_search_time = to_seconds(line_search_time);
           throw;
         }
         // lineSearch(solution);
         end = Clock::now();
         line_search_time += end -start;
-        _result.line_search_time = line_search_time;
+        _result.line_search_time = to_seconds(line_search_time);
 
         //========================================
         // Store statistics and create some output
