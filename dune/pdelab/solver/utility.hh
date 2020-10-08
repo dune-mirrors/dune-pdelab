@@ -30,11 +30,11 @@ namespace Dune {
     };
 
     template <typename RFType>
-    struct NewtonResult : PDESolverResult<RFType>
+    struct NewtonMethodResult : PDESolverResult<RFType>
     {
-      double line_search_time;
+      double line_search_time; // Cumulative time for line search
 
-      NewtonResult()
+      NewtonMethodResult()
       {
         clear();
       }

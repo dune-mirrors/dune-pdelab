@@ -189,9 +189,9 @@ namespace Dune::PDELab
     bool _forceAcceptBest;
   };
 
-  #ifdef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_HH
-    #define DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_ENABLED
-    #include<dune/pdelab/solver/newtonlinesearchbounded.hh>
+  #ifdef DUNE_PDELAB_SOLVER_LINESEARCH_BOUNDED_HH
+    #define DUNE_PDELAB_SOLVER_LINESEARCH_BOUNDED_ENABLED
+    #include<dune/pdelab/solver/linesearchbounded.hh>
   #endif
 
   //! Flags for different line search strategies
@@ -200,7 +200,7 @@ namespace Dune::PDELab
     noLineSearch,
     hackbuschReusken,
     hackbuschReuskenAcceptBest
-    #ifdef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_HH
+    #ifdef DUNE_PDELAB_SOLVER_LINESEARCH_BOUNDED_HH
     , boundedNoLineSearch
     , boundedHackbuschReusken
     #endif
@@ -223,7 +223,7 @@ namespace Dune::PDELab
         return LineSearchStrategy::hackbuschReusken;
       if (name == "hackbuschReuskenAcceptBest")
         return LineSearchStrategy::hackbuschReuskenAcceptBest;
-      #ifdef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_HH
+      #ifdef DUNE_PDELAB_SOLVER_LINESEARCH_BOUNDED_HH
         if (name == "boundedNoLineSearch")
           return LineSearchStrategy::boundedNoLineSearch;
         if (name == "boundedHackbuschReusken")
@@ -267,7 +267,7 @@ namespace Dune::PDELab
                 << "         Please use 'hackbuschReusken' and add the parameter 'LineSearchAcceptBest : true'";
       return lineSearch;
     }
-    #ifdef DUNE_PDELAB_SOLVER_NEWTONLINESEARCH_BOUNDED_HH
+    #ifdef DUNE_PDELAB_SOLVER_LINESEARCH_BOUNDED_HH
     if (strategy == LineSearchStrategy::boundedNoLineSearch){
       auto lineSearch = std::make_shared<BoundedLineSearchNone<Solver>> (solver);
       return lineSearch;

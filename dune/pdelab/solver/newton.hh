@@ -82,8 +82,7 @@ namespace Dune::PDELab
     using Real = typename Dune::FieldTraits<typename Domain::ElementType>::real_type;
 
     //! Type of results
-    // using Result = PDESolverResult<Real>;
-    using Result = NewtonResult<Real>;
+    using Result = NewtonMethodResult<Real>;
 
     //! Return results
     const Result& result() const
