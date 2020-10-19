@@ -224,7 +224,8 @@ namespace Impl
    *     EntityBlocked OrderingTag and "none" Blocking.
    *
    * Other options like bcrs blocking, InterleavedOrderingTag, or CompositeSpaces
-   * are not tested/implemented.
+   * are not tested/implemented. Default option is CorrectSolutionSingle,
+   * i.e. if neither of other types is recognized, this is the result.
    *
    * We treat separately cases when both upper and lower bounds are present
    * and when only one is - to avoid traversing the vector twice or
@@ -241,7 +242,7 @@ namespace Impl
     using ParameterClass = BoundedLineSearchParametersInterface<Newton>;
     using Domain = typename Newton::Domain;
 
-    CorrectSolutionEntityBlockedFixedBlocking(const ParameterClass& pc_)
+    explicit CorrectSolutionEntityBlockedFixedBlocking(const ParameterClass& pc_)
       : pc(pc_)
     {}
 
@@ -290,7 +291,7 @@ namespace Impl
     using ParameterClass = BoundedLineSearchParametersInterface<Newton>;
     using Domain = typename Newton::Domain;
 
-    CorrectSolutionEntityBlockedNoneBlocking(const ParameterClass& pc_)
+    explicit CorrectSolutionEntityBlockedNoneBlocking(const ParameterClass& pc_)
       : pc(pc_)
     {}
 
@@ -378,7 +379,7 @@ namespace Impl
     using ParameterClass = BoundedLineSearchParametersInterface<Newton>;
     using Domain = typename Newton::Domain;
 
-    CorrectSolutionLexicographic(const ParameterClass& pc_)
+    explicit CorrectSolutionLexicographic(const ParameterClass& pc_)
       : pc(pc_)
     {}
 
@@ -412,7 +413,7 @@ namespace Impl
     using ParameterClass = BoundedLineSearchParametersInterface<Newton>;
     using Domain = typename Newton::Domain;
 
-    CorrectSolutionSingle(const ParameterClass& pc_)
+    explicit CorrectSolutionSingle(const ParameterClass& pc_)
       : pc(pc_)
     {}
 
