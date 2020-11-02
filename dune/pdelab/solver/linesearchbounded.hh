@@ -39,7 +39,7 @@ namespace Impl
     std::size_t value = std::max(std::size_t(1),Domain::GridFunctionSpace::CHILDREN);
   };
 
-  class ExceptionBoundedLineSearch : Dune::Exception {};
+  class ExceptionBoundedLineSearch : public Dune::Exception {};
 
   /* \brief BoundedLineSearchParametersInterface
    *
