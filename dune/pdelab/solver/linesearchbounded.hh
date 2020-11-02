@@ -96,7 +96,7 @@ namespace Impl
           if (hasLower0)
           {
             if (bound != parameterTree.get<Real>("LowerBound0"))
-              DUNE_THROW(Exception,"BoundedLineSearch parameters error: Two different lower bounds are set!");
+              DUNE_THROW(ExceptionBoundedLineSearch,"BoundedLineSearch parameters error: Two different lower bounds are set!");
           }
         }
         else if (hasLower0)
@@ -112,7 +112,7 @@ namespace Impl
           if (hasUpper0)
           {
             if (bound != parameterTree.get<Real>("UpperBound0"))
-              DUNE_THROW(Exception,"BoundedLineSearch parameters error: Two different upper bounds are set!");
+              DUNE_THROW(ExceptionBoundedLineSearch,"BoundedLineSearch parameters error: Two different upper bounds are set!");
           }
         }
         else if (hasUpper0)
@@ -122,7 +122,7 @@ namespace Impl
         }
         if ((hasLower || hasLower0) && (hasUpper || hasUpper0))
           if (boundLower[0] > boundUpper[0])
-            DUNE_THROW(Exception,"BoundedLineSearch parameters error: LowerBound higher than UpperBound.");
+            DUNE_THROW(ExceptionBoundedLineSearch,"BoundedLineSearch parameters error: LowerBound higher than UpperBound.");
       }
       else // systemsize !=1
       {
@@ -142,7 +142,7 @@ namespace Impl
           }
           if (hasLower && hasUpper)
             if (boundLower[boundLower.size()-1] > boundUpper[boundUpper.size()-1])
-              DUNE_THROW(Exception,"BoundedLineSearch parameters error: Unknown "+std::to_string(i)+" has LowerBound higher than UpperBound.");
+              DUNE_THROW(ExceptionBoundedLineSearch,"BoundedLineSearch parameters error: Unknown "+std::to_string(i)+" has LowerBound higher than UpperBound.");
         }
       }
       // optional check, "NumberOfRestraints" stores the number of restraints.
@@ -151,7 +151,7 @@ namespace Impl
       {
         auto nrestr = parameterTree.get<std::size_t>("NumberOfRestraints");
         if (nrestr != placeLower.size() + placeUpper.size())
-          DUNE_THROW(Exception,"BoundedLineSearch parameters error: The number of restraints is different to the specified number.");
+          DUNE_THROW(ExceptionBoundedLineSearch,"BoundedLineSearch parameters error: The number of restraints is different to the specified number.");
         if (verbosity>=2)
           std::cout << "The system has " << systemsize << " unknowns and "
                     << nrestr << " restraints placed on them." << std::endl;
