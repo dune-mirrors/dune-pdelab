@@ -562,18 +562,23 @@ namespace Dune::PDELab
      * using ParameterTree is extraordinarily error prone. Checking
      * parameters without setting up the debugger can be useful...
      */
-    void printParameters(const std::string& _name = "NewtonMethod") const
+    void printParameters(const std::string& _name = "NewtonMethod") const noexcept
     {
+      // Change boolalpha flag to output true/false in full, not 0/1.
+      // Restoring previous setting is guaranteed -function is noexcept.
+      auto ioflags = std::cout.flags();
+      std::cout.setf(std::ios_base::boolalpha);
       std::cout << _name << " parameters:\n";
       std::cout << "Verbosity............... " << _verbosity << std::endl;
       std::cout << "Reduction............... " << _reduction << std::endl;
       std::cout << "AbsoluteLimit........... " << _absoluteLimit << std::endl;
-      std::cout << "KeepMatrix.............. " << (_keepMatrix ? "true" : "false") << std::endl;
-      std::cout << "UseMaxNorm.............. " << (_useMaxNorm ? "true" : "false") << std::endl;
+      std::cout << "KeepMatrix.............. " << _keepMatrix << std::endl;
+      std::cout << "UseMaxNorm.............. " << _useMaxNorm << std::endl;
       std::cout << "MinLinearReduction...... " << _minLinearReduction << std::endl;
       std::cout << "FixedLinearReduction.... " << _fixedLinearReduction << std::endl;
       std::cout << "ReassembleThreshold..... " << _reassembleThreshold << std::endl;
-      std::cout << "HangingNodeModifications " << (_hangingNodeModifications ? "true" : "false") << std::endl;
+      std::cout << "HangingNodeModifications " << _hangingNodeModifications << std::endl;
+      std::cout.flags(ioflags);
     }
 
     //! Construct Newton using default parameters with default parameters
