@@ -557,6 +557,25 @@ namespace Dune::PDELab
       _lineSearch = lineSearch;
     }
 
+    /**\brief Output NewtonMethod parameters
+     *
+     * using ParameterTree is extraordinarily error prone. Checking
+     * parameters without setting up the debugger can be useful...
+     */
+    void printParameters(const std::string& _name = "NewtonMethod") const
+    {
+      std::cout << _name << " parameters:\n";
+      std::cout << "Verbosity............... " << _verbosity << std::endl;
+      std::cout << "Reduction............... " << _reduction << std::endl;
+      std::cout << "AbsoluteLimit........... " << _absoluteLimit << std::endl;
+      std::cout << "KeepMatrix.............. " << (_keepMatrix ? "true" : "false") << std::endl;
+      std::cout << "UseMaxNorm.............. " << (_useMaxNorm ? "true" : "false") << std::endl;
+      std::cout << "MinLinearReduction...... " << _minLinearReduction << std::endl;
+      std::cout << "FixedLinearReduction.... " << _fixedLinearReduction << std::endl;
+      std::cout << "ReassembleThreshold..... " << _reassembleThreshold << std::endl;
+      std::cout << "HangingNodeModifications " << (_hangingNodeModifications ? "true" : "false") << std::endl;
+    }
+
     //! Construct Newton using default parameters with default parameters
     /**
        in p
