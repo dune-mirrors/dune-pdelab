@@ -22,6 +22,12 @@ namespace Dune::PDELab
 
     //! Set parameters
     virtual void setParameters(const ParameterTree&) = 0;
+
+    //! Print paramters
+    virtual void printParameters() const noexcept
+    {
+      std::cout << "NewtonMethod::_lineSearch->printParameters() is not implemented." << std::endl;
+    }
   };
 
 
@@ -43,6 +49,9 @@ namespace Dune::PDELab
     }
 
     virtual void setParameters(const ParameterTree&) override {}
+
+    // there are none parameters to print
+    virtual void printParameters() const noexcept override {}
 
   private:
     Solver& _solver;
@@ -178,6 +187,14 @@ namespace Dune::PDELab
       _acceptBest = parameterTree.get<bool>("AcceptBest", _acceptBest);
     }
 
+    virtual void printParameters() const noexcept override
+    {
+      std::cout << "LineSearch.MaxIterations.. " << _lineSearchMaxIterations << std::endl;
+      std::cout << "LineSearch.DampingFactor.. " << _lineSearchDampingFactor << std::endl;
+      std::cout << "LineSearch.AcceptBest..... " << _acceptBest << std::endl;
+      std::cout << "LineSearch.ForceAcceptBest " << _forceAcceptBest << std::endl;
+    }
+
   private:
     Solver& _solver;
     std::shared_ptr<Domain> _previousSolution;
@@ -264,7 +281,7 @@ namespace Dune::PDELab
     if (strategy == LineSearchStrategy::hackbuschReuskenAcceptBest){
       auto lineSearch = std::make_shared<LineSearchHackbuschReusken<Solver>> (solver, true);
       std::cout << "Warning: linesearch hackbuschReuskenAcceptBest is deprecated and will be removed after PDELab 2.7.\n"
-                << "         Please use 'hackbuschReusken' and add the parameter 'LineSearchAcceptBest : true'";
+                << "         Please use 'hackbuschReusken' and add the parameter 'LineSearch.AcceptBest : true'";
       return lineSearch;
     }
     #ifdef DUNE_PDELAB_SOLVER_LINESEARCH_BOUNDED_HH

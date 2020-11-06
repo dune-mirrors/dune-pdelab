@@ -559,8 +559,8 @@ namespace Dune::PDELab
 
     /**\brief Output NewtonMethod parameters
      *
-     * using ParameterTree is extraordinarily error prone. Checking
-     * parameters without setting up the debugger can be useful...
+     * Setting parameters using ParameterTree is quite error prone.
+     * Checking parameters without setting up the debugger can be useful.
      */
     void printParameters(const std::string& _name = "NewtonMethod") const noexcept
     {
@@ -578,6 +578,8 @@ namespace Dune::PDELab
       std::cout << "FixedLinearReduction.... " << _fixedLinearReduction << std::endl;
       std::cout << "ReassembleThreshold..... " << _reassembleThreshold << std::endl;
       std::cout << "HangingNodeModifications " << _hangingNodeModifications << std::endl;
+      _terminate->printParameters();
+      _lineSearch->printParameters();
       std::cout.flags(ioflags);
     }
 

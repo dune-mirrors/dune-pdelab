@@ -39,7 +39,7 @@ namespace Impl
     std::size_t value = std::max(std::size_t(1),Domain::GridFunctionSpace::CHILDREN);
   };
 
-  class ExceptionBoundedLineSearch : public Dune::Exception {};
+  class LineSearchError : public Dune::Exception {};
 
   /* \brief BoundedLineSearchParametersInterface
    *
@@ -96,7 +96,7 @@ namespace Impl
           if (hasLower0)
           {
             if (bound != parameterTree.get<Real>("LowerBound0"))
-              DUNE_THROW(ExceptionBoundedLineSearch,"BoundedLineSearch parameters error: Two different lower bounds are set!");
+              DUNE_THROW(LineSearchError,"BoundedLineSearch parameters error: Two different lower bounds are set!");
           }
         }
         else if (hasLower0)
@@ -112,7 +112,7 @@ namespace Impl
           if (hasUpper0)
           {
             if (bound != parameterTree.get<Real>("UpperBound0"))
-              DUNE_THROW(ExceptionBoundedLineSearch,"BoundedLineSearch parameters error: Two different upper bounds are set!");
+              DUNE_THROW(LineSearchError,"BoundedLineSearch parameters error: Two different upper bounds are set!");
           }
         }
         else if (hasUpper0)
@@ -122,7 +122,7 @@ namespace Impl
         }
         if ((hasLower || hasLower0) && (hasUpper || hasUpper0))
           if (boundLower[0] > boundUpper[0])
-            DUNE_THROW(ExceptionBoundedLineSearch,"BoundedLineSearch parameters error: LowerBound higher than UpperBound.");
+            DUNE_THROW(LineSearchError,"BoundedLineSearch parameters error: LowerBound higher than UpperBound.");
       }
       else // systemsize !=1
       {
@@ -142,7 +142,7 @@ namespace Impl
           }
           if (hasLower && hasUpper)
             if (boundLower[boundLower.size()-1] > boundUpper[boundUpper.size()-1])
-              DUNE_THROW(ExceptionBoundedLineSearch,"BoundedLineSearch parameters error: Unknown "+std::to_string(i)+" has LowerBound higher than UpperBound.");
+              DUNE_THROW(LineSearchError,"BoundedLineSearch parameters error: Unknown "+std::to_string(i)+" has LowerBound higher than UpperBound.");
         }
       }
       // optional check, "NumberOfRestraints" stores the number of restraints.
@@ -151,7 +151,7 @@ namespace Impl
       {
         auto nrestr = parameterTree.get<std::size_t>("NumberOfRestraints");
         if (nrestr != placeLower.size() + placeUpper.size())
-          DUNE_THROW(ExceptionBoundedLineSearch,"BoundedLineSearch parameters error: The number of restraints is different to the specified number.");
+          DUNE_THROW(LineSearchError,"BoundedLineSearch parameters error: The number of restraints is different to the specified number.");
         if (verbosity>=2)
           std::cout << "The system has " << systemsize << " unknowns and "
                     << nrestr << " restraints placed on them." << std::endl;
@@ -199,6 +199,32 @@ namespace Impl
     std::size_t getSystemSize() const
     {
       return systemsize;
+    }
+
+    void printParameters() const noexcept
+    {
+      using std::cout;
+      cout << "Number of Bounds on variables: " << placeLower.size()+placeUpper.size() << std::endl;
+      if (placeLower.size() > 0)
+      {
+        cout << "Lower bounds on variable" << (placeLower.size()==1 ? " " : "s ");
+        for (const auto& v : placeLower)
+          cout << v << ", ";
+        cout << (placeLower.size()==1 ? "is " : "are ");
+        for (const auto& v : boundLower)
+          cout << v << ", ";
+        cout << std::endl;
+      }
+      if (placeUpper.size() > 0)
+      {
+        cout << "Upper bounds on variable" << (placeUpper.size()==1 ? " " : "s ");
+        for (const auto& v : placeUpper)
+          cout << v << ", ";
+        cout << (placeUpper.size()==1 ? "is " : "are ");
+        for (const auto& v : boundUpper)
+          cout << v << ", ";
+        cout << std::endl;
+      }
     }
 
   private:
@@ -510,11 +536,16 @@ public:
     param.setBoundedParameters(parameterTree,_newton.getVerbosityLevel());
   }
 
+  virtual void printParameters() const noexcept override
+  {
+    param.printParameters();
+  }
+
 private:
   Newton& _newton;
-  ParameterClass param;
   using CorSol = typename Impl::SetCorrectSolution<Newton>::type;
   CorSol corSol;
+  ParameterClass param;
 };
 
 /** \brief bounded Hackbusch-Reusken line search
@@ -523,7 +554,7 @@ private:
  * Allows setting bounds on values which will not be exceeded,
  * after performing line search, solution vector is corrected to stay inside limits.
  *
- * If the parameter line_search_accept_best is set through the setParameters
+ * If the parameter AcceptBest is set through the setParameters
  * method this line search will simply return the best result even if it did
  * not converge.
  */
@@ -638,33 +669,41 @@ public:
    *
    * Possible parameters are:
    *
-   * - line_search_max_iterations: Maximum number of line search iterations.
+   * - MaxIterations: Maximum number of line search iterations.
    *
-   * - line_search_damping_factor: Multiplier to line search parameter after each iteration.
+   * - DampingFactor: Multiplier to line search parameter after each iteration.
    *
-   * - line_search_accept_best: Accept the best line search parameter if
+   * - AcceptBest: Accept the best line search parameter if
    *   there was any improvement, even if the convergence criterion was not
    *   reached.
    */
   virtual void setParameters(const ParameterTree& parameterTree) override
   {
-    _lineSearchMaxIterations = parameterTree.get<unsigned int>("line_search_max_iterations",
+    _lineSearchMaxIterations = parameterTree.get<unsigned int>("MaxIterations",
                                                                _lineSearchMaxIterations);
-    _lineSearchDampingFactor = parameterTree.get<Real>("line_search_damping_factor",
+    _lineSearchDampingFactor = parameterTree.get<Real>("DampingFactor",
                                                        _lineSearchDampingFactor);
-    _acceptBest = parameterTree.get<bool>("line_search_accept_best",
+    _acceptBest = parameterTree.get<bool>("AcceptBest",
                                           _acceptBest);
     param.setBoundedParameters(parameterTree);
+  }
+
+  virtual void printParameters() const noexcept override
+  {
+    std::cout << "LineSearch.MaxIterations.. " << _lineSearchMaxIterations << std::endl;
+    std::cout << "LineSearch.DampingFactor.. " << _lineSearchDampingFactor << std::endl;
+    std::cout << "LineSearch.AcceptBest..... " << _acceptBest << std::endl;
+    param.printParameters();
   }
 
 private:
   Newton& _newton;
   std::shared_ptr<Domain> _previousSolution;
-  ParameterClass param;
   using CorSol = typename Impl::SetCorrectSolution<Newton>::type;
   CorSol corSol;
 
   // Line search parameters
+  ParameterClass param;
   unsigned int _lineSearchMaxIterations = 10;
   Real _lineSearchDampingFactor = 0.5;
   bool _acceptBest = false;
