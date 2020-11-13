@@ -562,10 +562,9 @@ namespace Dune::PDELab
      * Setting parameters using ParameterTree is quite error prone.
      * Checking parameters without setting up the debugger can be useful.
      */
-    void printParameters(const std::string& _name = "NewtonMethod") const noexcept
+    void printParameters(const std::string& _name = "NewtonMethod") const
     {
       // Change boolalpha flag to output true/false in full, not 0/1.
-      // Restoring previous setting is guaranteed -function is noexcept.
       auto ioflags = std::cout.flags();
       std::cout.setf(std::ios_base::boolalpha);
       std::cout << _name << " parameters:\n";
@@ -578,8 +577,15 @@ namespace Dune::PDELab
       std::cout << "FixedLinearReduction.... " << _fixedLinearReduction << std::endl;
       std::cout << "ReassembleThreshold..... " << _reassembleThreshold << std::endl;
       std::cout << "HangingNodeModifications " << _hangingNodeModifications << std::endl;
-      _terminate->printParameters();
-      _lineSearch->printParameters();
+      // restore ioflags to previous state
+      try{
+        _terminate->printParameters();
+        _lineSearch->printParameters();
+      }
+      catch (...) {
+        std::cout.flags(ioflags);
+        throw;
+      }
       std::cout.flags(ioflags);
     }
 

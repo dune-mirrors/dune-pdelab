@@ -201,7 +201,7 @@ namespace Impl
       return systemsize;
     }
 
-    void printParameters() const noexcept
+    void printParameters() const
     {
       using std::cout;
       cout << "Number of Bounds on variables: " << placeLower.size()+placeUpper.size() << std::endl;
@@ -536,7 +536,7 @@ public:
     param.setBoundedParameters(parameterTree,_newton.getVerbosityLevel());
   }
 
-  virtual void printParameters() const noexcept override
+  virtual void printParameters() const override
   {
     param.printParameters();
   }
@@ -688,7 +688,7 @@ public:
     param.setBoundedParameters(parameterTree);
   }
 
-  virtual void printParameters() const noexcept override
+  virtual void printParameters() const override
   {
     std::cout << "LineSearch.MaxIterations.. " << _lineSearchMaxIterations << std::endl;
     std::cout << "LineSearch.DampingFactor.. " << _lineSearchDampingFactor << std::endl;

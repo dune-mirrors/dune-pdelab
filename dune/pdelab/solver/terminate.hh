@@ -19,7 +19,7 @@ namespace Dune::PDELab
 
     virtual void setParameters(const ParameterTree&) = 0;
 
-    virtual void printParameters() const noexcept
+    virtual void printParameters() const
     {
       std::cout << "NewtonMethod::_terminate->printParameters() is not implemented." << std::endl;
     }
@@ -51,7 +51,7 @@ namespace Dune::PDELab
       _force_iteration = parameterTree.get<bool>("ForceIteration", _force_iteration);
     }
 
-    virtual void printParameters() const noexcept override
+    virtual void printParameters() const override
     {
       std::cout << "Terminate.MaxIterations. " << _maxIterations << std::endl;
       std::cout << "Terminate.ForceIteration " << _force_iteration << std::endl;
