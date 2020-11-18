@@ -149,8 +149,9 @@ namespace Dune {
         // do statistics
         OneStepMethodPartialResult step_result;
 
-        std::vector<TrlV*> x(1); // vector of pointers to all steps
-        x[0] = &xold;            // initially we have only one
+        std::vector<std::shared_ptr<TrlV>> x(1); // vector of pointers to all steps
+        // initially we have only one, this pointer is non-owning
+        x[0] = stackobject_to_shared_ptr(xold);
 
         if (verbosityLevel>=1){
           std::ios_base::fmtflags oldflags = std::cout.flags();
@@ -192,14 +193,14 @@ namespace Dune {
             // get vector for current stage
             if (r==method->s())
               {
-                // last stage
-                x.push_back(&xnew);
+                // last stage, non-owning pointer to pre-exinsting entity
+                x.push_back(stackobject_to_shared_ptr<TrlV>(xnew));
                 if (r>1) xnew = *(x[r-1]); // if r=1 then xnew has already initial guess
               }
             else
               {
-                // intermediate step
-                x.push_back(new TrlV(igos.trialGridFunctionSpace()));
+                // intermediate step, own the resource, delete when x goes out of scope
+                x.push_back(std::make_shared<TrlV>(igos.trialGridFunctionSpace()));
                 if (r>1)
                   *(x[r]) = *(x[r-1]); // use result of last stage as initial guess
                 else
@@ -223,12 +224,6 @@ namespace Dune {
                 res.total.linear_solver_iterations += step_result.linear_solver_iterations;
                 res.total.nonlinear_solver_iterations += step_result.nonlinear_solver_iterations;
                 res.total.timesteps += 1;
-
-                // delete intermediate steps
-                for (unsigned i=1; i<r; ++i) delete x[i];
-                if (r < method->s())
-                  delete x[r];
-
                 throw;
               }
             PDESolverResult pderes = pdesolver.result();
@@ -240,9 +235,6 @@ namespace Dune {
             // stage cleanup
             igos.postStage();
           }
-
-        // delete intermediate steps
-        for (unsigned i=1; i<method->s(); ++i) delete x[i];
 
         // step cleanup
         igos.postStep();
@@ -296,8 +288,9 @@ namespace Dune {
         // save formatting attributes
         ios_base_all_saver format_attribute_saver(std::cout);
 
-        std::vector<TrlV*> x(1); // vector of pointers to all steps
-        x[0] = &xold;            // initially we have only one
+        std::vector<std::shared_ptr<TrlV>> x(1); // vector of pointers to all steps
+        // initially we have only one, this pointer is non-owning
+        x[0] = stackobject_to_shared_ptr<TrlV>(xold);
 
         if (verbosityLevel>=1){
           std::ios_base::fmtflags oldflags = std::cout.flags();
@@ -339,13 +332,13 @@ namespace Dune {
             // get vector for current stage
             if (r==method->s())
               {
-                // last stage
-                x.push_back(&xnew);
+                // last stage, non-owning pointer to pre-exinsting entity
+                x.push_back(stackobject_to_shared_ptr<TrlV>(xnew));
               }
             else
               {
-                // intermediate step
-                x.push_back(new TrlV(igos.trialGridFunctionSpace()));
+                // intermediate step, own the resource, delete when x goes out of scope
+                x.push_back(std::make_shared<TrlV>(igos.trialGridFunctionSpace()));
               }
 
             // set boundary conditions and initial value
@@ -368,12 +361,6 @@ namespace Dune {
                 res.total.linear_solver_iterations += step_result.linear_solver_iterations;
                 res.total.nonlinear_solver_iterations += step_result.nonlinear_solver_iterations;
                 res.total.timesteps += 1;
-
-                // delete intermediate steps
-                for (unsigned i=1; i<r; ++i) delete x[i];
-                if (r < method->s())
-                  delete x[r];
-
                 throw;
               }
             PDESolverResult pderes = pdesolver.result();
@@ -385,9 +372,6 @@ namespace Dune {
             // stage cleanup
             igos.postStage();
           }
-
-        // delete intermediate steps
-        for (unsigned i=1; i<method->s(); ++i) delete x[i];
 
         // step cleanup
         igos.postStep();
