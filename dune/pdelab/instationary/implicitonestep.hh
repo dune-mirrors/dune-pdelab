@@ -149,9 +149,13 @@ namespace Dune {
         // do statistics
         OneStepMethodPartialResult step_result;
 
-        std::vector<std::shared_ptr<TrlV>> x(1); // vector of pointers to all steps
-        // initially we have only one, this pointer is non-owning
-        x[0] = stackobject_to_shared_ptr(xold);
+        // vector of pointers to all steps
+        // first and last pointer point to xold and xnew and have
+        // null deleter, so xold, xnew are not accidentaly released
+        std::vector<std::shared_ptr<TrlV>> x{stackobject_to_shared_ptr(xold)};
+        // raw pointers are needed for compatibility with preStage,
+        // shared pointers manage memory, xraw must not be deleted
+        std::vector<TrlV*> xraw{&xold};
 
         if (verbosityLevel>=1){
           std::ios_base::fmtflags oldflags = std::cout.flags();
@@ -188,7 +192,7 @@ namespace Dune {
             }
 
             // prepare stage
-            igos.preStage(r,x);
+            igos.preStage(r,xraw);
 
             // get vector for current stage
             if (r==method->s())
@@ -206,6 +210,7 @@ namespace Dune {
                 else
                   *(x[r]) = xnew;
               }
+            xraw.push_back(x[r].get());
 
             // solve stage
             try {
@@ -288,9 +293,13 @@ namespace Dune {
         // save formatting attributes
         ios_base_all_saver format_attribute_saver(std::cout);
 
-        std::vector<std::shared_ptr<TrlV>> x(1); // vector of pointers to all steps
-        // initially we have only one, this pointer is non-owning
-        x[0] = stackobject_to_shared_ptr<TrlV>(xold);
+        // vector of pointers to all steps
+        // first and last pointer point to xold and xnew and have
+        // null deleter, so xold, xnew are not accidentaly released
+        std::vector<std::shared_ptr<TrlV>> x{stackobject_to_shared_ptr(xold)};
+        // raw pointers are needed for compatibility with preStage,
+        // shared pointers manage memory, xraw must not be deleted
+        std::vector<TrlV*> xraw{&xold};
 
         if (verbosityLevel>=1){
           std::ios_base::fmtflags oldflags = std::cout.flags();
@@ -327,7 +336,7 @@ namespace Dune {
             }
 
             // prepare stage
-            igos.preStage(r,x);
+            igos.preStage(r,xraw);
 
             // get vector for current stage
             if (r==method->s())
@@ -340,6 +349,7 @@ namespace Dune {
                 // intermediate step, own the resource, delete when x goes out of scope
                 x.push_back(std::make_shared<TrlV>(igos.trialGridFunctionSpace()));
               }
+            xraw.push_back(x[r].get());
 
             // set boundary conditions and initial value
             igos.interpolate(r,*x[r-1],f,*x[r]);
