@@ -84,6 +84,9 @@ namespace Dune::PDELab
     //! Type of results
     using Result = NewtonMethodResult<Real>;
 
+    //! Type of line search interface
+    using LineSearch = LineSearchInterface<Domain>;
+
     //! Return results
     const Result& result() const
     {
@@ -119,7 +122,6 @@ namespace Dune::PDELab
       _linearReduction = _minLinearReduction;
       // corner case: ForceIteration==true. Use _minLinearReduction when initial defect is less than AbsoluteLimit.
       if (not _fixedLinearReduction && !(_result.iterations==0 && _result.first_defect<_absoluteLimit)){
-      // if (not _fixedLinearReduction){
         // Determine maximum defect, where Newton is converged.
         using std::min;
         using std::max;
@@ -129,10 +131,9 @@ namespace Dune::PDELab
         // reduction of at least current_defect^2/prev_defect^2.  For the
         // last newton step a linear reduction of
         // 1/10*end_defect/current_defect is sufficient for convergence.
-        if (stop_defect/(10*_result.defect) > min(_minLinearReduction, _result.defect*_result.defect/(_previousDefect*_previousDefect)))
-          _linearReduction = stop_defect/(10*_result.defect);
-        else
-          _linearReduction = min(_minLinearReduction, _result.defect*_result.defect/(_previousDefect*_previousDefect));
+        _linearReduction =
+          max( stop_defect/(10*_result.defect),
+            min(_minLinearReduction, _result.defect*_result.defect/(_previousDefect*_previousDefect)) );
         }
 
         if (_verbosity >= 3)
@@ -231,6 +232,9 @@ namespace Dune::PDELab
         }
         catch (...)
         {
+          // Keep track of statistics when the method fails. We record
+          // independently the time spent in non-converging attempts.
+          // Check OneStepMethod to see how these data are propagated.
           auto end = Clock::now();
           assembler_time += end-start;
           _result.assembler_time = to_seconds(assembler_time);
@@ -257,6 +261,7 @@ namespace Dune::PDELab
         }
         catch (...)
         {
+          // Separately catch statistics for linear solver failures.
           end = Clock::now();
           linear_solver_time += end-start;
           _result.linear_solver_time = to_seconds(linear_solver_time);
@@ -265,8 +270,8 @@ namespace Dune::PDELab
         }
         end = Clock::now();
         linear_solver_time += end -start;
-        _result.linear_solver_time += to_seconds(linear_solver_time);
-        _result.linear_solver_iterations += _linearSolver.result().iterations;
+        _result.linear_solver_time = to_seconds(linear_solver_time);
+        _result.linear_solver_iterations = _linearSolver.result().iterations;
 
         //===================================
         // Do line search and update solution
@@ -548,13 +553,25 @@ namespace Dune::PDELab
       _terminate = terminate;
     }
 
+    //! Return a pointer to the stored termination criterion
+    std::shared_ptr<TerminateInterface> getTerminate() const
+    {
+      return _terminate;
+    }
+
     /**\brief Set the line search
      *
      * See getLineSearch() for already implemented line searches
      */
-    void setLineSearch(std::shared_ptr<LineSearchInterface<Domain>> lineSearch)
+    void setLineSearch(std::shared_ptr<LineSearch> lineSearch)
     {
       _lineSearch = lineSearch;
+    }
+
+    //! Return a pointer to the stored line search
+    std::shared_ptr<LineSearch> getLineSearch() const
+    {
+      return _lineSearch;
     }
 
     /**\brief Output NewtonMethod parameters
@@ -631,7 +648,7 @@ namespace Dune::PDELab
     std::shared_ptr<Domain> _previousSolution;
 
     std::shared_ptr<TerminateInterface> _terminate;
-    std::shared_ptr<LineSearchInterface<Domain>> _lineSearch;
+    std::shared_ptr<LineSearch> _lineSearch;
 
     // Class for storing results
     Result _result;
