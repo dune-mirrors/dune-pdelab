@@ -65,12 +65,12 @@ namespace Impl
     * Bounds are loaded from ParameterTree, which is passed from Newton
     * class via subtree "LineSearch". To restrain some values, these
     * fields are expected (in subtree line_search passed to Newton class):
-    * LowerBound* = Real, lower bound for unknown number *
-    * UpperBound* = Real, upper bound for unknown number *
+    * LowerBound# = Real, lower bound for unknown number #
+    * UpperBound# = Real, upper bound for unknown number #
     * NumberOfRestraints = std:size_t, optional parameter, the total number
     *   of restraints specified (good for avoiding typos)
-    * In case of a problem with only one unknown LowerBound and UpperBound
-    * are accepted too, it is the same as if the missing number was 0.
+    * In case of a problem with only one unknown, LowerBound and UpperBound
+    * are accepted too. It is the same as if the missing number was 0.
     *
     * The system size is deduced automatically.
     */
@@ -156,26 +156,10 @@ namespace Impl
           std::cout << "The system has " << systemsize << " unknowns and "
                     << nrestr << " restraints placed on them." << std::endl;
       }
+      // Output the restraints.
       if (verbosity >=4)
       {
-        if (placeLower.size()==0)
-          std::cout << "There are no lower bounds." << std::endl;
-        else
-        {
-          for (std::size_t i=0; i<placeLower.size(); ++i)
-          {
-            std::cout << "Lower bound of unknown " << placeLower[i] << " is " << boundLower[i] <<std::endl;
-          }
-        }
-        if (placeUpper.size()==0)
-          std::cout << "There are no upper bounds." << std::endl;
-        else
-        {
-          for (std::size_t i=0; i<placeUpper.size(); ++i)
-          {
-            std::cout << "Upper bound of unknown " << placeUpper[i] << " is " << boundUpper[i] <<std::endl;
-          }
-        }
+        printParameters();
       }
     }
 
@@ -203,36 +187,33 @@ namespace Impl
 
     void printParameters() const
     {
-      using std::cout;
-      cout << "Number of Bounds on variables: " << placeLower.size()+placeUpper.size() << std::endl;
-      if (placeLower.size() > 0)
+      std::cout << "Number of Bounds on variables: " << placeLower.size()+placeUpper.size() << std::endl;
+      if (placeLower.size()==0)
+        std::cout << "There are no lower bounds." << std::endl;
+      else
       {
-        cout << "Lower bounds on variable" << (placeLower.size()==1 ? " " : "s ");
-        for (const auto& v : placeLower)
-          cout << v << ", ";
-        cout << (placeLower.size()==1 ? "is " : "are ");
-        for (const auto& v : boundLower)
-          cout << v << ", ";
-        cout << std::endl;
+        for (std::size_t i=0; i<placeLower.size(); ++i)
+        {
+          std::cout << "Lower bound of unknown " << placeLower[i] << " is " << boundLower[i] <<std::endl;
+        }
       }
-      if (placeUpper.size() > 0)
+      if (placeUpper.size()==0)
+        std::cout << "There are no upper bounds." << std::endl;
+      else
       {
-        cout << "Upper bounds on variable" << (placeUpper.size()==1 ? " " : "s ");
-        for (const auto& v : placeUpper)
-          cout << v << ", ";
-        cout << (placeUpper.size()==1 ? "is " : "are ");
-        for (const auto& v : boundUpper)
-          cout << v << ", ";
-        cout << std::endl;
+        for (std::size_t i=0; i<placeUpper.size(); ++i)
+        {
+          std::cout << "Upper bound of unknown " << placeUpper[i] << " is " << boundUpper[i] <<std::endl;
+        }
       }
     }
 
   private:
-    std::vector<std::size_t> placeLower; // stores which parts of block are restrained
-    std::vector<std::size_t> placeUpper; // stores which parts of block are restrained
+    std::vector<std::size_t> placeLower; // stores positions of bounds
+    std::vector<std::size_t> placeUpper; // stores positions of bounds
     std::size_t systemsize = 0; // if setBoundedParameters is not used (which definitely should), this leads to zero division
-    std::vector<Real> boundLower; // remembers lower bounds
-    std::vector<Real> boundUpper; // remembers upper bounds
+    std::vector<Real> boundLower; // stores lower bounds
+    std::vector<Real> boundUpper; // stores upper bounds
   }; // BoundedLineSearchParametersInterface
 
   /* \brief CorrectSolution
@@ -538,6 +519,7 @@ public:
 
   virtual void printParameters() const override
   {
+    std::cout << "LineSearch.Type........... Bounded LineSearchNone" << std::endl;
     param.printParameters();
   }
 
@@ -551,8 +533,11 @@ private:
 /** \brief bounded Hackbusch-Reusken line search
  *
  * Hackbusch-Reusken line search with an extra feature.
- * Allows setting bounds on values which will not be exceeded,
- * after performing line search, solution vector is corrected to stay inside limits.
+ * Allows setting bounds on values which will not be exceeded. After
+ * performing line search, solution vector is corrected to stay
+ * inside limits. Solution obtained by using the next damping factor
+ * is not affected by the correction. It looks as if a normal
+ * HackbuschReusken method was used, and must be corrected too.
  *
  * If the parameter AcceptBest is set through the setParameters
  * method this line search will simply return the best result even if it did
@@ -690,6 +675,7 @@ public:
 
   virtual void printParameters() const override
   {
+    std::cout << "LineSearch.Type........... Bounded Hackbusch-Reusken" << std::endl;
     std::cout << "LineSearch.MaxIterations.. " << _lineSearchMaxIterations << std::endl;
     std::cout << "LineSearch.DampingFactor.. " << _lineSearchDampingFactor << std::endl;
     std::cout << "LineSearch.AcceptBest..... " << _acceptBest << std::endl;

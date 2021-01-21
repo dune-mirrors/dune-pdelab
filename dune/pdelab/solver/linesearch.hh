@@ -51,7 +51,10 @@ namespace Dune::PDELab
     virtual void setParameters(const ParameterTree&) override {}
 
     // there are none parameters to print
-    virtual void printParameters() const override {}
+    virtual void printParameters() const override
+    {
+      std::cout << "LineSearch.Type........... LineSearchNone" << std::endl;
+    }
 
   private:
     Solver& _solver;
@@ -189,6 +192,7 @@ namespace Dune::PDELab
 
     virtual void printParameters() const override
     {
+      std::cout << "LineSearch.Type........... Hackbusch-Reusken" << std::endl;
       std::cout << "LineSearch.MaxIterations.. " << _lineSearchMaxIterations << std::endl;
       std::cout << "LineSearch.DampingFactor.. " << _lineSearchDampingFactor << std::endl;
       std::cout << "LineSearch.AcceptBest..... " << _acceptBest << std::endl;
