@@ -65,6 +65,9 @@ namespace Dune {
 
         arpack.computeGenNonSymMinMagnitude(native(ovlp_mat), eps, eigenvectors, eigenvalues, shift);
 
+        for (double ev : eigenvalues)
+          std::cout << ev << std::endl;
+
         // Count eigenvectors below threshold
         int cnt = -1;
         if (eigenvalue_threshold >= 0) {
