@@ -560,7 +560,6 @@ public:
   {
     if ((_newton.result().defect < _newton.getAbsoluteLimit())){
       solution.axpy(-1., correction);
-      // param.correctSolution(solution);
       corSol(solution);
       _newton.updateDefect(solution);
       return;
@@ -590,7 +589,6 @@ public:
 
       solution.axpy(-lambda, correction);
       corSol(solution);
-      // param.correctSolution(solution);
       _newton.updateDefect(solution);
       if (verbosity >= 4){
         if (not std::isfinite(_newton.result().defect))
@@ -637,6 +635,7 @@ public:
         if (bestLambda != lambda){
           solution = *_previousSolution;
           solution.axpy(-bestLambda, correction);
+          corSol(solution);
           _newton.updateDefect(solution);
           converged = true;
         }
