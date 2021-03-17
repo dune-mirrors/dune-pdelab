@@ -171,6 +171,19 @@ namespace Dune {
       //! change number of current step
       void setStepNumber(int newstep) { step = newstep; }
 
+      /**
+       * @brief Set the Reduction for linear system soltion
+       * @details This reduction is applyied to the solution of the linear
+       *          systems resulting from the shu-osher RK form for each stage.
+       *          In cases when the mass matrix is known to be diagonal of block
+       *          diagonal and an appropiate linear solver is provided
+       *          (e.g. BlockJacobi, Gauss-Seidel), it's sufficient to set this
+       *          to 0.99.
+       *
+       * @param reduction Reduction for the linear system solution
+       */
+      void setReduction(const double& reduction) { reduction_ = reduction; }
+
       //! redefine the method to be used; can be done before every step
       /**
        * \param method_ Parameter object.
@@ -348,7 +361,7 @@ namespace Dune {
             if (verbosityLevel>=4)
               std::cout << stagetag << "Solving diagonal system..."
                         << std::endl;
-            ls.apply(D,*x[r],alpha,0.99); // dummy reduction
+            ls.apply(D,*x[r],alpha,reduction_);
             if (verbosityLevel>=4)
               std::cout << stagetag << "Solving diagonal system... done."
                         << std::endl;
@@ -571,7 +584,7 @@ namespace Dune {
             if (verbosityLevel>=4)
               std::cout << stagetag << "Solving diagonal system..."
                         << std::endl;
-            ls.apply(D, update, residual, 0.99); // dummy reduction
+            ls.apply(D, update, residual, reduction_);
             if (verbosityLevel>=4)
               std::cout << stagetag << "Solving diagonal system... done."
                         << std::endl;
@@ -620,6 +633,7 @@ namespace Dune {
         {}
       };
 
+      double reduction_ = 1e-3;
       const TimeSteppingParameterInterface<T> *method;
       IGOS& igos;
       LS& ls;
