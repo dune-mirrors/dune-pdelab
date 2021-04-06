@@ -39,7 +39,7 @@ namespace Impl
     std::size_t value = std::max(std::size_t(1),Domain::GridFunctionSpace::CHILDREN);
   };
 
-  class LineSearchError : public Dune::Exception {};
+  class LineSearchError : public NewtonError {};
 
   /* \brief BoundedLineSearchParametersInterface
    *
@@ -64,7 +64,7 @@ namespace Impl
     *
     * Bounds are loaded from ParameterTree, which is passed from Newton
     * class via subtree "LineSearch". To restrain some values, these
-    * fields are expected (in subtree line_search passed to Newton class):
+    * fields are expected (in subtree LineSearch passed to Newton class):
     * LowerBound# = Real, lower bound for unknown number #
     * UpperBound# = Real, upper bound for unknown number #
     * NumberOfRestraints = std:size_t, optional parameter, the total number
