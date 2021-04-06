@@ -51,6 +51,12 @@ namespace Dune::PDELab
       _force_iteration = parameterTree.get<bool>("ForceIteration", _force_iteration);
     }
 
+    virtual void printParameters() const override
+    {
+      std::cout << "Terminate.MaxIterations. " << _maxIterations << std::endl;
+      std::cout << "Terminate.ForceIteration " << _force_iteration << std::endl;
+    }
+
     //! Set the maximum iterations allowed in the Newton solver
     void setMaxIterations(const unsigned int maxIterations)
     {
@@ -61,12 +67,6 @@ namespace Dune::PDELab
     void setForceIteration(const bool forceIteration)
     {
       _force_iteration = forceIteration;
-    }
-
-    virtual void printParameters() const override
-    {
-      std::cout << "Terminate.MaxIterations. " << _maxIterations << std::endl;
-      std::cout << "Terminate.ForceIteration " << _force_iteration << std::endl;
     }
 
   private:

@@ -582,6 +582,7 @@ namespace Dune::PDELab
     void printParameters(const std::string& _name = "NewtonMethod") const
     {
       // Change boolalpha flag to output true/false in full, not 0/1.
+      // Restoring to previous setting is guaranteed.
       auto ioflags = std::cout.flags();
       std::cout.setf(std::ios_base::boolalpha);
       std::cout << _name << " parameters:\n";
@@ -594,12 +595,14 @@ namespace Dune::PDELab
       std::cout << "FixedLinearReduction.... " << _fixedLinearReduction << std::endl;
       std::cout << "ReassembleThreshold..... " << _reassembleThreshold << std::endl;
       std::cout << "HangingNodeModifications " << _hangingNodeModifications << std::endl;
-      // restore ioflags to previous state
-      try{
+      try
+      {
         _terminate->printParameters();
         _lineSearch->printParameters();
       }
-      catch (...) {
+      catch (...)
+      {
+        // guarantee restoring previous std::cout flags
         std::cout.flags(ioflags);
         throw;
       }
