@@ -170,6 +170,9 @@ namespace Dune {
         }
       }
 
+      using ESExcluder = Dune::PDELab::EntitySetExcluder<Vector, GV>;
+      gfs.entitySet().setExcluder(std::make_shared<ESExcluder>());
+
       return std::make_tuple(extended_matrices.first, extended_matrices.second, part_unity);
     }
   }

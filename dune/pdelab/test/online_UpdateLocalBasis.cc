@@ -55,7 +55,7 @@ void driver(std::string path_to_storage, std::vector<int> targeted, Dune::MPIHel
     BCType bctype(es,problem);
 
     // ~~~~~~~~~~~~~~~~~~
-  //  FE fine Space definition
+    //  FE fine Space definition
     // ~~~~~~~~~~~~~~~~~~
     typedef typename ES::Grid::ctype DF;
     // instantiate finite element maps
@@ -105,7 +105,7 @@ void driver(std::string path_to_storage, std::vector<int> targeted, Dune::MPIHel
     typedef Dune::PDELab::VTKGridFunctionAdapter<DGF> ADAPT;
 
     // ~~~~~~~~~~~~~~~~~~
-  //  Solving process begin here: First some parameters
+    //  Solving process begin here: First some parameters
     // ~~~~~~~~~~~~~~~~~~
     double eigenvalue_threshold = -1;
     // const int algebraic_overlap = 0;
@@ -129,12 +129,12 @@ void driver(std::string path_to_storage, std::vector<int> targeted, Dune::MPIHel
     }
 
     // ~~~~~~~~~~~~~~~~~~
-  //  Subdomain basis computation and loading for neighbours
+    //  Subdomain basis computation and loading for neighbours
     // ~~~~~~~~~~~~~~~~~~
     std::shared_ptr<Dune::PDELab::SubdomainBasis<Vector>> online_subdomainbasis;
     online_subdomainbasis = std::make_shared<Dune::PDELab::GenEOBasisOnline<GO, Matrix, Vector>>(native(A), nPoU, eigenvalue_threshold, nev, nev_arpack);
     // ~~~~~~~~~~~~~~~~~~
-  //  Particular solution
+    //  Particular solution
     // ~~~~~~~~~~~~~~~~~~
     // auto PartSol = ParticularSolution<Vector, Matrix>(native(A));
     // PartSol.exactRHS(native(fine_b));

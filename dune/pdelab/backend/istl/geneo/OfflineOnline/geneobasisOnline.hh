@@ -155,6 +155,32 @@ namespace Dune {
       }
     };
 
+    template<class Vector, typename vector1i>
+    class GenEOBasisFinalPlot : public SubdomainBasis<Vector>
+    { // For testing
+
+    public:
+
+      GenEOBasisFinalPlot(std::string& path_to_storage, int basis_size, int subdomain_number, std::string defectID="", int verbose = 0) {
+
+        if (verbose > 1) std::cout << "Getting EV basis for subdomain: " << subdomain_number << " from offline." << std::endl;
+
+        this->local_basis.resize(basis_size);
+
+        for (int basis_index = 0; basis_index < basis_size; basis_index++) {
+          std::shared_ptr<Vector> ev = std::make_shared<Vector>();
+          std::string filename_EV = path_to_storage + std::to_string(subdomain_number) + "_" + defectID + "EV_" + std::to_string(basis_index) + ".mm";
+          std::ifstream file_EV;
+          file_EV.open(filename_EV.c_str(), std::ios::in);
+
+          Dune::readMatrixMarket((*ev),file_EV);
+          file_EV.close();
+
+          this->local_basis[basis_index] = ev;
+        }
+      }
+    };
+
     template<class GridView, class M, class Vector, class vector1i>
     class NeighbourBasis : public SubdomainBasis<Vector>
     {

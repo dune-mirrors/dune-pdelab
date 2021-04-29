@@ -306,7 +306,7 @@ namespace ArpackGeneo
 
       // define what we need: eigenvalues with smallest magnitude
       char which[] = "LM";
-      //ARNonSymGenEig<Real,WrappedMatrix,WrappedMatrix>
+      // ARNonSymGenEig<Real,WrappedMatrix,WrappedMatrix>
       //  dprob(nrows, nev, &A, &WrappedMatrix::multMv, &A, &WrappedMatrix::multMvB, sigma, which, ncv, tol, maxit);
 
       //Non generalised problem
