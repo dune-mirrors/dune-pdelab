@@ -88,7 +88,7 @@ namespace Dune {
      * @return A tuple containing the GenEO matrices extended by virtual overlap and the corresponding partition of unity
      */
     template<class GO, class Matrix, class Vector>
-    std::tuple<std::shared_ptr<Matrix>, std::shared_ptr<Matrix>, std::shared_ptr<Vector>> setupGenEOMatrices(const GO& go, NonoverlappingOverlapAdapter<typename GO::Traits::TrialGridFunctionSpace::Traits::GridView, Vector, Matrix>& adapter, const typename GO::Jacobian& A) {
+    std::tuple<std::shared_ptr<Matrix>, std::shared_ptr<Matrix>, std::shared_ptr<Vector>> setupGenEOMatrices(const GO& go, NonoverlappingOverlapAdapter<typename GO::Traits::TrialGridFunctionSpace::Traits::GridView, Vector, Matrix>& adapter, const typename GO::Jacobian& A, bool need_enforced_dirichlet_on_PoU=1) {
 
       using Dune::PDELab::Backend::native;
 
@@ -149,23 +149,25 @@ namespace Dune {
         return stackobject_to_shared_ptr(native(newmat));
       });
 
-      // Enforce problem's Dirichlet condition on PoU
-      const int block_size = Vector::block_type::dimension;
-      for (auto rIt=A_extended->begin(); rIt!=A_extended->end(); ++rIt) {
-        for(int block_i = 0; block_i < block_size; block_i++){ //loop over block
-          bool isDirichlet = true;
-          for (auto cIt=rIt->begin(); cIt!=rIt->end(); ++cIt)
-          {
-            for(int block_j = 0; block_j<block_size; block_j++){
-              if ((rIt.index() != cIt.index() || block_i!=block_j) && (*cIt)[block_i][block_j] != 0.0) {
-                isDirichlet = false;
-                break;
+      if (need_enforced_dirichlet_on_PoU==true){
+        // Enforce problem's Dirichlet condition on PoU
+        const int block_size = Vector::block_type::dimension;
+        for (auto rIt=A_extended->begin(); rIt!=A_extended->end(); ++rIt) {
+          for(int block_i = 0; block_i < block_size; block_i++){ //loop over block
+            bool isDirichlet = true;
+            for (auto cIt=rIt->begin(); cIt!=rIt->end(); ++cIt)
+            {
+              for(int block_j = 0; block_j<block_size; block_j++){
+                if ((rIt.index() != cIt.index() || block_i!=block_j) && (*cIt)[block_i][block_j] != 0.0) {
+                  isDirichlet = false;
+                  break;
+                }
               }
+              if(!isDirichlet) break;
             }
-            if(!isDirichlet) break;
-          }
-          if (isDirichlet) {
-            (*part_unity)[rIt.index()][block_i] = .0;
+            if (isDirichlet) {
+              (*part_unity)[rIt.index()][block_i] = .0;
+            }
           }
         }
       }
