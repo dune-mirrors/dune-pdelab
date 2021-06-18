@@ -640,6 +640,8 @@ namespace Dune::PDELab
       setParameters(parameterTree);
     }
 
+    virtual ~NewtonMethod() {}
+
   private:
     const GridOperator& _gridOperator;
     LinearSolver& _linearSolver;
