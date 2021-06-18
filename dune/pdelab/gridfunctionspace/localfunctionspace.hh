@@ -614,7 +614,7 @@ namespace Dune {
           {
             auto gt = e.type();
             auto index = this->gridFunctionSpace().entitySet().indexSet().index(e);
-            GFS::Ordering::Traits::DOFIndexAccessor::store(*it,gt,index,0);
+            DefaultDOFIndexAccessor::store(*it,gt,index,0);
             ++it;
           }
         else
@@ -640,7 +640,7 @@ namespace Dune {
                   coeffs.localKey(i).codim());
 
                 // store data
-                GFS::Ordering::Traits::DOFIndexAccessor::store(*it,gt,index,coeffs.localKey(i).index());
+                DefaultDOFIndexAccessor::store(*it,gt,index,coeffs.localKey(i).index());
 
                 // make sure we don't write past the end of the iterator range
                 assert(it != endit);

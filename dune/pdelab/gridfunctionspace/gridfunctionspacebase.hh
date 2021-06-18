@@ -196,22 +196,6 @@ namespace Dune {
         return _max_local_size;
       }
 
-      //! Update the indexing information of the GridFunctionSpace.
-      /**
-       *
-       * \ param force   Set to true if the underlying grid has changed (e.g. due to adaptivity)
-       *                 to force an update of the embedded EntitySet.
-       */
-      void update(bool force = false)
-      {
-        auto entity_set = gfs().entitySet();
-        entity_set.update(force);
-        // We bypass the normal access using ordering() here to avoid a double
-        // update if the Ordering has not been created yet.
-        if (!gfs()._ordering)
-          gfs().create_ordering();
-        update(*gfs()._ordering);
-      }
 
       const std::string& name() const
       {
@@ -250,16 +234,6 @@ namespace Dune {
 
     protected:
 
-      template<typename Ordering>
-      void update(Ordering& ordering) const
-      {
-        if (!_is_root_space)
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,"update() may only be called on the root of the function space hierarchy");
-          }
-        ordering.update();
-        TypeTree::applyToTree(ordering,impl::update_ordering_data<typename Traits::SizeType>(ordering));
-      }
 
     private:
 

@@ -46,9 +46,9 @@ namespace Dune {
 
 #include <dune/pdelab/constraints/noconstraints.hh>
 #include <dune/pdelab/gridfunctionspace/compositegridfunctionspace.hh>
-#include <dune/pdelab/gridfunctionspace/datahandleprovider.hh>
 #include <dune/pdelab/gridfunctionspace/gridfunctionspacebase.hh>
 #include <dune/pdelab/gridfunctionspace/gridfunctionspaceutilities.hh>
+#include <dune/pdelab/gridfunctionspace/orderedgridfunctionspace.hh>
 #include <dune/pdelab/gridfunctionspace/powergridfunctionspace.hh>
 #include <dune/pdelab/gridfunctionspace/tags.hh>
 #include <dune/pdelab/ordering/gridviewordering.hh>
@@ -175,17 +175,14 @@ namespace Dune {
      */
     template<typename GV, typename FEM, typename CE=NoConstraints,
              typename B=ISTL::VectorBackend<>, typename O=DefaultLeafOrderingTag>
-    class GridFunctionSpace
+    class UnorderedGridFunctionSpace
       : public TypeTree::LeafNode
       , public GridFunctionSpaceBase<
-                 GridFunctionSpace<GV,FEM,CE,B,O>,
+                 UnorderedGridFunctionSpace<GV,FEM,CE,B,O>,
                  GridFunctionSpaceTraits<GV,FEM,CE,B,O>
                  >
       , public GridFunctionOutputParameters
-      , public DataHandleProvider<GridFunctionSpace<GV,FEM,CE,B,O> >
     {
-
-      typedef TypeTree::TransformTree<GridFunctionSpace,gfs_to_ordering<GridFunctionSpace> > ordering_transformation;
 
       template<typename,typename>
       friend class GridFunctionSpaceBase;
@@ -196,7 +193,7 @@ namespace Dune {
 
     private:
 
-      typedef GridFunctionSpaceBase<GridFunctionSpace,Traits> BaseT;
+      typedef GridFunctionSpaceBase<UnorderedGridFunctionSpace,Traits> BaseT;
 
     public:
 
@@ -210,33 +207,13 @@ namespace Dune {
 
       typedef LeafGridFunctionSpaceTag ImplementationTag;
 
-      typedef typename ordering_transformation::Type Ordering;
-
-       //! extract type for storing constraints
-      template<typename E>
-      struct ConstraintsContainer
-      {
-
-        //! \brief define Type as the Type of a container of E's
-        typedef typename std::conditional<
-          std::is_same<
-            CE,
-            NoConstraints
-            >::value,
-          EmptyTransformation,
-          ConstraintsTransformation<typename Ordering::Traits::DOFIndex,typename Ordering::Traits::ContainerIndex,E>
-          >::type Type;
-
-      private:
-        ConstraintsContainer () {}
-      };
 
       // ****************************************************************************************************
       // Construct from GridView
       // ****************************************************************************************************
 
       //! constructor
-      GridFunctionSpace (const typename Traits::GridView& gridview, const FEM& fem, const CE& ce, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
+      UnorderedGridFunctionSpace (const typename Traits::GridView& gridview, const FEM& fem, const CE& ce, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
 #if DUNE_PDELAB_WARN_ON_GRIDVIEW_BASED_GFS
         DUNE_DEPRECATED_MSG("GridFunctionSpaces now internally use an EntitySet instead of a GridView, please replace the template parameter and the first constructor parameter by an EntitySet").
 #endif
@@ -248,7 +225,7 @@ namespace Dune {
       }
 
       //! constructor
-      GridFunctionSpace (const typename Traits::GridView& gridview, const std::shared_ptr<const FEM>& fem, const std::shared_ptr<const CE>& ce, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
+      UnorderedGridFunctionSpace (const typename Traits::GridView& gridview, const std::shared_ptr<const FEM>& fem, const std::shared_ptr<const CE>& ce, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
 #if DUNE_PDELAB_WARN_ON_GRIDVIEW_BASED_GFS
         DUNE_DEPRECATED_MSG("GridFunctionSpaces now internally use an EntitySet instead of a GridView, please replace the template parameter and the first constructor parameter by an EntitySet").
 #endif
@@ -259,7 +236,7 @@ namespace Dune {
       {}
 
       //! constructor
-      GridFunctionSpace (const typename Traits::GridView& gridview, const FEM& fem, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
+      UnorderedGridFunctionSpace (const typename Traits::GridView& gridview, const FEM& fem, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
 #if DUNE_PDELAB_WARN_ON_GRIDVIEW_BASED_GFS
         DUNE_DEPRECATED_MSG("GridFunctionSpaces now internally use an EntitySet instead of a GridView, please replace the template parameter and the first constructor parameter by an EntitySet").
 #endif
@@ -270,7 +247,7 @@ namespace Dune {
       {}
 
       //! constructor
-      GridFunctionSpace (const typename Traits::GridView& gridview, const std::shared_ptr<const FEM>& fem, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
+      UnorderedGridFunctionSpace (const typename Traits::GridView& gridview, const std::shared_ptr<const FEM>& fem, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
 #if DUNE_PDELAB_WARN_ON_GRIDVIEW_BASED_GFS
         DUNE_DEPRECATED_MSG("GridFunctionSpaces now internally use an EntitySet instead of a GridView, please replace the template parameter and the first constructor parameter by an EntitySet").
 #endif
@@ -287,7 +264,7 @@ namespace Dune {
 
 
       //! constructor
-      GridFunctionSpace (const typename Traits::EntitySet& entitySet, const FEM& fem, const CE& ce, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
+      UnorderedGridFunctionSpace (const typename Traits::EntitySet& entitySet, const FEM& fem, const CE& ce, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
         : BaseT(backend,ordering_tag)
         , _es(entitySet)
         , pfem(stackobject_to_shared_ptr(fem))
@@ -296,7 +273,7 @@ namespace Dune {
       }
 
       //! constructor
-      GridFunctionSpace (const typename Traits::EntitySet& entitySet, const std::shared_ptr<const FEM>& fem, const std::shared_ptr<const CE>& ce, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
+      UnorderedGridFunctionSpace (const typename Traits::EntitySet& entitySet, const std::shared_ptr<const FEM>& fem, const std::shared_ptr<const CE>& ce, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
         : BaseT(backend,ordering_tag)
         , _es(entitySet)
         , pfem(fem)
@@ -304,7 +281,7 @@ namespace Dune {
       {}
 
       //! constructor
-      GridFunctionSpace (const typename Traits::EntitySet& entitySet, const FEM& fem, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
+      UnorderedGridFunctionSpace (const typename Traits::EntitySet& entitySet, const FEM& fem, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
         : BaseT(backend,ordering_tag)
         , _es(entitySet)
         , pfem(stackobject_to_shared_ptr(fem))
@@ -312,7 +289,7 @@ namespace Dune {
       {}
 
       //! constructor
-      GridFunctionSpace (const typename Traits::EntitySet& entitySet, const std::shared_ptr<const FEM>& fem, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
+      UnorderedGridFunctionSpace (const typename Traits::EntitySet& entitySet, const std::shared_ptr<const FEM>& fem, const B& backend = B(), const OrderingTag& ordering_tag = OrderingTag())
         : BaseT(backend,ordering_tag)
         , _es(entitySet)
         , pfem(fem)
@@ -355,89 +332,25 @@ namespace Dune {
       {
         return _pce;
       }
+  private:
 
-      //------------------------------
+    typename Traits::EntitySet _es;
+    std::shared_ptr<FEM const> pfem;
+    std::shared_ptr<CE const> _pce;
 
-      //! Direct access to the DOF ordering.
-      const Ordering &ordering() const
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return *_ordering;
-      }
-
-      //! Direct access to the DOF ordering.
-      Ordering &ordering()
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return *_ordering;
-      }
-
-      //! Direct access to the storage of the DOF ordering.
-      std::shared_ptr<const Ordering> orderingStorage() const
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return _ordering;
-      }
-
-      //! Direct access to the storage of the DOF ordering.
-      std::shared_ptr<Ordering> orderingStorage()
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return _ordering;
-      }
-
-    private:
-
-      // This method here is to avoid a double update of the Ordering when the user calls
-      // GFS::update() before GFS::ordering().
-      void create_ordering() const
-      {
-        _ordering = std::make_shared<Ordering>(ordering_transformation::transform(*this));
-      }
-
-      typename Traits::EntitySet _es;
-      std::shared_ptr<FEM const> pfem;
-      std::shared_ptr<CE const> _pce;
-
-      mutable std::shared_ptr<Ordering> _ordering;
     };
 
+
+
+    template<typename GV, typename FEM, typename CE=NoConstraints,
+             typename B=ISTL::VectorBackend<>, typename O=DefaultLeafOrderingTag>
+    class GridFunctionSpace
+      : public OrderedGridFunctionSpace<UnorderedGridFunctionSpace<GV,FEM,CE,B,O>>
+    {
+      using Base = OrderedGridFunctionSpace<UnorderedGridFunctionSpace<GV,FEM,CE,B,O>>;
+    public:
+      using Base::Base;
+    };
 
   } // namespace PDELab
 } // namespace Dune
