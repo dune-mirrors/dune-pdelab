@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) try {
       FEM;
   FEM fem;
 
-  typedef PDELab::VectorGridFunctionSpace<
+  typedef PDELab::UnorderedVectorGridFunctionSpace<
     GridView, FEM, dim, PDELab::ISTL::VectorBackend<>,
       PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::none,1>, PDELab::ConformingDirichletConstraints,
       PDELab::EntityBlockedOrderingTag, PDELab::DefaultLeafOrderingTag>
@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) try {
   DisplacementGFS displacementGFS(gridView, fem);
   displacementGFS.name("displacement");
 
-  typedef PDELab::VectorGridFunctionSpace<
+  typedef PDELab::UnorderedVectorGridFunctionSpace<
       GridView, FEM, nPlasticStrainComponents, PDELab::ISTL::VectorBackend<>,
       PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::none,1>, PDELab::ConformingDirichletConstraints,
       PDELab::EntityBlockedOrderingTag, PDELab::DefaultLeafOrderingTag>

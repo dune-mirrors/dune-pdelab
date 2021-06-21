@@ -56,22 +56,22 @@ static void test_interpolate_old_interface(const GV& gv)
   Q22DFEM q22dfem(gv);
 
   // make a grid function space
-  typedef Dune::PDELab::GridFunctionSpace<GV,P0FEM> P0GFS;
+  typedef Dune::PDELab::UnorderedGridFunctionSpace<GV,P0FEM> P0GFS;
   P0GFS p0gfs(gv,p0fem);
-  typedef Dune::PDELab::GridFunctionSpace<GV,Q12DFEM> GFS1;
+  typedef Dune::PDELab::UnorderedGridFunctionSpace<GV,Q12DFEM> GFS1;
   GFS1 gfs1(gv,q12dfem);
-  typedef Dune::PDELab::GridFunctionSpace<GV,Q22DFEM> GFS2;
+  typedef Dune::PDELab::UnorderedGridFunctionSpace<GV,Q22DFEM> GFS2;
   GFS2 gfs2(gv,q22dfem);
-  typedef Dune::PDELab::GridFunctionSpace<GV,Q22DFEM,Dune::PDELab::NoConstraints,
+  typedef Dune::PDELab::UnorderedGridFunctionSpace<GV,Q22DFEM,Dune::PDELab::NoConstraints,
                                           Dune::PDELab::ISTL::VectorBackend<> > GFS3;
   GFS3 gfs3(gv,q22dfem);
 
   // test power
-  typedef Dune::PDELab::PowerGridFunctionSpace<GFS2,3,Dune::PDELab::ISTL::VectorBackend<> > PGFS;
+  typedef Dune::PDELab::UnorderedPowerGridFunctionSpace<GFS2,3,Dune::PDELab::ISTL::VectorBackend<> > PGFS;
   PGFS pgfs(gfs2,gfs2,gfs2);
 
   // test composite
-  typedef Dune::PDELab::CompositeGridFunctionSpace<
+  typedef Dune::PDELab::UnorderedCompositeGridFunctionSpace<
     Dune::PDELab::ISTL::VectorBackend<>,
     Dune::PDELab::LexicographicOrderingTag,
     P0GFS,GFS1,GFS2,GFS3
