@@ -67,6 +67,7 @@ int main(int argc, char** argv)
   typedef Dune::PDELab::GridFunctionSpace<GV, FEM, Constraints, Dune::PDELab::ISTL::VectorBackend<>> SCALAR_GFS;
   SCALAR_GFS U1(grid.leafGridView(),fem); U1.name("U1");
   SCALAR_GFS U2(grid.leafGridView(),fem); U2.name("U2");
+  static_assert(SCALAR_GFS::Ordering::Traits::ContainerIndex::max_depth == 1);
   //! [Scalar grid function space]
 
   {
@@ -81,6 +82,7 @@ int main(int argc, char** argv)
                                                 VBE, // blocked vector backend
                                                 LexiographicOrderingTag> GFS;
   GFS gfs(U1,U2);
+  static_assert(GFS::Ordering::Traits::ContainerIndex::max_depth == 2);
   //! [Lexiographic blocked type]
   }
 
@@ -95,6 +97,7 @@ int main(int argc, char** argv)
                                                     EntityOrderingTag,
                                                     SCALAR_GFS, SCALAR_GFS> GFS;
   GFS gfs(U1,U2);
+  static_assert(GFS::Ordering::Traits::ContainerIndex::max_depth == 2);
   //! [Entity blocked type]
   }
 }
