@@ -30,37 +30,60 @@ namespace Dune {
 
 #ifndef DOXYGEN
 
-    struct extract_max_container_depth
-    {
+  /**
+   * @brief Integral constant accumulator visitor to extract max blocking depth
+   * @details This visitor is intended to be used with an unordered grid
+   *          function space tree where each node gives a vector backend
+   *          containing the information whether such node should be blocked or
+   *          not (i.e. `Node::Traits::Backend::Traits::max_blocking_depth`).
+   */
+  struct extract_max_container_depth
+      : public TypeTree::DefaultAccumulateVisitor,
+        public TypeTree::StaticTraversal,
+        public TypeTree::VisitDirectChildren {
 
-      typedef std::size_t result_type;
+    template <class Node, class TreePath, class U>
+    auto leaf(const Node &, TreePath, U) const {
+      // is leaf node blocked?
+      constexpr std::size_t blocked =
+          Node::Traits::Backend::Traits::max_blocking_depth;
+      return index_constant<blocked>{};
+    }
 
-      template<typename Node, typename TreePath>
-      struct doVisit
-      {
-        static const bool value = true;
-      };
+    template <class Node, class Child, class TreePath, class ChildIndex,
+              class CarryValue>
+    auto beforeChild(const Node &, Child &&child, TreePath, ChildIndex,
+                     CarryValue) const {
+      // extract max container for depth for child i
+      using ChildBlockingDepth = decltype(TypeTree::accumulateToTree(
+          child, extract_max_container_depth{}, Indices::_0));
+      // return max value between child and carried value (previous children)
+      return index_constant<std::max(CarryValue::value,
+                                     ChildBlockingDepth::value)>{};
+    }
 
-      template<typename Node, typename TreePath>
-      struct visit
-      {
-        static const std::size_t result = Node::Traits::Backend::Traits::max_blocking_depth;
-      };
-
-    };
-
+    template <class Node, class TreePath, class ChildrenCount>
+    auto post(const Node &, TreePath, ChildrenCount) const {
+      // After all children accumulated their depths, we add the blocking value
+      // of the node
+      constexpr std::size_t blocked =
+          Node::Traits::Backend::Traits::max_blocking_depth;
+      return index_constant<ChildrenCount::value + blocked>{};
+    }
+  };
 
     //! GridFunctionSpace to Ordering transformation descriptor
     template<typename RootGFS>
     struct gfs_to_ordering
     {
-      static const std::size_t ci_depth =
-        TypeTree::AccumulateValue<RootGFS,
-                                  extract_max_container_depth,
-                                  TypeTree::max<std::size_t>,
-                                  0,
-                                  TypeTree::plus<std::size_t>
-                                  >::result + 1;
+      // extract max blocking depth (notice that this is an unevaluated context,
+      // and the resulting type know the depth at compile-time)
+      static const std::size_t ci_depth = decltype(
+        TypeTree::accumulateToTree(
+            std::declval<RootGFS>(),
+            std::declval<extract_max_container_depth>(),
+            Indices::_0)
+          )::value + 1;
 
       typedef typename gfs_to_lfs<RootGFS>::DOFIndex DOFIndex;
       typedef MultiIndex<std::size_t,ci_depth> ContainerIndex;
