@@ -152,10 +152,11 @@ void driver (const GV& gv, const FEM& fem)
   using Dune::PDELab::Backend::native;
 
   // make function space
+  using EntitySet = Dune::PDELab::AllEntitySet<GV>;
   typedef Dune::PDELab::OverlappingConformingDirichletConstraints CON;
   typedef Dune::PDELab::ISTL::VectorBackend<> VBE;
-  typedef Dune::PDELab::GridFunctionSpace<GV,FEM,CON,VBE> GFS;
-  GFS gfs(gv,fem);
+  typedef Dune::PDELab::GridFunctionSpace<EntitySet,FEM,CON,VBE> GFS;
+  GFS gfs(EntitySet{gv},fem);
   gfs.name("timeDependentBoundary");
 
   // Coefficient vector

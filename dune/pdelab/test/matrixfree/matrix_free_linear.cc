@@ -94,8 +94,10 @@ int main(int argc, char** argv)
     // Grid function space
     using Constraints = Dune::PDELab::NoConstraints;
     using VectorBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed, Dune::QkStuff::QkSize<degree, dim>::value>;
-    using GridFunctionSpace = Dune::PDELab::GridFunctionSpace<GridView, FiniteElementMap, Constraints, VectorBackend>;
-    GridFunctionSpace gridFunctionSpace(gridView, finiteElementMap);
+    using EntitySet = Dune::PDELab::AllEntitySet<GridView>;
+    using GridFunctionSpace = Dune::PDELab::GridFunctionSpace<EntitySet, FiniteElementMap, Constraints, VectorBackend>;
+    EntitySet entitySet{gridView};
+    GridFunctionSpace gridFunctionSpace(entitySet, finiteElementMap);
     gridFunctionSpace.name("numerical_solution");
 
     // Local operator

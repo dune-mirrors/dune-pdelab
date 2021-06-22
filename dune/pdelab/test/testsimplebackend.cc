@@ -143,13 +143,14 @@ void poisson (const GV& gv, const FEM& fem, std::string filename, int q)
     LocalBasisType::Traits::RangeFieldType R;
 
   // make function space
+  using ES = Dune::PDELab::AllEntitySet<GV>;
   typedef Dune::PDELab::GridFunctionSpace<
-    GV,
+    ES,
     FEM,
     CON,
     Dune::PDELab::Simple::VectorBackend<>
     > GFS;
-  GFS gfs(gv,fem);
+  GFS gfs(ES{gv},fem);
   gfs.name("solution");
 
   // make model problem

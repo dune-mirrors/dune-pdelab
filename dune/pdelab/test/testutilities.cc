@@ -21,8 +21,9 @@ void testq1 (const GV& gv)
   Q12DFEM q12dfem(gv);
 
   // make a grid function space
-  typedef Dune::PDELab::GridFunctionSpace<GV,Q12DFEM> Q1GFS;
-  Q1GFS q1gfs(gv,q12dfem);
+  using EntitySet = Dune::PDELab::AllEntitySet<GV>:
+  typedef Dune::PDELab::GridFunctionSpace<EntitySet,Q12DFEM> Q1GFS;
+  Q1GFS q1gfs(EntitySet{gv},q12dfem);
 
   // make coefficent Vectors
   using V = Dune::PDELab::Backend::Vector<Q1GFS, double>;
@@ -90,10 +91,12 @@ void testinterpolate (const GV& gv)
   Q22DFEM q22dfem(gv);
 
   // make a grid function space
-  typedef Dune::PDELab::GridFunctionSpace<GV,Q12DFEM> Q1GFS;
-  Q1GFS q1gfs(gv,q12dfem);
-  typedef Dune::PDELab::GridFunctionSpace<GV,Q22DFEM> Q2GFS;
-  Q2GFS q2gfs(gv,q22dfem);
+  using EntitySet = Dune::PDELab::AllEntitySet<GV>;
+  EntitySet entity_set{gv}
+  typedef Dune::PDELab::GridFunctionSpace<EntitySet,Q12DFEM> Q1GFS;
+  Q1GFS q1gfs(entity_set,q12dfem);
+  typedef Dune::PDELab::GridFunctionSpace<EntitySet,Q22DFEM> Q2GFS;
+  Q2GFS q2gfs(entity_set,q22dfem);
   typedef Dune::PDELab::CompositeGridFunctionSpace<Dune::PDELab::ISTL::VectorBackend<>,
     Dune::PDELab::LexicographicOrderingTag,Q1GFS,Q2GFS> CGFS;
   CGFS cgfs(q1gfs,q2gfs);
@@ -252,10 +255,12 @@ void testtaylorhood (const GV& gv)
   Q22DFEM q22dfem(gv);
 
   // make a grid function space
-  typedef Dune::PDELab::GridFunctionSpace<GV,Q12DFEM> Q1GFS;
-  Q1GFS q1gfs(gv,q12dfem);
-  typedef Dune::PDELab::GridFunctionSpace<GV,Q22DFEM> Q2GFS;
-  Q2GFS q2gfs(gv,q22dfem);
+  using EntitySet = Dune::PDELab::AllEntitySet<GV>;
+  EntitySet entity_set{gv}
+  typedef Dune::PDELab::GridFunctionSpace<EntitySet,Q12DFEM> Q1GFS;
+  Q1GFS q1gfs(entity_set,q12dfem);
+  typedef Dune::PDELab::GridFunctionSpace<EntitySet,Q22DFEM> Q2GFS;
+  Q2GFS q2gfs(entity_set,q22dfem);
   typedef Dune::PDELab::PowerGridFunctionSpace<Q2GFS,GV::dimension,Dune::PDELab::ISTL::VectorBackend<> > VGFS;
   VGFS vgfs(q2gfs);
   typedef Dune::PDELab::CompositeGridFunctionSpace<Dune::PDELab::ISTL::VectorBackend<>,
@@ -342,8 +347,10 @@ void testgridfunctions (const GV& gv)
   Q22DFEM q22dfem(gv);
 
   // make a grid function space
-  typedef Dune::PDELab::GridFunctionSpace<GV,Q22DFEM> Q2GFS;
-  Q2GFS q2gfs(gv,q22dfem);
+  using EntitySet = Dune::PDELab::AllEntitySet<GV>;
+  EntitySet entity_set{gv}
+  typedef Dune::PDELab::GridFunctionSpace<EntitySet,Q22DFEM> Q2GFS;
+  Q2GFS q2gfs(entity_set,q22dfem);
   typedef Dune::PDELab::PowerGridFunctionSpace<Q2GFS,GV::dimension,Dune::PDELab::ISTL::VectorBackend<> > VGFS;
   VGFS vgfs(q2gfs);
 

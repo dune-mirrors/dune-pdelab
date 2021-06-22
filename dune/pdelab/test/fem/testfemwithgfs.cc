@@ -30,15 +30,16 @@
 template<typename FEM, typename GV, typename Constraints, typename VBE>
 void test_fem(const FEM& fem, GV gv, const Constraints& constraints, const VBE& vbe)
 {
-
+  using EntitySet = Dune::PDELab::AllEntitySet<GV>;
+  EntitySet entity_set{gv};
   typedef Dune::PDELab::GridFunctionSpace<
-    GV,
+    EntitySet,
     FEM,
     Constraints,
     VBE
     > GFS;
 
-  GFS gfs(gv,fem,constraints,vbe);
+  GFS gfs(entity_set,fem,constraints,vbe);
 
   std::cout << gfs.ordering().size() << std::endl;
 
