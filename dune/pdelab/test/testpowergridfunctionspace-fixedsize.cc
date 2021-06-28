@@ -203,14 +203,16 @@ int main(int argc, char **argv) {
     auto gfs0 = std::make_shared<GFS>(gv, fem0);
     auto gfs1 = std::make_shared<GFS>(gv, fem1);
 
+    // only 3 entity blocks are non-empty, we chunk them in another block!
+    POT chucked_ordering(3);
     {
-      PGFS pgfs(*gfs0, *gfs1, PVBE(), POT(blockSize));
+      PGFS pgfs(*gfs0, *gfs1, PVBE(), chucked_ordering);
       pgfs.ordering();
     }
 
     {
       std::array<std::shared_ptr<GFS>,2> containter{gfs0,gfs1};
-      PGFS pgfs(containter, PVBE(), POT(blockSize));
+      PGFS pgfs(containter, PVBE(), chucked_ordering);
       pgfs.ordering();
     }
 
