@@ -539,7 +539,7 @@ namespace Dune {
               }
             else
               {
-                ci.push_back(_gt_entity_offsets[geometry_type_index] + entity_index);
+                ci.push_back(_entity_dof_offsets[_gt_entity_offsets[geometry_type_index] + entity_index]);
               }
           }
         else
@@ -573,7 +573,7 @@ namespace Dune {
                 {
                   const size_type geometry_type_index = Traits::DOFIndexAccessor::geometryType(*in);
                   const size_type entity_index = Traits::DOFIndexAccessor::entityIndex(*in);
-                  out->push_back(_gt_entity_offsets[geometry_type_index] + entity_index);
+                  out->push_back(_entity_dof_offsets[_gt_entity_offsets[geometry_type_index] + entity_index]);
                 }
           }
         else if (_fixed_size)
@@ -617,7 +617,7 @@ namespace Dune {
             else
               for (; ci_out != ci_end; ++ci_out)
                 {
-                  ci_out->push_back(_gt_entity_offsets[geometry_type_index] + entity_index);
+                  ci_out->push_back(_entity_dof_offsets[_gt_entity_offsets[geometry_type_index] + entity_index]);
                 }
           }
         else if (_fixed_size)
@@ -737,7 +737,8 @@ namespace Dune {
             _entity_dof_offsets.assign(_gt_entity_offsets.back()+1,0);
             _block_count = 0;
 
-            size_type carry = 0;
+            size_type carry_size = 0;
+            size_type carry_block = 0;
             size_type index = 0;
             for (size_type gt_index = 0; gt_index < GlobalGeometryTypeIndex::size(dim); ++gt_index)
               {
@@ -747,14 +748,14 @@ namespace Dune {
                 for (size_type entity_index = 0; entity_index < entity_count; ++entity_index)
                   {
                     const size_type size = localOrdering().size(gt_index,entity_index);
-                    _entity_dof_offsets[++index] = (carry += size);
+                    carry_size += size;
+                    carry_block += (_container_blocked ? (size > 0) : size);
+                    _entity_dof_offsets[++index] = carry_block;
                     _block_count += (size > 0);
                   }
               }
-            _size = _entity_dof_offsets.back();
-
-            if (!_container_blocked)
-              _block_count = _size;
+            _size = carry_size;
+            _block_count = _block_count;
 
             _codim_fixed_size.reset();
           }
