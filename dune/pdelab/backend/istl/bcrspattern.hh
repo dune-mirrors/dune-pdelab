@@ -6,6 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include <set>
+#include <map>
 
 #include <dune/common/iteratorfacades.hh>
 
@@ -21,8 +22,8 @@ namespace Dune {
       //! Pattern builder for generic BCRS-like sparse matrices.
       /**
        * BCRSPattern is a pattern builder for unstructured sparse matrices
-       * for operators mapping from a vector that conforms to RowOrdering to a vector
-       * that conforms to ColOrdering.
+       * for operators mapping from a vector that conforms to RowSizeProvider to a vector
+       * that conforms to ColSizeProvider.
        *
        * BCRSPattern has much better runtime performance and requires far less memory
        * than the older pattern constructon method in PDELab. By letting the user specify
@@ -39,49 +40,31 @@ namespace Dune {
        * is complete. Performance will degrade if the user-provided estimate is too far away
        * from the real value.
        */
-      template<typename RowOrdering, typename ColOrdering>
-      class BCRSPattern
+      template<class RowSizeProvider_, class ColSizeProvider_>
+      class SparcityPattern
       {
 
       public:
+        //! SparcityPattern cannot contain nested subpatterns. This entry is only required for TMP purposes.
+        using SubPattern = void;
 
-        //! size type used by BCRSPattern.
-        typedef typename RowOrdering::Traits::size_type size_type;
+        using RowSizeProvider = RowSizeProvider_;
+        using ColSizeProvider = ColSizeProvider_;
 
-        //! BCRSPattern cannot contain nested subpatterns. This entry is only required for TMP purposes.
-        typedef void SubPattern;
+        static_assert(RowSizeProvider::size_prefix_order == MultiIndexOrder::Outer2Inner);
+        static_assert(ColSizeProvider::size_prefix_order == MultiIndexOrder::Outer2Inner);
+
+        using RowSizePrefix = typename RowSizeProvider::SizePrefix;
+        using ColSizePrefix = typename ColSizeProvider::SizePrefix;
+
+        //! size type used by SparcityPattern.
+        using size_type = std::size_t;
+
 
       private:
 
         //! Marker value indicating an empty array entry.
         static const size_type empty = ~static_cast<size_type>(0);
-
-        //! Functor for looking up a column index within a row.
-        /**ss
-         * Looking up column indices requires a special comparison iterator,
-         * as we want to either return the position of the actual index if it
-         * has already been inserted or of the first empty matrix entry that we
-         * can use to store the index.
-         *
-         * \warning Only use for sequential search algorithms, binary searches
-         *          will not work correctly!
-         */
-        struct PaddedColumnCriterion
-        {
-
-          bool operator()(size_type k) const
-          {
-            return k == _j || k == empty;
-          }
-
-          PaddedColumnCriterion(size_type j)
-            : _j(j)
-          {}
-
-          const size_type _j;
-
-        };
-
 
         typedef typename std::vector<size_type>::iterator IndicesIterator;
         typedef typename std::set<std::pair<size_type,size_type> >::iterator OverflowIterator;
@@ -103,8 +86,14 @@ namespace Dune {
           IndicesIterator begin = start + _entries_per_row*i;
           IndicesIterator end = start + _entries_per_row*(i+1);
 
+          // Looking up column indices requires a special comparison iterator,
+          // as we want to either return the position of the actual index if it
+          // has already been inserted or of the first empty matrix entry that we
+          // can use to store the index (Only use for sequential search algorithms).
+          auto padded_col_criterion = [j](auto k){return k == empty || k == j;};
+
           // Does the entry (i,j) already exist?
-          IndicesIterator it = std::find_if(begin,end,PaddedColumnCriterion(j));
+          IndicesIterator it = std::find_if(begin,end,padded_col_criterion);
           if (it != end)
             {
               // Yes, just write out j. This does the right thing regardless of whether
@@ -137,7 +126,7 @@ namespace Dune {
           ConstIndicesIterator end = _indices.begin() + _entries_per_row;
           ConstOverflowIterator oit = _overflow.begin();
           ConstOverflowIterator oend = _overflow.end();
-          for (size_type i = 0; i < _row_ordering.blockCount(); ++i, ++rit, end+=_entries_per_row)
+          for (size_type i = 0; i < _rows; ++i, ++rit, end+=_entries_per_row)
             {
               size_type s = 0;
               // count non-empty column entries, break when first empty one is found.
@@ -158,7 +147,7 @@ namespace Dune {
         //! Returns a vector with the size of all rows in the pattern.
         std::vector<size_type> sizes() const
         {
-          std::vector<size_type> r(_row_ordering.blockCount());
+          std::vector<size_type> r(_rows);
           sizes(r.begin());
           return r;
         }
@@ -214,7 +203,7 @@ namespace Dune {
               return _it == other._it;
           }
 
-          iterator(const BCRSPattern& p, size_type row, bool at_end)
+          iterator(const SparcityPattern& p, size_type row, bool at_end)
             : _row(row)
             , _in_overflow(false)
             , _at_end(at_end)
@@ -255,28 +244,23 @@ namespace Dune {
           return iterator(*this,i,true);
         }
 
-        //! Constructs a BCRSPattern for the given pair of orderings and reserves space for the provided average number of entries per row.
+        //! Constructs a SparcityPattern for the given pair of orderings and reserves space for the provided average number of entries per row.
         /**
-         * \param row_ordering    Ordering describing the row structure
-         * \param col_ordering    Ordering describing the column structure
+         * \param row_size_provider    Ordering describing the row structure
+         * \param col_size_provider    Ordering describing the column structure
          * \param entries_per_row An estimate of the average number of entries per row.
          */
-        BCRSPattern(const RowOrdering& row_ordering, const ColOrdering& col_ordering, size_type entries_per_row)
-          : _row_ordering(row_ordering)
-          , _col_ordering(col_ordering)
+        SparcityPattern(const RowSizeProvider row_size_provider,
+                    typename RowSizeProvider::SizePrefix row_prefix,
+                    const ColSizeProvider col_size_provider,
+                    typename ColSizeProvider::SizePrefix col_prefix,
+                    size_type entries_per_row)
+          : _row_size_provider(row_size_provider)
+          , _col_size_provider(col_size_provider)
+          , _rows(_row_size_provider.size(row_prefix))
           , _entries_per_row(entries_per_row)
-          , _indices(row_ordering.blockCount()*entries_per_row,size_type(empty))
+          , _indices(_rows*entries_per_row,size_type(empty))
         {}
-
-        const RowOrdering& rowOrdering() const
-        {
-          return _row_ordering;
-        }
-
-        const ColOrdering& colOrdering() const
-        {
-          return _row_ordering;
-        }
 
         //! Discard all internal data.
         /**
@@ -301,11 +285,22 @@ namespace Dune {
           return _overflow.size();
         }
 
+        const RowSizeProvider& rowSizeProvider() const
+        {
+          return _row_size_provider;
+        }
+
+        const ColSizeProvider& colSizeProvider() const
+        {
+          return _col_size_provider;
+        }
+
       private:
 
-        const RowOrdering& _row_ordering;
-        const ColOrdering& _col_ordering;
-        const size_type _entries_per_row;
+        const RowSizeProvider _row_size_provider;
+        const ColSizeProvider _col_size_provider;
+
+        const size_type _rows, _entries_per_row;
 
         std::vector<size_type> _indices;
         std::set<std::pair<size_type,size_type> > _overflow;
@@ -319,86 +314,297 @@ namespace Dune {
        * blocks can be nested (i.e. be NestedPatterns again) or BCRSPattern instances.
        */
 
-      template<typename RowOrdering, typename ColOrdering, typename SubPattern_>
-      class NestedPattern
+      template<class Pattern>
+      class BlockSparsityPattern
       {
-
       public:
-
         //! The pattern type used for each block.
-        typedef SubPattern_ SubPattern;
+        using SubPattern = Pattern;
 
-        //! size type used by NestedPattern.
+        using RowSizeProvider = typename Pattern::RowSizeProvider;
+        using ColSizeProvider = typename Pattern::ColSizeProvider;
+
+        static_assert(RowSizeProvider::size_prefix_order == MultiIndexOrder::Outer2Inner);
+        static_assert(ColSizeProvider::size_prefix_order == MultiIndexOrder::Outer2Inner);
+
+        using RowSizePrefix = typename RowSizeProvider::SizePrefix;
+        using ColSizePrefix = typename ColSizeProvider::SizePrefix;
+
+
+        //! size type used by BlockSparsityPattern.
         typedef typename SubPattern::size_type size_type;
+
+
+        //! Marker value indicating an empty array entry.
+        static constexpr size_type empty = ~static_cast<size_type>(0);
 
         //! Add a link between the row indicated by ri and the column indicated by ci.
         /**
          * This method just forwards the call to the relevant block as indicated by the
          * tail members of ri and ci.
          */
-        template<typename RI, typename CI>
-        void add_link(const RI& ri, const CI& ci)
+        // template<typename RI, typename CI>
+        // void add_link(const RI& ri, const CI& ci)
+        // {
+        //   // recursive_add_entry(ri.view(),ci.view());
+        // }
+
+        //! Add a link between the row indicated by ri and the column indicated by ci.
+        template<class RowIndex, class ColIndex>
+        void add_link(RowIndex row_index, ColIndex col_index)
         {
-          recursive_add_entry(ri.view(),ci.view());
+          // in case of empty indices, no link is needed ???
+          if(row_index.size() == 0 or col_index.size() == 0)
+            return;
+
+          // extract block indices for current level
+          size_type i = row_index.back();
+          size_type j = col_index.back();
+
+          auto start = _indices.begin();
+          auto begin = start + _entries_per_row*i;
+          auto end = start + _entries_per_row*(i+1);
+
+          // Looking up column indices requires a special comparison iterator,
+          // as we want to either return the position of the actual index if it
+          // has already been inserted or of the first empty matrix entry that we
+          // can use to store the index (Only use for sequential search algorithms).
+          auto padded_col_criterion = [j](auto k){return k.first == empty || k.first == j;};
+
+          // Does the entry (i,j) already exist?
+          auto it = std::find_if(begin,end,padded_col_criterion);
+          std::shared_ptr<SubPattern> sub_pattern;
+          if (it != end) {
+            RowSizePrefix sub_row_prefix = _row_prefix;
+            ColSizePrefix sub_col_prefix = _col_prefix;
+            sub_row_prefix.push_back(i);
+            sub_col_prefix.push_back(j);
+            if (not it->second)
+              it->second = std::make_shared<SubPattern>(
+                  _row_size_provider, sub_row_prefix, _col_size_provider,
+                  sub_col_prefix, _entries_per_row);
+            // Yes, just write out j. This does the right thing regardless of
+            // whether it points at the correct column value or at an empty
+            // entry.
+            it->first = j;
+            sub_pattern = it->second;
+          } else {
+            DUNE_THROW(NotImplemented, "Foo");
+            // The row is already full -> spill into map
+            // _overflow.insert(std::make_pair(i,j));
+          }
+          row_index.pop_back();
+          col_index.pop_back();
+          sub_pattern->add_link(row_index,col_index);
+        }
+
+        //! Stream the sizes of all rows into the output iterator rit.
+        template<typename OutIt>
+        void sizes(OutIt out) const
+        {
+          auto idx_it = std::begin(_indices);
+          auto idx_end = std::begin(_indices) + _entries_per_row;
+          auto ovf_it = std::begin(_overflow);
+          auto ovf_end = std::end(_overflow);
+          for (size_type i = 0; i < _rows; ++i) {
+            size_type row_size = 0;
+            // count non-empty column entries
+            while (idx_it != idx_end and idx_it->first != empty)
+              ++idx_it, ++row_size;
+            // add overflow entries
+            while (ovf_it != ovf_end and ovf_it->first.first == i)
+              ++ovf_it, ++row_size;
+            // write row size into out iterator and advance to next row
+            *out = row_size;
+            ++out;
+            // advance index range to next row
+            idx_it = idx_end;
+            idx_end += _entries_per_row;
+          }
+        }
+
+
+        //! Returns a vector with the size of all rows in the pattern.
+        std::vector<size_type> sizes() const
+        {
+          std::vector<size_type> row_sizes(_rows);
+          this->sizes(std::begin(row_sizes));
+          return row_sizes;
+        }
+
+
+        //! Iterator over all column indices for a given row, unique but in arbitrary order.
+        struct iterator
+          : public ForwardIteratorFacade<iterator, const size_type>
+        {
+
+#ifndef DOXYGEN
+
+          const size_type& dereference() const
+          {
+            if (_in_overflow)
+              return _oit->first.second;
+            else
+              return _it->first;
+          }
+
+          SubPattern& pattern()
+          {
+            if (_in_overflow)
+              return *_oit->second;
+            else
+              return *_it->second;
+          }
+
+          void increment()
+          {
+            if (_in_overflow)
+              {
+                if (++_oit == _oend || _oit->first.first != _row)
+                  {
+                    // we have exhausted the row, invalidate iterator
+                    _at_end = true;
+                  }
+              }
+            else
+              {
+                if (_it != _end)
+                  ++_it;
+                if (_it == _end || _it->first == empty)
+                  {
+                    _in_overflow = true;
+                    // we have exhausted the row, invalidate iterator
+                    if (_oit == _oend || _oit->first.first > _row)
+                      _at_end = true;
+                  }
+              }
+          }
+
+          bool equals(const iterator& other) const
+          {
+            if (_row != other._row)
+              return false;
+            if (_at_end || other._at_end)
+              return _at_end && other._at_end;
+            if (_in_overflow)
+              return _oit == other._oit;
+            else
+              return _it == other._it;
+          }
+
+          iterator(const BlockSparsityPattern& p, size_type row, bool at_end)
+            : _row(row)
+            , _in_overflow(false)
+            , _at_end(at_end)
+            , _it(p._indices.begin() + row * p._entries_per_row)
+            , _end(p._indices.begin() + (row+1) * p._entries_per_row)
+            , _oit(p._overflow.lower_bound(std::make_pair(row,0)))
+            , _oend(p._overflow.end())
+          {
+            // catch corner case with completely empty row
+            if ((!_at_end) && (_it == _end || _it->first == empty))
+              {
+                _in_overflow = true;
+                _at_end = _oit == _oend || _oit->first.first != _row;
+              }
+          }
+
+          size_type _row;
+          bool _in_overflow;
+          bool _at_end;
+          typename  std::vector<std::pair<size_type,std::shared_ptr<SubPattern> > >::const_iterator _it;
+          typename  std::vector<std::pair<size_type,std::shared_ptr<SubPattern> > >::const_iterator _end;
+          typename std::map<std::pair<size_type,size_type>,std::shared_ptr<SubPattern> >::const_iterator _oit;
+          const typename std::map<std::pair<size_type,size_type>,std::shared_ptr<SubPattern> >::const_iterator _oend;
+
+#endif // DOXYGEN
+
+        };
+
+        //! Returns an iterator to the first column index of row i.
+        iterator begin(size_type i) const
+        {
+          return iterator(*this,i,false);
+        }
+
+        //! Returns an iterator past the last column index of row i.
+        iterator end(size_type i) const
+        {
+          return iterator(*this,i,true);
         }
 
 #ifndef DOXYGEN
 
-        template<typename RI, typename CI>
-        void recursive_add_entry(const RI& ri, const CI& ci)
-        {
-          _sub_patterns[ri.back() * _col_ordering.blockCount() + ci.back()].recursive_add_entry(ri.back_popped(),ci.back_popped());
-        }
+        // template<typename RI, typename CI>
+        // void recursive_add_entry(const RI& ri, const CI& ci)
+        // {
+        //   _sub_patterns[ri.back() * _cols + ci.back()].recursive_add_entry(ri.back_popped(),ci.back_popped());
+        // }
 
 #endif // DOXYGEN
 
-        template<typename EntriesPerRow>
-        NestedPattern(const RowOrdering& row_ordering, const ColOrdering& col_ordering, const EntriesPerRow& entries_per_row)
-          : _row_ordering(row_ordering)
-          , _col_ordering(col_ordering)
+        BlockSparsityPattern(const RowSizeProvider& row_size_provider,
+                      RowSizePrefix row_prefix,
+                      const ColSizeProvider& col_size_provider,
+                      ColSizePrefix col_prefix,
+                      const std::size_t& entries_per_row)
+          : _row_size_provider(row_size_provider)
+          , _col_size_provider(col_size_provider)
+          , _row_prefix(row_prefix)
+          , _col_prefix(col_prefix)
+          , _rows(row_size_provider.size(_row_prefix))
+          , _cols(col_size_provider.size(_col_prefix))
+          , _entries_per_row(entries_per_row)
+          , _indices(_rows*entries_per_row,std::make_pair(empty,nullptr))
         {
-          size_type rows = row_ordering.blockCount();
-          size_type cols = col_ordering.blockCount();
-          for (size_type i = 0; i < rows; ++i)
-            for (size_type j = 0; j < cols; ++j)
-              _sub_patterns.push_back(
-                SubPattern(
-                  _row_ordering.childOrdering(i),
-                  _col_ordering.childOrdering(j),
-                  entries_per_row[i][j]
-                  )
-                );
+
         }
 
-        NestedPattern(const RowOrdering& row_ordering, const ColOrdering& col_ordering, size_type entries_per_row)
-          : _row_ordering(row_ordering)
-          , _col_ordering(col_ordering)
+        // NestedPattern(const RowSizeProvider& row_size_provider,
+        //               typename RowSizeProvider::SizePrefix row_prefix,
+        //               const ColSizeProvider& col_size_provider,
+        //               typename ColSizeProvider::SizePrefix col_prefix,
+        //               const size_type& entries_per_row)
+        //   : _rows(row_size_provider.size(row_prefix))
+        //   , _cols(col_size_provider.size(col_prefix))
+        //   , _indices(_rows*entries_per_row,std::make_pair(empty,nullptr))
+        // {
+
+        // }
+
+        // //! Returns the subpattern associated with block (i,j).
+        // SubPattern& subPattern(size_type i, size_type j)
+        // {
+        //   return _sub_patterns[i * _cols + j];
+        // }
+
+        void clear()
         {
-          size_type rows = row_ordering.blockCount();
-          size_type cols = col_ordering.blockCount();
-          for (size_type i = 0; i < rows; ++i)
-            for (size_type j = 0; j < cols; ++j)
-              _sub_patterns.push_back(
-                SubPattern(
-                  _row_ordering.childOrdering(i),
-                  _col_ordering.childOrdering(j),
-                  entries_per_row
-                  )
-                );
+          _indices.clear();
+          _overflow.clear();
         }
 
-        //! Returns the subpattern associated with block (i,j).
-        SubPattern& subPattern(size_type i, size_type j)
+        const RowSizeProvider& rowSizeProvider() const
         {
-          return _sub_patterns[i * _col_ordering.blockCount() + j];
+          return _row_size_provider;
+        }
+
+        const ColSizeProvider& colSizeProvider() const
+        {
+          return _col_size_provider;
         }
 
       private:
 
-        const RowOrdering& _row_ordering;
-        const ColOrdering& _col_ordering;
-        std::vector<SubPattern> _sub_patterns;
+        const RowSizeProvider _row_size_provider;
+        const ColSizeProvider _col_size_provider;
 
+        const RowSizePrefix _row_prefix;
+        const ColSizePrefix _col_prefix;
+        const size_type _rows, _cols, _entries_per_row;
+
+        std::vector<std::pair<size_type,std::shared_ptr<SubPattern> > > _indices;
+        std::map<std::pair<size_type,size_type>,std::shared_ptr<SubPattern> > _overflow;
       };
 
 

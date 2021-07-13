@@ -16,154 +16,107 @@ namespace Dune {
 
       namespace {
 
-        template<typename M, typename RowOrdering, typename ColOrdering, bool pattern>
-        struct _build_bcrs_pattern_type
-        {
-          // we use void as a marker for a nonexisting subpattern
-          typedef void type;
-        };
-
-        // central TMP that is invoked recursively while traversing the ordering hierarchy
-        // and builds up the possibly nested pattern.
-        template<typename M, typename RowOrdering, typename ColOrdering>
-        struct _build_bcrs_pattern_type<M,RowOrdering,ColOrdering,true>
-        {
-
-          // descend into blocks
-          typedef typename _build_bcrs_pattern_type<
-            typename M::block_type,
-            RowOrdering,
-            ColOrdering,
-            requires_pattern<
-              typename M::block_type
-              >::value
-            >::type BlockOrdering;
-
-          // Leafs -> BCRSPattern, interior nodes -> NestedPattern
-          typedef typename std::conditional<
-            std::is_same<BlockOrdering,void>::value,
-            BCRSPattern<
-              RowOrdering,
-              ColOrdering
-              >,
-            NestedPattern<
-              RowOrdering,
-              ColOrdering,
-              BlockOrdering
-              >
-            >::type type;
-
-        };
-
-        // Wrapper TMP for constructing OrderingBase types from function spaces and for
-        // shielding user from recursive implementation
-        template<typename M, typename GFSV, typename GFSU, typename Tag>
+        template<class M, class GFSV, class GFSU, class = void>
         struct build_bcrs_pattern_type
         {
+          static_assert(Dune::blockLevel<M>() > 1, "There is not enough blocking to create a pattern in M!");
 
-          typedef OrderingBase<
-            typename GFSV::Ordering::Traits::DOFIndex,
-            typename GFSV::Ordering::Traits::ContainerIndex
-            > RowOrdering;
-
-          typedef OrderingBase<
-            typename GFSU::Ordering::Traits::DOFIndex,
-            typename GFSU::Ordering::Traits::ContainerIndex
-            > ColOrdering;
-
-          typedef typename _build_bcrs_pattern_type<M,RowOrdering,ColOrdering,requires_pattern<M>::value>::type type;
+          // // descend into blocks
+          static_assert(Dune::AlwaysFalse<M>{}, "No pattern supported for type M");
+          // using BlockPattern = typename build_bcrs_pattern_type<typename M::block_type>::type;
+          // using type = DensePattern<BlockPattern>;
         };
 
-        // Specialization for forcibly flat backends
-        template<typename M, typename GFSV, typename GFSU>
-        struct build_bcrs_pattern_type<M,GFSV,GFSU,FlatContainerAllocationTag>
+        template<class B, class A, class GFSV, class GFSU>
+        struct build_bcrs_pattern_type<Dune::BCRSMatrix<B,A>, GFSV, GFSU, std::enable_if_t<(Dune::blockLevel<B>() == 1)>>
         {
-          typedef BCRSPattern<typename GFSV::Ordering, typename GFSU::Ordering> type;
+          using RowSizeType = typename GFSV::Ordering::Traits::SizeType;
+          using RowSizePrefix = typename GFSV::Ordering::Traits::SizePrefix;
+          using RowSizeProvider = SizeProviderAdapter<RowSizeType, RowSizePrefix>;
+          using ColSizeType = typename GFSU::Ordering::Traits::SizeType;
+          using ColSizePrefix = typename GFSU::Ordering::Traits::SizePrefix;
+          using ColSizeProvider = SizeProviderAdapter<ColSizeType, ColSizePrefix>;
+          using type = SparcityPattern<RowSizeProvider,ColSizeProvider>;
+        };
+
+        template<class B, class A, class GFSV, class GFSU>
+        struct build_bcrs_pattern_type<Dune::BCRSMatrix<B,A>, GFSV, GFSU, std::enable_if_t<(Dune::blockLevel<B>() > 1)>>
+        {
+          using BlockPattern = typename build_bcrs_pattern_type<B,GFSV,GFSU>::type;
+          using type = BlockSparsityPattern<BlockPattern>;
         };
 
 
-        // leaf BCRSMatrix
-        template<typename OrderingV, typename OrderingU, typename Pattern, typename Container, typename StatsVector>
-        typename std::enable_if<
-          std::is_same<typename Pattern::SubPattern,void>::value
-          >::type
-        allocate_bcrs_matrix(const OrderingV& ordering_v,
-                             const OrderingU& ordering_u,
-                             Pattern& p,
-                             Container& c,
+        // // leaf BCRSMatrix
+        template<class Pattern, class B, class A, typename StatsVector>
+        void allocate_bcrs_matrix(Pattern& p,
+                             typename Pattern::RowSizePrefix prefix_v,
+                             typename Pattern::ColSizePrefix prefix_u,
+                             Dune::BCRSMatrix<B,A>& c,
                              StatsVector& stats)
         {
-          c.setSize(ordering_v.blockCount(),ordering_u.blockCount(),0);
-          c.setBuildMode(Container::random);
+          using size_type = typename Pattern::size_type;
+          static_assert(Pattern::ColSizeProvider::size_prefix_order == MultiIndexOrder::Outer2Inner);
+          static_assert(Pattern::ColSizeProvider::size_prefix_order == MultiIndexOrder::Outer2Inner);
+          auto row_size = p.rowSizeProvider().size(prefix_v);
+          auto col_size = p.colSizeProvider().size(prefix_u);
+          c.setSize(row_size, col_size, 0);
+          c.setBuildMode(Dune::BCRSMatrix<B, A>::random);
 
-          std::vector<typename Pattern::size_type> row_sizes(p.sizes());
+          auto row_sizes = p.sizes();
+          size_type nnz = 0;
+          size_type longest_row = 0;
 
-          typename Pattern::size_type nnz = 0;
-          typename Pattern::size_type longest_row = 0;
-
-          for (typename Pattern::size_type i = 0; i < c.N(); ++i)
-            {
-              nnz += row_sizes[i];
-              longest_row = std::max(longest_row,row_sizes[i]);
-              c.setrowsize(i,row_sizes[i]);
-            }
+          for (size_type i = 0; i < c.N(); ++i) {
+            nnz += row_sizes[i];
+            longest_row = std::max(longest_row, row_sizes[i]);
+            c.setrowsize(i, row_sizes[i]);
+          }
           c.endrowsizes();
 
-          stats.push_back(typename StatsVector::value_type(nnz,longest_row,p.overflowCount(),p.entriesPerRow(),ordering_v.blockCount()));
+          //   stats.push_back(typename
+          //   StatsVector::value_type(nnz,longest_row,p.overflowCount(),p.entriesPerRow(),row_size));
 
-          for (typename Pattern::size_type i = 0; i < c.N(); ++i)
+          for (size_type i = 0; i < c.N(); ++i){
+            for (auto it = p.begin(i) ; it != p.end(i); ++it)
+              std::cout << *it << std::endl;
             c.setIndices(i,p.begin(i),p.end(i));
+          }
 
-          // free temporary index storage in pattern before allocating data array in matrix
-          p.clear();
-          // allocate data array
-          c.endindices();
-        }
+          if constexpr (std::is_void<typename Pattern::SubPattern>{}) {
+            // free temporary index storage in pattern before allocating data array in matrix
+            p.clear();
+            // allocate data array
+            c.endindices();
+          } else {
+            // allocate data array
+            c.endindices();
+            // add sub patterns on sub matrices
+            typename Pattern::RowSizePrefix row_sub_prefix = prefix_v;
+            row_sub_prefix.push_back(0);
+            typename Pattern::RowSizePrefix col_sub_prefix = prefix_u;
+            col_sub_prefix.push_back(0);
 
+            for (auto row_it = c.begin(); row_it != c.end(); ++row_it) {
+              auto row = row_it.index();
+              row_sub_prefix.back() = row;
 
-        // ********************************************************************************
-        // nested matrix allocation
-        // In contrast to the older implementation, this code still uses BCRSMatrix for nested matrices,
-        // but we do not attempt to keep the pattern of those interior matrices sparse and always allocate all
-        // blocks. That greatly simplifies the code, and as those interior matrices really shouldn't be very
-        // large, any performance impact is minimal.
-        // The code also collects statistics about the pattern of the leaf BCRSMatrices and collates those stats
-        // in a row-major ordering.
-        // ********************************************************************************
+              auto pattern_it = p.begin(row);
+              // pattern iterator is not necessarely order when has overflow, thus we iterate over
+              while (pattern_it != p.end(row)) {
+                auto col = *pattern_it;
+                col_sub_prefix.back() = col;
+                assert(c.exists(row,col));
 
-        // interior BCRSMatrix
-        template<typename OrderingV, typename OrderingU, typename Pattern, typename Container, typename StatsVector>
-        typename std::enable_if<
-          !std::is_same<typename Pattern::SubPattern,void>::value &&
-           requires_pattern<Container>::value
-        >::type
-        allocate_bcrs_matrix(const OrderingV& ordering_v,
-                             const OrderingU& ordering_u,
-                             Pattern& p,
-                             Container& c,
-                             StatsVector& stats)
-        {
-          c.setSize(ordering_v.blockCount(),ordering_u.blockCount(),ordering_v.blockCount()*ordering_u.blockCount());
-          c.setBuildMode(Container::random);
-
-          for (std::size_t i = 0; i < c.N(); ++i)
-            c.setrowsize(i,ordering_u.blockCount());
-          c.endrowsizes();
-
-          for (std::size_t i = 0; i < c.N(); ++i)
-            for (std::size_t j = 0; j < c.M(); ++j)
-              c.addindex(i,j);
-          c.endindices();
-
-          for (std::size_t i = 0; i < c.N(); ++i)
-            for (std::size_t j = 0; j < c.M(); ++j)
-              {
-                allocate_bcrs_matrix(ordering_v.childOrdering(i),
-                                     ordering_u.childOrdering(j),
-                                     p.subPattern(i,j),
-                                     c[i][j],
-                                     stats);
+                // TODO check if pattern matches another already created matrix and copy matrix to reuse pattern
+                auto& sub_container = (*row_it)[col];
+                allocate_bcrs_matrix(pattern_it.pattern(), row_sub_prefix, col_sub_prefix, sub_container, stats);
+                ++pattern_it;
               }
+              assert(pattern_it == p.end(row));
+            }
+            p.clear();
+          }
         }
 
       } // anonymous namespace
@@ -198,8 +151,7 @@ namespace Dune {
         using Pattern = typename build_bcrs_pattern_type<
           typename Matrix::Container,
           GFSV,
-          GFSU,
-          typename GFSV::Ordering::ContainerAllocationTag
+          GFSU
           >::type;
 
         template<typename VV, typename VU, typename E>
@@ -224,19 +176,21 @@ namespace Dune {
         template<typename GridOperator, typename Matrix>
         std::vector<Statistics> buildPattern(const GridOperator& grid_operator, Matrix& matrix) const
         {
-          Pattern<
+          using P = Pattern<
             Matrix,
             typename GridOperator::Traits::TestGridFunctionSpace,
             typename GridOperator::Traits::TrialGridFunctionSpace
-            > pattern(grid_operator.testGridFunctionSpace().ordering(),grid_operator.trialGridFunctionSpace().ordering(),_entries_per_row);
+            >;
+
+         auto row_size_provider =
+              SizeProviderAdapter{grid_operator.testGridFunctionSpace().orderingStorage()};
+          auto col_size_provider =
+              SizeProviderAdapter{grid_operator.trialGridFunctionSpace().orderingStorage()};
+          P pattern(row_size_provider, {}, col_size_provider, {},
+                                  _entries_per_row);
           grid_operator.fill_pattern(pattern);
           std::vector<Statistics> stats;
-          allocate_bcrs_matrix(grid_operator.testGridFunctionSpace().ordering(),
-                               grid_operator.trialGridFunctionSpace().ordering(),
-                               pattern,
-                               Backend::native(matrix),
-                               stats
-                               );
+          allocate_bcrs_matrix(pattern, {}, {}, Backend::native(matrix), stats);
           return stats;
         }
 
