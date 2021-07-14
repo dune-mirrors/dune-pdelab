@@ -139,6 +139,12 @@ namespace Dune {
       {
       }
 
+      //! Set relaxation
+      void setRelaxation(double relaxation)
+      {
+        _relaxation = relaxation;
+      }
+
 
       // Before we can call the jacobian_apply methods we need to compute the
       // LU decomposition of the diagonal block. We use the bool _requireSetup
@@ -228,7 +234,7 @@ namespace Dune {
           value_type rhs(ztmp_container[i]);
           for(int j=size-1; j>i; j--)
             rhs -= diagonalBlockLU(i, j) * y_container[j];
-          y_container[i] = rhs/diagonalBlockLU(i,i);
+          y_container[i] += _relaxation*rhs/diagonalBlockLU(i,i);
         }
       }
 
@@ -239,6 +245,7 @@ namespace Dune {
       mutable std::vector<TupleType> _precCache;
       const int _verbose;
       bool _requireSetup;
+      double _relaxation = 1.0;
     };
 
   } // namespace PDELab

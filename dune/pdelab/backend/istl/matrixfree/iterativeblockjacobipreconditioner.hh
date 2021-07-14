@@ -315,6 +315,12 @@ namespace Dune {
         , _requireSetup(true)
       {}
 
+      //! Set relaxation
+      void setRelaxation(double relaxation)
+      {
+        _relaxation = relaxation;
+      }
+
       // Before we can call the jacobian_apply methods we need to assemble the
       // point diagonal of the diagonal block. This will be used as a preconditioner
       // for the iterative matrix free solver on the diagonal block.
@@ -386,11 +392,15 @@ namespace Dune {
         LocalVector y_tmp(lfsv.size(), 0.0);
         solver.apply(y_tmp, z_tmp, stat);
         _solverStatistics.append(stat.iterations);
+
+        auto update = [=](value_type& a, value_type& b){
+          return a + _relaxation * b;
+        };
         std::transform(y.data(),
                        y.data()+y.size(),
                        y_tmp.data(),
                        y.data(),
-                       std::plus<value_type>{});
+                       update);
       } // end jacobian_apply_volume
 
 
@@ -432,11 +442,15 @@ namespace Dune {
         LocalVector y_tmp(lfsv.size(), 0.0);
         solver.apply(y_tmp, z_tmp, stat);
         _solverStatistics.append(stat.iterations);
+
+        auto update = [=](value_type& a, value_type& b){
+          return a + _relaxation * b;
+        };
         std::transform(y.data(),
                        y.data()+y.size(),
                        y_tmp.data(),
                        y.data(),
-                       std::plus<value_type>{});
+                       update);
       } // end jacobian_apply_volume
 
     private :
@@ -449,6 +463,7 @@ namespace Dune {
       mutable BlockSolverOptions _solveroptions;
       const int _verbose;
       bool _requireSetup;
+      double _relaxation  = 1.0;
     }; // end class IterativeBlockJacobiPreconditionerLocalOperator
 
   } // namespace PDELab
