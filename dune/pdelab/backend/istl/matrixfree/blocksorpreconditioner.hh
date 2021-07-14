@@ -254,17 +254,7 @@ namespace Dune {
       template<typename EG, typename LFSU, typename X, typename Z, typename LFSV, typename Y>
       void jacobian_apply_volume_post_skeleton(const EG& eg, const LFSU& lfsu, const X& x, const Z& z, const LFSV& lfsv, Y& y) const
       {
-        // static checks
-        //----------------------
-        // static_assert(std::is_same<decltype(x),decltype(_a_i)>::value,"Both types have to be the same for nonlinear Jacobian apply");
-        // static_assert(not std::is_same<decltype(x),decltype(_a_i)>::value,"Both types have to be the same for nonlinear Jacobian apply");
-        //
-        // dynamic crashes
-        //----------------------
-        // x.bar(); // type ConstAliasedVectorView
-        // _a_i.bar(); // type LocalVector<double, >
-
-        // Subtract x_e: _a_i -= x_e
+       // Subtract x_e: _a_i -= x_e
         std::transform(_a_i.data(),_a_i.data()+_a_i.size(),
                        z.data(),
                        _a_i.data(),
