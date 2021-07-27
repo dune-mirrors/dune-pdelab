@@ -59,18 +59,20 @@
     However, a main difference is that intermediate nodes are added in order
     to account for additional node transformations to the ContainerIndex.
 
-Tree example:
+    Tree example:
+    \verbatim
+    Power GFS node -->  *                 \       *      <-- GFS to ordering node transofrmation e.g. PowerLexicographicOrdering node
+                        |\        ---------\      |\
+                        | \       transform 〉     * *     <-- Additional intermediate node e.g. GridViewOrdering nodes
+                        |  \      ---------/      |  \
+    Leaf GFS node -->   *   *             /       *   *   <-- Leaf node transformation e.g. Local ordering nodes
+    \endverbatim
 
-Power GFS node -->   *                *
-                     |\               |\
-                     | \              * *     <-- Additional intermediate node e.g. GV ordering nodes
-                     |  \             |  \
-Leaf GFS node -->    *   *            *   *   <-- e.g. Local ordering nodes
+    Possible intermediate nodes:
+      - Grid View Ordering node
+      - Chunked Ordering node
+      - Permuted Ordering node
 
-Possible intermediate nodes:
-  - Grid View Ordering node
-  - Chunked Ordering node
-  - Permuted Ordering node
     ### Ordering Node
 
     The main task of an ordering node is to modify or add the **last**
@@ -89,7 +91,6 @@ Possible intermediate nodes:
       container index. In other words, it needs to put the last modified index
       into the context of the a bigger tree strucutre. Typically, this is done
       by adding an offset according to a merging strategy.
-
 
     ### Local Ordering Tree
 
@@ -150,6 +151,7 @@ Possible intermediate nodes:
     @see SizeProviderAdapter
     @see MultiIndex
     @see DOFIndex
+    @see OrderedGridFunctionSpace
 
   @}
 

@@ -124,7 +124,7 @@ namespace Dune {
 
     };
 
-
+    //! \copydoc UnorderedCompositeGridFunctionSpace
     template<typename Backend,
              typename OrderingTag,
              typename... Children>

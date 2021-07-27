@@ -37,6 +37,16 @@ namespace Dune {
       };
     } // namespace Impl
 
+    /**
+     * @brief Add ordering and data handler to an unordered grid function space
+     * @details This class extends the grid function space interface to have
+     * an ordering and a data handler for parallel communication. In particular,
+     * this is intened to only be used on the root node.
+     *
+     * @tparam UnorderedGFS  A grid function space that has no ordering
+     *
+     * \see Ordering
+     */
     template <class UnorderedGFS>
     class OrderedGridFunctionSpace
         : public UnorderedGFS,
@@ -46,8 +56,10 @@ namespace Dune {
           TypeTree::TransformTree<UnorderedGFS, gfs_to_ordering<UnorderedGFS>>;
 
     public:
+      //! Inherit constructor from UnorderedGFS
       using UnorderedGFS::UnorderedGFS;
 
+      //! Ordering tree type
       using Ordering = typename ordering_transformation::Type;
 
       //! extract type for storing constraints
