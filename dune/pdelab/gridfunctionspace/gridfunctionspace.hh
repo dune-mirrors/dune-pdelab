@@ -165,9 +165,14 @@ namespace Dune {
 
     };
 
-    /** \brief A grid function space.
-     *  \details Representation of a function space in a grid. Here, the entity
-     *    set.
+    /** \brief An unordered grid function space.
+     *  \details Representation of an function space in a grid.
+     *
+     *  - This class should be prefered over an (ordered) GridFunctionSpace when
+     *    building a tree of spaces.
+     *  - This class is not able to provide an \ref Ordering by itself. Thus,
+     *    it's not suitable for assembling local operators. If that's necessary,
+     *    use OrderedGridFunctionSpace or GridFunctionSpace.
      *
      *  \tparam ES   Entity Set type (See PartitionViewEntitySet). Respresents
      *               the sub set of entities where the finite element map has
@@ -177,6 +182,10 @@ namespace Dune {
      *  \tparam CE   Type for constraints assembler
      *  \tparam B    Backend type
      *  \tparam O    Ordering tag
+     *
+     *  \see Ordering
+     *  \see GridFunctionSpace
+     *  \see PartitionViewEntitySet
      */
     template<typename ES, typename FEM, typename CE=NoConstraints,
              typename B=ISTL::VectorBackend<>, typename O=DefaultLeafOrderingTag>
@@ -392,7 +401,28 @@ namespace Dune {
     };
 
 
-
+    /** \brief An ordered grid function space.
+     *  \details Representation of an function space in a grid.
+     *
+     *  - Constructor isthe same as for UnorderedGridFunctionSpace.
+     *  - This class should be prefered over an UnorderedGridFunctionSpace when
+     *    only one space is required (i.e. no space trees).
+     *  - This class is able to provide an \ref Ordering by itself. Thus,
+     *    it is suitable for assembling local operators.
+     *
+     *  \tparam ES   Entity Set type (See PartitionViewEntitySet). Respresents
+     *               the sub set of entities where the finite element map has
+     *               support.
+     *  \tparam FEM  Type implementing FiniteElementMapInterface. A map from
+     *               entity to local finite element.
+     *  \tparam CE   Type for constraints assembler
+     *  \tparam B    Backend type
+     *  \tparam O    Ordering tag
+     *
+     *  \see Ordering
+     *  \see GridFunctionSpace
+     *  \see PartitionViewEntitySet
+     */
     template<typename GV, typename FEM, typename CE=NoConstraints,
              typename B=ISTL::VectorBackend<>, typename O=DefaultLeafOrderingTag>
     class GridFunctionSpace

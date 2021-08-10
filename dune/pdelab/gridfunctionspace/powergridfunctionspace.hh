@@ -211,6 +211,7 @@ namespace Dune {
 
     };
 
+    //! \copydoc UnorderedPowerGridFunctionSpace
     template<typename T, std::size_t k,
              typename Backend,
              typename OrderingTag = LexicographicOrderingTag>
