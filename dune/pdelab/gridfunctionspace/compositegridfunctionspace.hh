@@ -10,7 +10,7 @@
 #include <dune/typetree/utility.hh>
 
 #include <dune/pdelab/gridfunctionspace/powercompositegridfunctionspacebase.hh>
-#include <dune/pdelab/gridfunctionspace/datahandleprovider.hh>
+#include <dune/pdelab/gridfunctionspace/orderedgridfunctionspace.hh>
 #include <dune/pdelab/gridfunctionspace/tags.hh>
 
 namespace Dune {
@@ -37,10 +37,10 @@ namespace Dune {
     template<typename Backend,
              typename OrderingTag,
              typename... Children>
-    class CompositeGridFunctionSpace
+    class UnorderedCompositeGridFunctionSpace
       : public TypeTree::CompositeNode<Children...>
       , public PowerCompositeGridFunctionSpaceBase<
-          CompositeGridFunctionSpace<
+          UnorderedCompositeGridFunctionSpace<
             Backend,
             OrderingTag,
             Children...>,
@@ -49,27 +49,22 @@ namespace Dune {
           OrderingTag,
           sizeof...(Children)
         >
-      , public DataHandleProvider<CompositeGridFunctionSpace<Backend,OrderingTag,Children...> >
     {
       typedef TypeTree::CompositeNode<Children...> NodeT;
 
       typedef PowerCompositeGridFunctionSpaceBase<
-        CompositeGridFunctionSpace,
+        UnorderedCompositeGridFunctionSpace,
         typename TypeTree::Child<NodeT,0>::Traits::EntitySet,
         Backend,
         OrderingTag,
         sizeof...(Children)> ImplementationBase;
 
       friend class PowerCompositeGridFunctionSpaceBase<
-        CompositeGridFunctionSpace,
+        UnorderedCompositeGridFunctionSpace,
         typename TypeTree::Child<NodeT,0>::Traits::EntitySet,
         Backend,
         OrderingTag,
         sizeof...(Children)>;
-
-      typedef TypeTree::TransformTree<CompositeGridFunctionSpace,
-                                      gfs_to_ordering<CompositeGridFunctionSpace>
-                                      > ordering_transformation;
 
       template<typename,typename>
       friend class GridFunctionSpaceBase;
@@ -77,50 +72,28 @@ namespace Dune {
     public:
       typedef CompositeGridFunctionSpaceTag ImplementationTag;
 
-      typedef typename ordering_transformation::Type Ordering;
-
-      //! extract type for storing constraints
-      template<typename E>
-      struct ConstraintsContainer
-      {
-        typedef typename std::conditional<
-          // check against all children.
-          // Use EmptyTransformation, iif all Children use EmptyTransformation
-          std::conjunction_v<
-            std::is_same<
-              EmptyTransformation,
-              typename Children::template ConstraintsContainer<E>::Type>...>,
-          EmptyTransformation,
-          ConstraintsTransformation<
-            typename Ordering::Traits::DOFIndex,
-            typename Ordering::Traits::ContainerIndex,
-            E
-            >
-          >::type Type;
-      };
-
       typedef typename ImplementationBase::Traits Traits;
 
       // ********************************************************************************
       // constructors for stack-constructed children passed in by reference
       // ********************************************************************************
 
-      CompositeGridFunctionSpace(const Backend& backend, Children&... children)
+      UnorderedCompositeGridFunctionSpace(const Backend& backend, Children&... children)
         : NodeT(TypeTree::assertGridViewType<typename NodeT::template Child<0>::Type>(children)...)
         , ImplementationBase(backend,OrderingTag())
       { }
 
-      CompositeGridFunctionSpace(const OrderingTag& ordering_tag, Children&... children)
+      UnorderedCompositeGridFunctionSpace(const OrderingTag& ordering_tag, Children&... children)
         : NodeT(TypeTree::assertGridViewType<typename NodeT::template Child<0>::Type>(children)...)
         , ImplementationBase(Backend(),ordering_tag)
       { }
 
-      CompositeGridFunctionSpace(const Backend& backend, const OrderingTag& ordering_tag, Children&... children)
+      UnorderedCompositeGridFunctionSpace(const Backend& backend, const OrderingTag& ordering_tag, Children&... children)
         : NodeT(TypeTree::assertGridViewType<typename NodeT::template Child<0>::Type>(children)...)
         , ImplementationBase(backend,ordering_tag)
       { }
 
-      CompositeGridFunctionSpace(Children&... children)
+      UnorderedCompositeGridFunctionSpace(Children&... children)
         : NodeT(TypeTree::assertGridViewType<typename NodeT::template Child<0>::Type>(children)...)
         , ImplementationBase(Backend(),OrderingTag())
       { }
@@ -129,104 +102,40 @@ namespace Dune {
       // constructors for heap-constructed children passed in as shared_ptrs
       // ********************************************************************************
 
-      CompositeGridFunctionSpace(const Backend& backend, std::shared_ptr<Children>... children)
+      UnorderedCompositeGridFunctionSpace(const Backend& backend, std::shared_ptr<Children>... children)
         : NodeT(children...)
         , ImplementationBase(backend,OrderingTag())
       { }
 
-      CompositeGridFunctionSpace(const OrderingTag& ordering_tag, std::shared_ptr<Children>... children)
+      UnorderedCompositeGridFunctionSpace(const OrderingTag& ordering_tag, std::shared_ptr<Children>... children)
         : NodeT(children...)
         , ImplementationBase(Backend(),ordering_tag)
       { }
 
-      CompositeGridFunctionSpace(const Backend& backend, const OrderingTag& ordering_tag, std::shared_ptr<Children>... children)
+      UnorderedCompositeGridFunctionSpace(const Backend& backend, const OrderingTag& ordering_tag, std::shared_ptr<Children>... children)
         : NodeT(children...)
         , ImplementationBase(backend,ordering_tag)
       { }
 
-      CompositeGridFunctionSpace(std::shared_ptr<Children>... children)
+      UnorderedCompositeGridFunctionSpace(std::shared_ptr<Children>... children)
         : NodeT(children...)
         , ImplementationBase(Backend(),OrderingTag())
       { }
 
-
-      //! Direct access to the DOF ordering.
-      const Ordering &ordering() const
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return *_ordering;
-      }
-
-      //! Direct access to the DOF ordering.
-      Ordering &ordering()
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return *_ordering;
-      }
-
-      //! Direct access to the storage of the DOF ordering.
-      std::shared_ptr<const Ordering> orderingStorage() const
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return _ordering;
-      }
-
-      //! Direct access to the storage of the DOF ordering.
-      std::shared_ptr<Ordering> orderingStorage()
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return _ordering;
-      }
-
-
-    private:
-
-      // This method here is to avoid a double update of the Ordering when the user calls
-      // GFS::update() before GFS::ordering().
-      void create_ordering() const
-      {
-        _ordering = std::make_shared<Ordering>(ordering_transformation::transform(*this));
-      }
-
-      mutable std::shared_ptr<Ordering> _ordering;
-
     };
+
+
+    template<typename Backend,
+             typename OrderingTag,
+             typename... Children>
+    class CompositeGridFunctionSpace
+      : public OrderedGridFunctionSpace<UnorderedCompositeGridFunctionSpace<Backend,OrderingTag,Children...>>
+    {
+      using Base = OrderedGridFunctionSpace<UnorderedCompositeGridFunctionSpace<Backend,OrderingTag,Children...>>;
+    public:
+      using Base::Base;
+    };
+
 
     //! \}
 
