@@ -27,8 +27,9 @@ void check_ordering(const GFS& gfs)
 {
     const auto& ordering = gfs.ordering();
 
-    Dune::PDELab::LocalFunctionSpace lfs{gfs};
-    Dune::PDELab::LFSIndexCache lfs_cache{lfs};
+    using LFS = Dune::PDELab::LocalFunctionSpace<GFS>;
+    LFS lfs{gfs};
+    Dune::PDELab::LFSIndexCache<LFS> lfs_cache{lfs};
 
     for (const auto& element : elements(gfs.entitySet()))
     {

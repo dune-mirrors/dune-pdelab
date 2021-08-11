@@ -624,7 +624,7 @@ namespace Dune {
         else if (fast) {
           auto gt = e.type();
           auto index = es.indexSet().index(e);
-          GFS::Ordering::Traits::DOFIndexAccessor::store(*it, gt, index, 0);
+          DefaultDOFIndexAccessor::store(*it,gt,index,0);
           ++it;
         } else {
           // get layout of entity
@@ -645,8 +645,8 @@ namespace Dune {
                 e, coeffs.localKey(i).subEntity(), coeffs.localKey(i).codim());
 
             // store data
-            GFS::Ordering::Traits::DOFIndexAccessor::store(
-                *it, gt, index, coeffs.localKey(i).index());
+            DefaultDOFIndexAccessor::store(*it, gt, index,
+                                           coeffs.localKey(i).index());
 
             // make sure we don't write past the end of the iterator range
             assert(it != endit);

@@ -12,6 +12,7 @@
 
 #include <dune/typetree/powernode.hh>
 
+#include <dune/pdelab/gridfunctionspace/orderedgridfunctionspace.hh>
 #include <dune/pdelab/gridfunctionspace/powercompositegridfunctionspacebase.hh>
 #include <dune/pdelab/gridfunctionspace/tags.hh>
 #include <dune/pdelab/gridfunctionspace/gridfunctionspace.hh>
@@ -55,8 +56,8 @@ namespace Dune {
              typename Constraints = NoConstraints,
              typename OrderingTag = LexicographicOrderingTag,
              typename LeafOrderingTag = DefaultLeafOrderingTag>
-    class VectorGridFunctionSpace
-      : public TypeTree::PowerNode<GridFunctionSpace<
+    class UnorderedVectorGridFunctionSpace
+      : public TypeTree::PowerNode<UnorderedGridFunctionSpace<
                                      impl::EntitySet<GV>,
                                      FEM,
                                      Constraints,
@@ -64,7 +65,7 @@ namespace Dune {
                                      LeafOrderingTag
                                      >,
                                    k>
-      , public PowerCompositeGridFunctionSpaceBase<VectorGridFunctionSpace<
+      , public PowerCompositeGridFunctionSpaceBase<UnorderedVectorGridFunctionSpace<
                                                      GV,
                                                      FEM,
                                                      k,
@@ -78,22 +79,10 @@ namespace Dune {
                                                    Backend,
                                                    OrderingTag,
                                                    k>
-
-      , public DataHandleProvider<VectorGridFunctionSpace<
-                                    GV,
-                                    FEM,
-                                    k,
-                                    Backend,
-                                    LeafBackend,
-                                    Constraints,
-                                    OrderingTag,
-                                    LeafOrderingTag
-                                    > >
-
       , public GridFunctionOutputParameters
     {
 
-      typedef GridFunctionSpace<
+      typedef UnorderedGridFunctionSpace<
         impl::EntitySet<GV>,
         FEM,
         Constraints,
@@ -111,44 +100,20 @@ namespace Dune {
       typedef TypeTree::PowerNode<LeafGFS,k> BaseT;
 
       typedef PowerCompositeGridFunctionSpaceBase<
-        VectorGridFunctionSpace,
+        UnorderedVectorGridFunctionSpace,
         impl::EntitySet<GV>,
         Backend,
         OrderingTag,
         k> ImplementationBase;
 
       friend class PowerCompositeGridFunctionSpaceBase<
-        VectorGridFunctionSpace,
+        UnorderedVectorGridFunctionSpace,
         impl::EntitySet<GV>,
         Backend,
         OrderingTag,
         k>;
 
-      typedef TypeTree::TransformTree<VectorGridFunctionSpace,
-                                      gfs_to_ordering<VectorGridFunctionSpace>
-                                      > ordering_transformation;
-
     public:
-
-      typedef typename ordering_transformation::Type Ordering;
-
-      //! extract type for storing constraints
-      template<typename E>
-      struct ConstraintsContainer
-      {
-        typedef typename std::conditional<
-          std::is_same<
-            Constraints,
-            NoConstraints
-            >::value,
-          EmptyTransformation,
-          ConstraintsTransformation<
-            typename Ordering::Traits::DOFIndex,
-            typename Ordering::Traits::ContainerIndex,
-            E
-            >
-          >::type Type;
-      };
 
       //! export traits class
       typedef typename ImplementationBase::Traits Traits;
@@ -170,28 +135,28 @@ namespace Dune {
 
     public:
 
-      VectorGridFunctionSpace(const typename Traits::GridView& gv, const FEM& fem,
+      UnorderedVectorGridFunctionSpace(const typename Traits::GridView& gv, const FEM& fem,
                               const Backend& backend = Backend(), const LeafBackend& leaf_backend = LeafBackend(),
                               const OrderingTag& ordering_tag = OrderingTag(), const LeafOrderingTag& leaf_ordering_tag = LeafOrderingTag())
         : BaseT(create_components(typename Traits::EntitySet(gv),stackobject_to_shared_ptr(fem),leaf_backend,leaf_ordering_tag))
         , ImplementationBase(backend,ordering_tag)
       {}
 
-      VectorGridFunctionSpace(const typename Traits::EntitySet& es, const FEM& fem,
+      UnorderedVectorGridFunctionSpace(const typename Traits::EntitySet& es, const FEM& fem,
                               const Backend& backend = Backend(), const LeafBackend& leaf_backend = LeafBackend(),
                               const OrderingTag& ordering_tag = OrderingTag(), const LeafOrderingTag& leaf_ordering_tag = LeafOrderingTag())
         : BaseT(create_components(es,stackobject_to_shared_ptr(fem),leaf_backend,leaf_ordering_tag))
         , ImplementationBase(backend,ordering_tag)
       {}
 
-      VectorGridFunctionSpace(const typename Traits::GridView& gv, std::shared_ptr<const FEM> fem,
+      UnorderedVectorGridFunctionSpace(const typename Traits::GridView& gv, std::shared_ptr<const FEM> fem,
                               const Backend& backend = Backend(), const LeafBackend& leaf_backend = LeafBackend(),
                               const OrderingTag& ordering_tag = OrderingTag(), const LeafOrderingTag& leaf_ordering_tag = LeafOrderingTag())
         : BaseT(create_components(typename Traits::EntitySet(gv), fem, leaf_backend, leaf_ordering_tag))
         , ImplementationBase(backend,ordering_tag)
       {}
 
-      VectorGridFunctionSpace(const typename Traits::EntitySet& es, std::shared_ptr<const FEM> fem,
+      UnorderedVectorGridFunctionSpace(const typename Traits::EntitySet& es, std::shared_ptr<const FEM> fem,
                                     const Backend& backend = Backend(), const LeafBackend& leaf_backend = LeafBackend(),
                                     const OrderingTag& ordering_tag = OrderingTag(), const LeafOrderingTag& leaf_ordering_tag = LeafOrderingTag())
               : BaseT(create_components(es, fem, leaf_backend, leaf_ordering_tag))
@@ -213,83 +178,25 @@ namespace Dune {
             this->child(i).name(ns.str());
           }
       }
-
-      //! Direct access to the DOF ordering.
-      const Ordering &ordering() const
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return *_ordering;
-      }
-
-      //! Direct access to the DOF ordering.
-      Ordering &ordering()
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return *_ordering;
-      }
-
-      //! Direct access to the storage of the DOF ordering.
-      std::shared_ptr<const Ordering> orderingStorage() const
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return _ordering;
-      }
-
-      //! Direct access to the storage of the DOF ordering.
-      std::shared_ptr<Ordering> orderingStorage()
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return _ordering;
-      }
-
-    private:
-
-      // This method here is to avoid a double update of the Ordering when the user calls
-      // GFS::update() before GFS::ordering().
-      void create_ordering() const
-      {
-        _ordering = std::make_shared<Ordering>(ordering_transformation::transform(*this));
-      }
-
-      mutable std::shared_ptr<Ordering> _ordering;
-
     };
+
+
+    template<typename GV,
+             typename FEM,
+             std::size_t k,
+             typename Backend,
+             typename LeafBackend,
+             typename Constraints = NoConstraints,
+             typename OrderingTag = LexicographicOrderingTag,
+             typename LeafOrderingTag = DefaultLeafOrderingTag>
+    class VectorGridFunctionSpace
+      : public OrderedGridFunctionSpace<UnorderedVectorGridFunctionSpace<GV,FEM,k,Backend,LeafBackend,Constraints,OrderingTag,LeafOrderingTag>>
+    {
+      using Base = OrderedGridFunctionSpace<UnorderedVectorGridFunctionSpace<GV,FEM,k,Backend,LeafBackend,Constraints,OrderingTag,LeafOrderingTag>>;
+    public:
+      using Base::Base;
+    };
+
 
   } // namespace PDELab
 } // namespace Dune

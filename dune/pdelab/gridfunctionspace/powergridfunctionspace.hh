@@ -10,7 +10,7 @@
 #include <dune/typetree/powernode.hh>
 
 #include <dune/pdelab/gridfunctionspace/powercompositegridfunctionspacebase.hh>
-#include <dune/pdelab/gridfunctionspace/datahandleprovider.hh>
+#include <dune/pdelab/gridfunctionspace/orderedgridfunctionspace.hh>
 #include <dune/pdelab/gridfunctionspace/tags.hh>
 
 namespace Dune {
@@ -37,15 +37,14 @@ namespace Dune {
     template<typename T, std::size_t k,
              typename Backend,
              typename OrderingTag = LexicographicOrderingTag>
-    class PowerGridFunctionSpace
+    class UnorderedPowerGridFunctionSpace
       : public TypeTree::PowerNode<T,k>
       , public PowerCompositeGridFunctionSpaceBase<
-          PowerGridFunctionSpace<T, k, Backend, OrderingTag>,
+          UnorderedPowerGridFunctionSpace<T, k, Backend, OrderingTag>,
           typename T::Traits::EntitySet,
           Backend,
           OrderingTag,
           k>
-      , public DataHandleProvider<PowerGridFunctionSpace<T,k,Backend,OrderingTag> >
     {
 
     public:
@@ -57,7 +56,7 @@ namespace Dune {
     private:
 
       typedef PowerCompositeGridFunctionSpaceBase<
-        PowerGridFunctionSpace,
+        UnorderedPowerGridFunctionSpace,
         typename T::Traits::EntitySet,
         Backend,
         OrderingTag,
@@ -65,7 +64,7 @@ namespace Dune {
         > ImplementationBase;
 
       friend class PowerCompositeGridFunctionSpaceBase<
-        PowerGridFunctionSpace,
+        UnorderedPowerGridFunctionSpace,
         typename T::Traits::EntitySet,
         Backend,
         OrderingTag,
@@ -74,31 +73,7 @@ namespace Dune {
       template<typename,typename>
       friend class GridFunctionSpaceBase;
 
-      typedef TypeTree::TransformTree<PowerGridFunctionSpace,
-                                      gfs_to_ordering<PowerGridFunctionSpace>
-                                      > ordering_transformation;
-
     public:
-
-      typedef typename ordering_transformation::Type Ordering;
-
-      //! extract type for storing constraints
-      template<typename E>
-      struct ConstraintsContainer
-      {
-        typedef typename std::conditional<
-          std::is_same<
-            typename T::template ConstraintsContainer<E>::Type,
-            EmptyTransformation
-            >::value,
-          EmptyTransformation,
-          ConstraintsTransformation<
-            typename Ordering::Traits::DOFIndex,
-            typename Ordering::Traits::ContainerIndex,
-            E
-            >
-          >::type Type;
-      };
 
       //! export traits class
       typedef typename ImplementationBase::Traits Traits;
@@ -110,17 +85,17 @@ namespace Dune {
        * @param backend       backend object
        * @param ordering_tag  ordering tag object
        */
-      PowerGridFunctionSpace(const std::array<std::shared_ptr<T>,k>& container, const Backend& backend = Backend(), const OrderingTag ordering_tag = OrderingTag())
+      UnorderedPowerGridFunctionSpace(const std::array<std::shared_ptr<T>,k>& container, const Backend& backend = Backend(), const OrderingTag ordering_tag = OrderingTag())
         : BaseT(container)
         , ImplementationBase(backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace(T& c, const Backend& backend = Backend(), const OrderingTag ordering_tag = OrderingTag())
+      UnorderedPowerGridFunctionSpace(T& c, const Backend& backend = Backend(), const OrderingTag ordering_tag = OrderingTag())
         : BaseT(c)
         , ImplementationBase(backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               const Backend& backend = Backend(),
                               const OrderingTag ordering_tag = OrderingTag())
@@ -128,7 +103,7 @@ namespace Dune {
         , ImplementationBase(backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               const Backend& backend = Backend(),
@@ -137,7 +112,7 @@ namespace Dune {
         , ImplementationBase(backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               T& c3,
@@ -147,7 +122,7 @@ namespace Dune {
         , ImplementationBase(backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               T& c3,
@@ -158,7 +133,7 @@ namespace Dune {
         , ImplementationBase(backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               T& c3,
@@ -170,7 +145,7 @@ namespace Dune {
         , ImplementationBase(backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               T& c3,
@@ -183,7 +158,7 @@ namespace Dune {
         , ImplementationBase(backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               T& c3,
@@ -197,7 +172,7 @@ namespace Dune {
         , ImplementationBase(backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               T& c3,
@@ -212,7 +187,7 @@ namespace Dune {
         , ImplementationBase(backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               T& c3,
@@ -229,87 +204,24 @@ namespace Dune {
       {}
 
       template<typename Child0, typename... Children>
-      PowerGridFunctionSpace(std::shared_ptr<Child0> child0, std::shared_ptr<Children>... children)
+      UnorderedPowerGridFunctionSpace(std::shared_ptr<Child0> child0, std::shared_ptr<Children>... children)
         : BaseT(child0, children...)
         , ImplementationBase(Backend(),OrderingTag())
       {}
 
-      //! Direct access to the DOF ordering.
-      const Ordering &ordering() const
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return *_ordering;
-      }
-
-      //! Direct access to the DOF ordering.
-      Ordering &ordering()
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return *_ordering;
-      }
-
-      //! Direct access to the storage of the DOF ordering.
-      std::shared_ptr<const Ordering> orderingStorage() const
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return _ordering;
-      }
-
-      //! Direct access to the storage of the DOF ordering.
-      std::shared_ptr<Ordering> orderingStorage()
-      {
-        if (!this->isRootSpace())
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Ordering can only be obtained for root space in GridFunctionSpace tree.");
-          }
-        if (!_ordering)
-          {
-            create_ordering();
-            this->update(*_ordering);
-          }
-        return _ordering;
-      }
-
-    private:
-
-      // This method here is to avoid a double update of the Ordering when the user calls
-      // GFS::update() before GFS::ordering().
-      void create_ordering() const
-      {
-        _ordering = std::make_shared<Ordering>(ordering_transformation::transform(*this));
-      }
-
-      mutable std::shared_ptr<Ordering> _ordering;
-
     };
+
+    template<typename T, std::size_t k,
+             typename Backend,
+             typename OrderingTag = LexicographicOrderingTag>
+    class PowerGridFunctionSpace
+      : public OrderedGridFunctionSpace<UnorderedPowerGridFunctionSpace<T,k,Backend,OrderingTag>>
+    {
+      using Base = OrderedGridFunctionSpace<UnorderedPowerGridFunctionSpace<T,k,Backend,OrderingTag>>;
+    public:
+      using Base::Base;
+    };
+
 
   } // namespace PDELab
 } // namespace Dune
