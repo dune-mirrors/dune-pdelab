@@ -165,8 +165,9 @@ namespace Dune {
           suffix.pop_back();
           return this->child(child).size(suffix);
         } else {
-          auto it = std::upper_bound(this->_child_block_offsets.begin(), this->_child_block_offsets.end(), suffix.back());
-          std::size_t child = *std::prev(it);
+          auto it = std::prev(std::upper_bound(this->_child_block_offsets.begin(), this->_child_block_offsets.end(), suffix.back()));
+          std::size_t child = std::distance(this->_child_block_offsets.begin(), it);
+          suffix.back() -= *it;
           return this->child(child).size(suffix);
         }
       }
@@ -289,8 +290,9 @@ namespace Dune {
           assert(this->degree() > _child);
           suffix.pop_back();
         } else {
-          auto it = std::upper_bound(this->_child_block_offsets.begin(), this->_child_block_offsets.end(), suffix.back());
-          _child = *std::prev(it);
+          auto it = std::prev(std::upper_bound(this->_child_block_offsets.begin(), this->_child_block_offsets.end(), suffix.back()));
+          _child = std::distance(this->_child_block_offsets.begin(), it);
+          suffix.back() -= *it;
         }
 
         Hybrid::forEach(indices, [&](auto i){

@@ -37,6 +37,8 @@ namespace Dune {
 
     public:
 
+      static std::string name() {return "DirectLeafLocalOrdering";}
+
       typedef LocalOrderingTraits<ES,DI,CI> Traits;
 
     private:
@@ -69,8 +71,10 @@ namespace Dune {
         const typename Traits::SizeType s = size(ei);
 
         // Handle DOF indices
-        for (typename Traits::SizeType i = 0; i < s; ++i, ++di_out)
+        for (typename Traits::SizeType i = 0; i < s; ++i, ++di_out) {
           di_out->treeIndex().push_back(i);
+          di_out->entityIndex() = ei;
+        }
 
         // only return the size, as the tree visitor expects that from all leaf nodes.
         // The actual index processing is done by the specialized GridViewOrdering.
@@ -107,15 +111,18 @@ namespace Dune {
       typename Traits::SizeType size(const typename Traits::SizeType geometry_type_index, const typename Traits::SizeType entity_index) const
       {
         typedef typename Traits::SizeType size_type;
-        if (_fixed_size)
+        if (_fixed_size) {
           return _gt_dof_sizes[geometry_type_index];
-        else if (_gt_used[geometry_type_index])
-          {
-            const size_type index = _gt_entity_offsets[geometry_type_index] + entity_index;
+        } else if (_gt_used[geometry_type_index]) {
+          const size_type index = _gt_entity_offsets[geometry_type_index] + entity_index;
+          if (_container_blocked) {
+            return _entity_dof_sizes[index+1];
+          } else {
             return _entity_dof_offsets[index+1] - _entity_dof_offsets[index];
           }
-        else
+        } else {
           return 0;
+        }
       }
 
       typename Traits::SizeType size(const typename Traits::SizeType geometry_type_index, const typename Traits::SizeType entity_index, const typename Traits::SizeType child_index) const
@@ -129,11 +136,11 @@ namespace Dune {
         return 0;
       }
 
-      DirectLeafLocalOrdering(const std::shared_ptr<const FEM>& fem, const ES& es)
+      DirectLeafLocalOrdering(const std::shared_ptr<const FEM>& fem, const ES& es, bool container_blocked)
         : _fem(fem)
         , _es(es)
         , _fixed_size(false)
-        , _container_blocked(false)
+        , _container_blocked(container_blocked)
         , _gfs_data(nullptr)
       {}
 
@@ -238,7 +245,7 @@ namespace Dune {
               _gt_entity_offsets[GlobalGeometryTypeIndex::index(*it) + 1] = _es.indexSet().size(*it);
           }
         std::partial_sum(_gt_entity_offsets.begin(),_gt_entity_offsets.end(),_gt_entity_offsets.begin());
-        _entity_dof_offsets.assign(_gt_entity_offsets.back() + 1,0);
+        _entity_dof_sizes.assign(_gt_entity_offsets.back() + 1,0);
 
         // Don't claim fixed size for any codim for now
         _codim_fixed_size.reset();
@@ -267,7 +274,7 @@ namespace Dune {
 
             const size_type entity_index = _es.indexSet().subIndex(cell,key.subEntity(),key.codim());
             const size_type index = _gt_entity_offsets[geometry_type_index] + entity_index;
-            _local_gt_dof_sizes[geometry_type_index] = _entity_dof_offsets[index+1] = std::max(_entity_dof_offsets[index+1],static_cast<size_type>(key.index() + 1));
+            _local_gt_dof_sizes[geometry_type_index] = _entity_dof_sizes[index+1] = std::max(_entity_dof_sizes[index+1],static_cast<size_type>(key.index() + 1));
           }
 
         if (_fixed_size_possible)
@@ -301,8 +308,23 @@ namespace Dune {
           }
         else
           {
+            _entity_dof_offsets.resize(_entity_dof_sizes.size());
             // convert per-entity sizes to offsets
-            std::partial_sum(_entity_dof_offsets.begin(),_entity_dof_offsets.end(),_entity_dof_offsets.begin());
+            if (_container_blocked) {
+              partial_sum(
+                begin(_entity_dof_sizes),
+                end(_entity_dof_sizes),
+                begin(_entity_dof_offsets),
+                [](auto& offset, auto& size){return (size==0) ? offset : offset+1;}
+              );
+            } else {
+              _entity_dof_offsets = std::move(_entity_dof_sizes);
+              partial_sum(
+                begin(_entity_dof_offsets),
+                end(_entity_dof_offsets),
+                begin(_entity_dof_offsets)
+              );
+            }
             _fixed_size = false;
             _codim_fixed_size.reset();
           }
@@ -339,6 +361,7 @@ namespace Dune {
       std::vector<typename Traits::SizeType> _gt_entity_offsets;
       std::vector<typename Traits::SizeType> _gt_dof_sizes;
       std::vector<typename Traits::SizeType> _entity_dof_offsets;
+      std::vector<typename Traits::SizeType> _entity_dof_sizes;
       std::vector<typename Traits::SizeType> _local_gt_dof_sizes;
 
       // This is only here to make the visitor happy that traverses all

@@ -32,7 +32,7 @@ namespace Dune {
         friend Backend::impl::Wrapper<C>;
 
       public:
-        typedef typename C::field_type ElementType;
+        typedef typename Dune::FieldTraits<C>::field_type ElementType;
         typedef ElementType E;
         typedef C Container;
         typedef GFS GridFunctionSpace;
@@ -62,7 +62,7 @@ namespace Dune {
 
         BlockVector(const BlockVector& rhs)
           : _gfs(rhs._gfs)
-          , _container(std::make_shared<Container>(_gfs->ordering().blockCount()))
+          , _container(std::make_shared<Container>())
         {
           resize();
           (*_container) = rhs.native();
@@ -238,12 +238,12 @@ namespace Dune {
 
         E& operator[](const ContainerIndex& ci)
         {
-          return ISTL::access_vector_element(ISTL::container_tag(*_container),*_container,ci,ci.size()-1);
+          return ISTL::access_vector_element(*_container,ci,ci.size()-1);
         }
 
         const E& operator[](const ContainerIndex& ci) const
         {
-          return ISTL::access_vector_element(ISTL::container_tag(*_container),*_container,ci,ci.size()-1);
+          return ISTL::access_vector_element(*_container,ci,ci.size()-1);
         }
 
         typename Dune::template FieldTraits<E>::real_type two_norm2() const
@@ -370,20 +370,37 @@ namespace Dune {
     // can't have the closing of the namespace inside the #ifndef DOXYGEN block
     } // namespace ISTL
 
-#ifndef DOXYGEN
-
-    namespace Backend {
+   namespace Backend {
       namespace impl {
 
         template<Dune::PDELab::ISTL::Blocking blocking, std::size_t block_size, typename GFS, typename E>
-        struct BackendVectorSelectorHelper<ISTL::VectorBackend<blocking,block_size>, GFS, E>
-          : public ISTL::BlockVectorSelectorHelper<GFS,E>
-        {};
+        struct ContainerVectorSelectorHelper<PDELab::ISTL::VectorBackend<blocking,block_size>, GFS, E>
+        {
+          using Type = typename TypeTree::AccumulateType<GFS,ISTL::vector_creation_policy<E>>::type::vector_type;
+        };
+
+        template<Dune::PDELab::ISTL::Blocking blocking, std::size_t block_size, typename GFS, typename E>
+        struct BackendVectorSelectorHelper<PDELab::ISTL::VectorBackend<blocking,block_size>, GFS, E>
+        {
+          using Container = typename ContainerVectorSelectorHelper<PDELab::ISTL::VectorBackend<blocking,block_size>,GFS,E>::Type;
+          using Type = ISTL::BlockVector<GFS,Container>;
+        };
+
+        template<Dune::PDELab::ISTL::Blocking NodeBlocking, typename GFS, typename E>
+        struct ContainerVectorSelectorHelper<PDELab::ISTL::BackendOptions<NodeBlocking>, GFS, E>
+        {
+          using Type = decltype(ISTL::registerVectorContainer<GFS,E>(PDELab::ISTL::BackendOptions<NodeBlocking>{}));
+        };
+
+        template<Dune::PDELab::ISTL::Blocking NodeBlocking, typename GFS, typename E>
+        struct BackendVectorSelectorHelper<PDELab::ISTL::BackendOptions<NodeBlocking>, GFS, E>
+        {
+          using Container = typename ContainerVectorSelector<GFS,E>::Type;
+          using Type = ISTL::BlockVector<GFS,Container>;
+        };
 
       } // namespace impl
     } // namespace Backend
-
-#endif // DOXYGEN
 
   } // namespace PDELab
 } // namespace Dune

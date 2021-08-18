@@ -193,6 +193,7 @@ namespace Dune {
               {
                 ci_out->push_back(i);
                 di_out->treeIndex().push_back(i);
+                di_out->entityIndex() = ei;
               }
             return size;
           }
@@ -236,13 +237,17 @@ namespace Dune {
 
       typename Traits::SizeType size(const typename Traits::SizeType geometry_type_index, const typename Traits::SizeType entity_index) const
       {
+        if (!_gt_used[geometry_type_index])
+          return 0;
+
+        if (_container_blocked && _child_count > 0)
+          return _child_count;
+
         if (_fixed_size)
           return _child_count > 0
             ? _gt_dof_offsets[geometry_type_index * _child_count + _child_count - 1]
             : _gt_dof_offsets[geometry_type_index];
 
-        if (!_gt_used[geometry_type_index])
-          return 0;
 
         return _child_count > 0
           ? _entity_dof_offsets[(_gt_entity_offsets[geometry_type_index] + entity_index) * _child_count + _child_count - 1]
@@ -301,21 +306,27 @@ namespace Dune {
           std::size_t _child;
 
           if (node.containerBlocked()) {
-            // in this case back index is the child ordering itself
-            _child = back_index;
             suffix.pop_back();
+            _child = back_index;
           } else {
             // here we need to find the child that describes the back_index (solve child in map_lfs_indices)
             const size_type gt_index = Traits::DOFIndexAccessor::GeometryIndex::geometryType(index);
+            assert(_gt_used[gt_index]);
             const size_type entity_index = Traits::DOFIndexAccessor::GeometryIndex::entityIndex(index);
-            auto dof_begin = node._fixed_size ? node._gt_dof_offsets.begin() : node._entity_dof_offsets.begin();
-            auto dof_end = node._fixed_size ? node._gt_dof_offsets.end() : node._entity_dof_offsets.end();
-            auto dof_it = std::prev(std::upper_bound(dof_begin, dof_end, back_index));
-            size_type dof_dist = std::distance(dof_begin, dof_it);
-            if (node._fixed_size)
-              _child = dof_dist - gt_index * node._child_count + 1;
-            else
-              _child = dof_dist - (node._gt_entity_offsets[gt_index] + entity_index) * node._child_count + 1;
+            auto dof_begin = node._fixed_size ? node._gt_dof_offsets.begin(): node._entity_dof_offsets.begin();
+            if (node._fixed_size) {
+              dof_begin += gt_index * TypeTree::degree(node);
+            } else {
+              dof_begin += (_gt_entity_offsets[gt_index] + entity_index) * TypeTree::degree(node);
+            }
+            auto dof_end = dof_begin + TypeTree::degree(node);
+            auto dof_it = std::upper_bound(dof_begin, dof_end, back_index);
+            if (dof_it != dof_begin) {
+              std::advance(dof_it, -1);
+              assert(suffix.back() >= *dof_it);
+              suffix.back() -= *dof_it;
+            }
+            _child = std::distance(dof_begin, dof_it);
           }
 
           assert(node.degree() > _child);

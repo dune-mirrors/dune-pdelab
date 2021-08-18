@@ -104,16 +104,9 @@ namespace Dune {
 
         if (localOrdering()._fixed_size)
           {
-            if (_container_blocked)
+            if (localOrdering()._container_blocked)
               {
-                // This check is needed to avoid a horrid stream of compiler warnings about
-                // exceeding array bounds in ReservedVector!
-                if (ci.size() < ci.capacity())
-                  ci.push_back(_gt_dof_offsets[geometry_type_index] + entity_index);
-                else
-                  {
-                    DUNE_THROW(Dune::Exception,"Container blocking incompatible with backend structure");
-                  }
+                ci.push_back(_gt_dof_offsets[geometry_type_index] + entity_index);
               }
             else
               {
@@ -122,16 +115,9 @@ namespace Dune {
           }
         else
           {
-            if (_container_blocked)
+            if (localOrdering()._container_blocked)
               {
-                // This check is needed to avoid a horrid stream of compiler warnings about
-                // exceeding array bounds in ReservedVector!
-                if (ci.size() < ci.capacity())
-                  ci.push_back(localOrdering()._gt_entity_offsets[geometry_type_index] + entity_index);
-                else
-                  {
-                    DUNE_THROW(Dune::Exception,"Container blocking incompatible with backend structure");
-                  }
+                ci.push_back(localOrdering()._entity_dof_offsets[localOrdering()._gt_entity_offsets[geometry_type_index] + entity_index]);
               }
             else
               {
@@ -148,7 +134,7 @@ namespace Dune {
 
         if (localOrdering()._fixed_size)
           {
-            if (_container_blocked)
+            if (localOrdering()._container_blocked)
               {
                 for (ItIn in = begin; in != end; ++in, ++out)
                   {
@@ -175,7 +161,7 @@ namespace Dune {
           }
         else
           {
-            if (_container_blocked)
+            if (localOrdering()._container_blocked)
               {
                 for (ItIn in = begin; in != end; ++in, ++out)
                   {
@@ -184,7 +170,7 @@ namespace Dune {
                     const size_type geometry_type_index = Traits::DOFIndexAccessor::geometryType(*in);
                     const size_type entity_index = Traits::DOFIndexAccessor::entityIndex(*in);
                     assert(localOrdering()._gt_used[geometry_type_index]);
-                    out->push_back(localOrdering()._gt_entity_offsets[geometry_type_index] + entity_index);
+                    out->push_back(localOrdering()._entity_dof_offsets[localOrdering()._gt_entity_offsets[geometry_type_index] + entity_index]);
                   }
               }
             else
@@ -219,7 +205,7 @@ namespace Dune {
         if (localOrdering()._fixed_size)
           {
             size_type size = localOrdering()._gt_dof_sizes[geometry_type_index];
-            if (_container_blocked)
+            if (localOrdering()._container_blocked)
               {
                 for (size_type i = 0; i < size; ++i, ++ci_out)
                   {
@@ -240,17 +226,18 @@ namespace Dune {
         else
           {
             size_type index = localOrdering()._gt_entity_offsets[geometry_type_index] + entity_index;
-            size_type size = localOrdering()._entity_dof_offsets[index+1] - localOrdering()._entity_dof_offsets[index];
-            if (_container_blocked)
+            if (localOrdering()._container_blocked)
               {
+                size_type size = localOrdering()._entity_dof_sizes[index+1];
                 for (size_type i = 0; i < size; ++i, ++ci_out)
                   {
                     ci_out->push_back(i);
-                    ci_out->push_back(index);
+                    ci_out->push_back(localOrdering()._entity_dof_offsets[index]);
                   }
               }
             else
               {
+                size_type size = localOrdering()._entity_dof_offsets[index+1] - localOrdering()._entity_dof_offsets[index];
                 for (size_type i = 0; i < size; ++i, ++ci_out)
                   {
                     ci_out->push_back(i);
@@ -273,7 +260,6 @@ namespace Dune {
       using BaseT::_max_local_size;
       using BaseT::_size;
       using BaseT::_block_count;
-      using BaseT::_container_blocked;
       using BaseT::_fixed_size;
       using BaseT::_codim_used;
       using BaseT::_codim_fixed_size;

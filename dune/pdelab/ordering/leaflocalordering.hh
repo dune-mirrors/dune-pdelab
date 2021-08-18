@@ -33,6 +33,8 @@ namespace Dune {
 
     public:
 
+      static std::string name() {return "LeafLocalOrdering";}
+
       typedef typename BaseT::Traits Traits;
 
       LeafLocalOrdering(const std::shared_ptr<const FEM>& fem, const ES& es, bool backend_blocked, typename BaseT::GFSData* gfs_data)
@@ -153,7 +155,7 @@ namespace Dune {
             for (size_type i = 0; i < gt_sizes.size(); ++i)
               {
                 if (this->_gt_dof_offsets[i] == this->GT_UNUSED)
-                  this->_gt_dof_offsets[i] = gt_sizes[i];
+                  this->_gt_dof_offsets[i] = this->_container_blocked ? 1 : gt_sizes[i];
                 else if (this->_gt_dof_offsets[i] != gt_sizes[i])
                 {
                   this->_fixed_size_possible = false;
@@ -187,12 +189,12 @@ namespace Dune {
 
       static transformed_type transform(const GFS& gfs, const Transformation& t)
       {
-        return transformed_type(gfs.finiteElementMapStorage(),gfs.entitySet(),false,&const_cast<GFS*>(gfs));
+        return transformed_type(gfs.finiteElementMapStorage(),gfs.entitySet(),gfs.backend().blocked(gfs),&const_cast<GFS*>(gfs));
       }
 
       static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t)
       {
-        return std::make_shared<transformed_type>(gfs->finiteElementMapStorage(),gfs->entitySet(),false,const_cast<GFS*>(gfs.get()));
+        return std::make_shared<transformed_type>(gfs->finiteElementMapStorage(),gfs->entitySet(),gfs->backend().blocked(*gfs),const_cast<GFS*>(gfs.get()));
       }
 
     };

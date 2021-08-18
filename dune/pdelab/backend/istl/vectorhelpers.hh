@@ -21,59 +21,25 @@ namespace Dune {
 
     namespace ISTL {
 
-      template<typename CI, typename Block>
-      typename Block::field_type&
-      access_vector_element(tags::field_vector_1, Block& b, const CI& ci, int i)
+      template<class CI, typename Block>
+      const typename FieldTraits<Block>::field_type&
+      access_vector_element(const Block& b, const CI& ci, const int& i)
       {
-        // usually we are at the end of the multi-index (-1),
-        // but we might be in a PowerFunctionSpace of size 1,
-        // then we are at the lowest multi-index component (0)
-        assert(i == -1 || i == 0);
-        return b[0];
+        if constexpr (std::is_convertible<Block,typename FieldTraits<Block>::field_type>{})
+          return b;
+        else
+          return access_vector_element(b[ci[i]],ci,i-1);
       }
 
-      template<typename CI, typename Block>
-      typename Block::field_type&
-      access_vector_element(tags::field_vector_n, Block& b, const CI& ci, int i)
+      template<class CI, class Block>
+      typename FieldTraits<Block>::field_type&
+      access_vector_element(Block& b, const CI& ci, const int& i)
       {
-        assert(i == 0);
-        return b[ci[0]];
+        if constexpr (std::is_convertible<Block,typename FieldTraits<Block>::field_type>{})
+          return b;
+        else
+          return access_vector_element(b[ci[i]],ci,i-1);
       }
-
-      template<typename CI, typename Block>
-      typename Block::field_type&
-      access_vector_element(tags::block_vector, Block& b, const CI& ci, int i)
-      {
-        return access_vector_element(container_tag(b[ci[i]]),b[ci[i]],ci,i-1);
-      }
-
-
-      template<typename CI, typename Block>
-      const typename Block::field_type&
-      access_vector_element(tags::field_vector_1, const Block& b, const CI& ci, int i)
-      {
-        // usually we are at the end of the multi-index (-1),
-        // but we might be in a PowerFunctionSpace of size 1,
-        // then we are at the lowest multi-index component (0)
-        assert(i == -1 || i == 0);
-        return b[0];
-      }
-
-      template<typename CI, typename Block>
-      const typename Block::field_type&
-      access_vector_element(tags::field_vector_n, const Block& b, const CI& ci, int i)
-      {
-        assert(i == 0);
-        return b[ci[0]];
-      }
-
-      template<typename CI, typename Block>
-      const typename Block::field_type&
-      access_vector_element(tags::block_vector, const Block& b, const CI& ci, int i)
-      {
-        return access_vector_element(container_tag(b[ci[i]]),b[ci[i]],ci,i-1);
-      }
-
 
       template<typename Vector>
       [[deprecated]]

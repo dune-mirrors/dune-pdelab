@@ -30,8 +30,10 @@ namespace Dune {
 
     public:
 
-      LeafGridViewOrdering(const typename NodeT::NodeStorage& local_ordering, bool container_blocked, typename BaseT::GFSData* gfs_data)
-        : BaseT(local_ordering, container_blocked, gfs_data)
+      static std::string name() {return "LeafGridViewOrdering";}
+
+      LeafGridViewOrdering(const typename NodeT::NodeStorage& local_ordering, typename BaseT::GFSData* gfs_data)
+        : BaseT(local_ordering, true, gfs_data)
         , _es(this->template child<0>().entitySet())
       {}
 
@@ -57,6 +59,10 @@ namespace Dune {
 
       using BaseT::size;
 
+      const ES& entitySet() const {
+        return _es;
+      }
+
       /**
        * @brief Gives the size for a given suffix
        * @param suffix  MultiIndex with a partial path to a container
@@ -72,7 +78,7 @@ namespace Dune {
         if (suffix.size() == Traits::ContainerIndex::max_depth)
           return 0; // all indices in suffix were consumed, no more sizes to provide
         if (suffix.size() == 0) // suffix wants the size of this depth
-          return _block_count; // blocked or not, this gives the number of blocks/dofs in next node hierarchy
+          return _block_count;
 
         // we first have to figure out the entity index
         typename Traits::DOFIndex::EntityIndex entity_index;
@@ -85,33 +91,26 @@ namespace Dune {
         auto& _entity_dof_offsets = this->localOrdering()._entity_dof_offsets;
         bool _fixed_size = this->localOrdering()._fixed_size;
         // we just need to make the inverse computation of the mapIndex funtion to find the entity index
-        if (_container_blocked) {
+        if (this->localOrdering()._container_blocked)
           suffix.pop_back();
-          auto gt_begin = _fixed_size ? _gt_dof_offsets.begin() : _gt_entity_offsets.begin();
-          auto gt_end = _fixed_size ? _gt_dof_offsets.end() : _gt_entity_offsets.end();
-          auto gt_it = std::prev(std::upper_bound(gt_begin, gt_end, back_index));
-          size_type gt = std::distance(gt_begin, gt_it);
-          assert(back_index >= *gt_it);
-          size_type ei = back_index - *gt_it;
-          Traits::DOFIndexAccessor::GeometryIndex::store(entity_index,gt,ei);
+
+        auto dof_begin = _fixed_size ? _gt_dof_offsets.begin() : _entity_dof_offsets.begin();
+        auto dof_end = _fixed_size ? _gt_dof_offsets.end() : _entity_dof_offsets.end();
+        auto dof_it = std::prev(std::upper_bound(dof_begin, dof_end, back_index));
+        size_type dof_dist = std::distance(dof_begin, dof_it);
+        if (_fixed_size) {
+          // On fixed size, entity index is not used down the tree. Set max to trigger segfault if this does not hold.
+          Traits::DOFIndexAccessor::GeometryIndex::store(entity_index,dof_dist,~size_type{0});
         } else {
-          auto dof_begin = _fixed_size ? _gt_dof_offsets.begin() : _entity_dof_offsets.begin();
-          auto dof_end = _fixed_size ? _gt_dof_offsets.end() : _entity_dof_offsets.end();
-          auto dof_it = std::prev(std::upper_bound(dof_begin, dof_end, back_index));
-          size_type dof_dist = std::distance(dof_begin, dof_it);
-          if (_fixed_size) {
-            // On fixed size, entity index is not used down the tree. Set max to trigger segfault if this does not hold.
-            Traits::DOFIndexAccessor::GeometryIndex::store(entity_index,dof_dist,~size_type{0});
-          } else {
-            auto gt_begin = _gt_entity_offsets.begin();
-            auto gt_end = _gt_entity_offsets.end();
-            auto gt_it = std::prev(std::upper_bound(gt_begin, gt_end, dof_dist));
-            size_type gt = std::distance(gt_begin, gt_it);
-            assert(dof_dist >= *gt_it);
-            size_type ei = dof_dist - *gt_it;
-            Traits::DOFIndexAccessor::GeometryIndex::store(entity_index,gt,ei);
-          }
+          auto gt_begin = _gt_entity_offsets.begin();
+          auto gt_end = _gt_entity_offsets.end();
+          auto gt_it = std::prev(std::upper_bound(gt_begin, gt_end, dof_dist));
+          size_type gt = std::distance(gt_begin, gt_it);
+          assert(dof_dist >= *gt_it);
+          size_type ei = dof_dist - *gt_it;
+          Traits::DOFIndexAccessor::GeometryIndex::store(entity_index,gt,ei);
         }
+
         // then, the local ordering knows the size for a given entity.
         return this->localOrdering().size(suffix, entity_index);
       }
@@ -174,7 +173,7 @@ namespace Dune {
                 size_type gt_size = lo.size(gt_index,0);
                 size_type entity_count = _es.indexSet().size(gt);
                 _size += gt_size * entity_count;
-                if (_container_blocked)
+                if (this->localOrdering()._container_blocked)
                   gt_size = gt_size > 0;
                 _gt_dof_offsets[gt_index + 1] = gt_size * entity_count;
               }
@@ -184,7 +183,11 @@ namespace Dune {
           }
         else
           {
-            _block_count = _size = lo._entity_dof_offsets.back();
+            _size = lo._entity_dof_offsets.back();
+            if (lo._container_blocked)
+              _block_count = lo._gt_entity_offsets.back();
+            else
+              _block_count = _size;
             _codim_fixed_size.reset();
           }
 
@@ -203,7 +206,6 @@ namespace Dune {
       using BaseT::_max_local_size;
       using BaseT::_size;
       using BaseT::_block_count;
-      using BaseT::_container_blocked;
       using BaseT::_fixed_size;
       using BaseT::_codim_used;
       using BaseT::_codim_fixed_size;
@@ -233,12 +235,14 @@ namespace Dune {
 
       static transformed_type transform(const GFS& gfs, const Transformation& t)
       {
-        return transformed_type(make_tuple(std::make_shared<LocalOrdering>(gfs.finiteElementMapStorage(),gfs.entitySet())),gfs.backend().blocked(gfs),const_cast<GFS*>(&gfs));
+        auto local_ordering = std::make_shared<LocalOrdering>(gfs.finiteElementMapStorage(),gfs.entitySet(), gfs.backend().blocked(gfs));
+        return transformed_type(make_tuple(local_ordering),const_cast<GFS*>(&gfs));
       }
 
       static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t)
       {
-        return std::make_shared<transformed_type>(make_tuple(std::make_shared<LocalOrdering>(gfs->finiteElementMapStorage(),gfs->entitySet())),gfs->backend().blocked(*gfs),const_cast<GFS*>(gfs.get()));
+        auto local_ordering = std::make_shared<LocalOrdering>(gfs->finiteElementMapStorage(),gfs->entitySet(),gfs->backend().blocked(*gfs));
+        return std::make_shared<transformed_type>(make_tuple(local_ordering),const_cast<GFS*>(gfs.get()));
       }
 
     };

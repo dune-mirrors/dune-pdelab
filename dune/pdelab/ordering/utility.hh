@@ -299,6 +299,10 @@ namespace Dune {
      */
     struct DummyDOFIndexIterator
     {
+      struct DummyEntityIndex {
+        template<class Other>
+        DummyEntityIndex& operator=(const Other& other){return *this;}
+      };
 
       typedef std::size_t size_type;
 
@@ -325,6 +329,11 @@ namespace Dune {
       DummyDOFIndexIterator& treeIndex()
       {
         return *this;
+      }
+
+      DummyEntityIndex entityIndex()
+      {
+        return DummyEntityIndex{};
       }
 
       bool operator==(const DummyDOFIndexIterator& r) const

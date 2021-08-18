@@ -412,8 +412,9 @@ namespace Dune {
                     for (size_type entity_index = 0; entity_index < entity_count; ++entity_index)
                       {
                         size_type carry = 0;
-                        for (size_type child_index = 0; child_index < TypeTree::degree(node); ++child_index)
-                          node._entity_dof_offsets[index++] = (carry += node.childOrdering(child_index).size(geometry_type_index,entity_index));
+                        for (size_type child_index = 0; child_index < TypeTree::degree(node); ++child_index) {
+                            node._entity_dof_offsets[index++] = (carry += node.childOrdering(child_index).size(geometry_type_index,entity_index));
+                        }
                       }
                   }
 
@@ -421,11 +422,13 @@ namespace Dune {
           }
       }
 
-      post_extract_per_entity_sizes(const ES& es_)
+      post_extract_per_entity_sizes(const ES& es_, bool container_blocked)
         : es(es_)
+        , _container_blocked{container_blocked}
       {}
 
       ES es;
+      bool _container_blocked;
 
     };
 
@@ -445,6 +448,7 @@ namespace Dune {
 
       static const bool consume_tree_index = false;
 
+      static std::string name() {return "GridViewOrdering";}
     private:
 
       typedef TypeTree::CompositeNode<LocalOrdering> NodeT;
@@ -455,6 +459,26 @@ namespace Dune {
 
       using EntitySet = typename Traits::EntitySet;
 
+    static bool isContainerBlocked(const typename NodeT::NodeStorage &local_ordering)
+    {
+      bool container_blocked = false;
+      // if any node in the local ordering is blocked, grid view shall be blocked
+      TypeTree::forEachNode(*std::get<0>(local_ordering),
+        [&](auto& node, auto& p){
+          if (node._container_blocked)
+            container_blocked = true;
+      });
+
+      // if grid view is blocked, all the leaf nodes shall be blocked
+      if (container_blocked)
+        TypeTree::forEachLeafNode(*std::get<0>(local_ordering),
+        [&](auto& node, auto& p){
+          if (not node._container_blocked)
+            DUNE_THROW(OrderingStructureError, "Grid view ordering is not allowed to be blocked if ont of the leaf nodes is not blocked");
+      });
+      return container_blocked;
+    }
+
     public:
       //! Construct ordering object
       /**
@@ -463,14 +487,10 @@ namespace Dune {
        * This particular ordering however can be used right away.
        */
       GridViewOrdering(const typename NodeT::NodeStorage &local_ordering,
-                       bool container_blocked,
                        typename BaseT::GFSData *gfs_data,
                        const EntitySet &entity_Set)
           : NodeT(local_ordering),
-            BaseT(*this, container_blocked, gfs_data, this), _es(entity_Set) {
-        // make sure to switch off container blocking handling in the local ordering,
-        // we already handle it in the GridViewOrdering
-        localOrdering().disable_container_blocking();
+            BaseT(*this, isContainerBlocked(local_ordering), gfs_data, this), _es(entity_Set) {
       }
 
 #ifndef DOXYGEN
@@ -504,6 +524,10 @@ namespace Dune {
 
 #endif // DOXYGEN
 
+      const typename Traits::EntitySet& entitySet() const {
+        return _es;
+      }
+
       using BaseT::size;
 
       /**
@@ -517,7 +541,7 @@ namespace Dune {
         if (suffix.size() == Traits::ContainerIndex::max_depth)
           return 0; // all indices in suffix were consumed, no more sizes to provide
         if (suffix.size() == 0) // suffix wants the size of this depth
-          return _block_count; // blocked or not, this gives the number of blocks/dofs in next node hierarchy
+          return _block_count;
 
         // we first have to figure out the entity index
         typename Traits::DOFIndex::EntityIndex entity_index;
@@ -525,32 +549,24 @@ namespace Dune {
         // the next index to find out its size
         auto back_index = suffix.back();
         // we just need to make the inverse computation of the mapIndex funtion to find the entity index
-        if (_container_blocked) {
+        if (_container_blocked)
           suffix.pop_back();
-          auto gt_begin = _fixed_size ? _gt_dof_offsets.begin() : _gt_entity_offsets.begin();
-          auto gt_end = _fixed_size ? _gt_dof_offsets.end() : _gt_entity_offsets.end();
-          auto gt_it = std::prev(std::upper_bound(gt_begin, gt_end, back_index));
-          size_type gt = std::distance(gt_begin, gt_it);
-          assert(back_index >= *gt_it);
-          size_type ei = back_index - *gt_it;
-          Traits::DOFIndexAccessor::GeometryIndex::store(entity_index,gt,ei);
+
+        auto dof_begin = _fixed_size ? _gt_dof_offsets.begin() : _entity_dof_offsets.begin();
+        auto dof_end = _fixed_size ? _gt_dof_offsets.end() : _entity_dof_offsets.end();
+        auto dof_it = std::prev(std::upper_bound(dof_begin, dof_end, back_index));
+        size_type dof_dist = std::distance(dof_begin, dof_it);
+        if (_fixed_size) {
+          // On fixed size, entity index is not used down the tree. Set max to trigger segfault if this does not hold.
+          Traits::DOFIndexAccessor::GeometryIndex::store(entity_index,dof_dist,~size_type{0});
         } else {
-          auto dof_begin = _fixed_size ? _gt_dof_offsets.begin() : _entity_dof_offsets.begin();
-          auto dof_end = _fixed_size ? _gt_dof_offsets.end() : _entity_dof_offsets.end();
-          auto dof_it = std::prev(std::upper_bound(dof_begin, dof_end, back_index));
-          size_type dof_dist = std::distance(dof_begin, dof_it);
-          if (_fixed_size) {
-            // On fixed size, entity index is not used down the tree. Set max to trigger segfault if this does not hold.
-            Traits::DOFIndexAccessor::GeometryIndex::store(entity_index,dof_dist,~size_type{0});
-          } else {
-            auto gt_begin = _gt_entity_offsets.begin();
-            auto gt_end = _gt_entity_offsets.end();
-            auto gt_it = std::prev(std::upper_bound(gt_begin, gt_end, dof_dist));
-            size_type gt = std::distance(gt_begin, gt_it);
-            assert(dof_dist >= *gt_it);
-            size_type ei = dof_dist - *gt_it;
-            Traits::DOFIndexAccessor::GeometryIndex::store(entity_index,gt,ei);
-          }
+          auto gt_begin = _gt_entity_offsets.begin();
+          auto gt_end = _gt_entity_offsets.end();
+          auto gt_it = std::prev(std::upper_bound(gt_begin, gt_end, dof_dist));
+          size_type gt = std::distance(gt_begin, gt_it);
+          assert(dof_dist >= *gt_it);
+          size_type ei = dof_dist - *gt_it;
+          Traits::DOFIndexAccessor::GeometryIndex::store(entity_index,gt,ei);
         }
         // then, the local ordering knows the size for a given entity.
         return localOrdering().size(suffix, entity_index);
@@ -586,17 +602,19 @@ namespace Dune {
         localOrdering().map_local_index(geometry_type_index,entity_index,di.treeIndex(),ci);
         if (_container_blocked)
           {
+            assert(not ci.empty() && "Grid View blocking is only possible if leaf nodes are also blocked!");
             if (_fixed_size)
               {
                 ci.push_back(_gt_dof_offsets[geometry_type_index] + entity_index);
               }
             else
               {
-                ci.push_back(_gt_entity_offsets[geometry_type_index] + entity_index);
+                ci.push_back(_entity_dof_offsets[_gt_entity_offsets[geometry_type_index] + entity_index]);
               }
           }
         else
           {
+            assert(ci.size() == 1 && "Grid View blocking is working in merged mode, every local ordering shall be not blocked and leaf node is the only node to push an index!");
             if (_fixed_size)
               {
                 ci.back() += _gt_dof_offsets[geometry_type_index] + entity_index * localOrdering().size(geometry_type_index,entity_index);
@@ -626,7 +644,7 @@ namespace Dune {
                 {
                   const size_type geometry_type_index = Traits::DOFIndexAccessor::geometryType(*in);
                   const size_type entity_index = Traits::DOFIndexAccessor::entityIndex(*in);
-                  out->push_back(_gt_entity_offsets[geometry_type_index] + entity_index);
+                  out->push_back(_entity_dof_offsets[_gt_entity_offsets[geometry_type_index] + entity_index]);
                 }
           }
         else if (_fixed_size)
@@ -670,7 +688,7 @@ namespace Dune {
             else
               for (; ci_out != ci_end; ++ci_out)
                 {
-                  ci_out->push_back(_gt_entity_offsets[geometry_type_index] + entity_index);
+                  ci_out->push_back(_entity_dof_offsets[_gt_entity_offsets[geometry_type_index] + entity_index]);
                 }
           }
         else if (_fixed_size)
@@ -743,7 +761,7 @@ namespace Dune {
                 visitor.set_cell(element);
                 TypeTree::applyToTree(localOrdering(),visitor);
               }
-            TypeTree::applyToTree(localOrdering(),post_extract_per_entity_sizes<ES>(_es));
+            TypeTree::applyToTree(localOrdering(),post_extract_per_entity_sizes{_es, _container_blocked});
           }
 
         _codim_used = localOrdering()._codim_used;
@@ -790,7 +808,8 @@ namespace Dune {
             _entity_dof_offsets.assign(_gt_entity_offsets.back()+1,0);
             _block_count = 0;
 
-            size_type carry = 0;
+            size_type carry_size = 0;
+            size_type carry_block = 0;
             size_type index = 0;
             for (size_type gt_index = 0; gt_index < GlobalGeometryTypeIndex::size(dim); ++gt_index)
               {
@@ -800,14 +819,13 @@ namespace Dune {
                 for (size_type entity_index = 0; entity_index < entity_count; ++entity_index)
                   {
                     const size_type size = localOrdering().size(gt_index,entity_index);
-                    _entity_dof_offsets[++index] = (carry += size);
-                    _block_count += (size > 0);
+                    carry_size += size;
+                    carry_block += (_container_blocked ? (size > 0) : size);
+                    _entity_dof_offsets[++index] = carry_block;
                   }
               }
-            _size = _entity_dof_offsets.back();
-
-            if (!_container_blocked)
-              _block_count = _size;
+            _size = carry_size;
+            _block_count = carry_block;
 
             _codim_fixed_size.reset();
           }

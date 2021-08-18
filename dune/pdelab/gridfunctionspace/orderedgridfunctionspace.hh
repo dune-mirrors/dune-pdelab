@@ -4,6 +4,10 @@
 #define DUNE_PDELAB_GRIDFUNCTIONSPACE_ORDEREDGRIDFUNCTIONSPACE_HH
 
 #include <dune/pdelab/gridfunctionspace/datahandleprovider.hh>
+#include <dune/pdelab/ordering/transformations.hh>
+#include <dune/pdelab/ordering/lexicographicordering.hh>
+#include <dune/pdelab/ordering/decorator.hh>
+#include <dune/pdelab/ordering/entityblockedlocalordering.hh>
 
 namespace Dune {
 namespace PDELab {
@@ -87,6 +91,16 @@ class OrderedGridFunctionSpace
 public:
   //! Inherit constructor from UnorderedGFS
   using UnorderedGFS::UnorderedGFS;
+
+  OrderedGridFunctionSpace(UnorderedGFS &&ugfs)
+      : UnorderedGFS(std::move(ugfs)) {}
+
+  OrderedGridFunctionSpace(const UnorderedGFS &ugfs)
+      : UnorderedGFS(ugfs) {}
+
+  OrderedGridFunctionSpace(std::shared_ptr<UnorderedGFS> ugfs)
+      : UnorderedGFS(*ugfs)
+    {} // TODO help!
 
   //! Ordering tree type
   using Ordering = typename ordering_transformation::Type;

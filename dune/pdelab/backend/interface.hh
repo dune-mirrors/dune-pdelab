@@ -15,6 +15,19 @@ namespace Dune {
         // This class needs to be specialized by each backend and return the correct
         // vector wrapper type via the nested type named "type"
         template<typename Backend, typename GridFunctionSpace, typename FieldType>
+        struct ContainerVectorSelectorHelper
+        {};
+
+        template<typename GridFunctionSpace, typename FieldType>
+        struct ContainerVectorSelector
+        {
+          typedef typename GridFunctionSpace::Traits::Backend Backend;
+          typedef typename ContainerVectorSelectorHelper<Backend, GridFunctionSpace, FieldType>::Type Type;
+        };
+
+        // This class needs to be specialized by each backend and return the correct
+        // vector wrapper type via the nested type named "type"
+        template<typename Backend, typename GridFunctionSpace, typename FieldType>
         struct BackendVectorSelectorHelper
         {};
 

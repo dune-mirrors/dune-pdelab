@@ -43,6 +43,7 @@ namespace Dune {
                                 typename ChildOrdering::Traits::ContainerIndex> BaseT;
 
     public:
+      static std::string name() {return "PowerEntityBlockedLocalOrdering";}
 
       static const bool consume_tree_index = true;
 
@@ -122,9 +123,8 @@ namespace Dune {
         auto& es = *es_visitor._entity_set;
         // build local ordering tree
         auto local_ordering = std::make_shared<LocalOrdering>(LocalOrderingTransformation::transform(gfs,gfs_to_local_ordering<Transformation>()));
-        bool blocked = gfs.backend().blocked(gfs);
         // create grid view ordering
-        transformed_type r(make_tuple(std::move(local_ordering)),blocked,const_cast<GFS*>(&gfs),es);
+        transformed_type r(make_tuple(std::move(local_ordering)),const_cast<GFS*>(&gfs),es);
         return r;
       }
 
@@ -137,9 +137,8 @@ namespace Dune {
         auto& es = *es_visitor._entity_set;
         // build local ordering tree
         auto local_ordering = LocalOrderingTransformation::transform_storage(gfs,gfs_to_local_ordering<Transformation>());
-        bool blocked = gfs->backend().blocked(*gfs);
         // create grid view ordering
-        transformed_storage_type r(std::make_shared<transformed_type>(make_tuple(std::move(local_ordering)),blocked,const_cast<GFS*>(gfs.get()),es));
+        transformed_storage_type r(std::make_shared<transformed_type>(make_tuple(std::move(local_ordering)),const_cast<GFS*>(gfs.get()),es));
         return r;
       }
 
@@ -165,6 +164,8 @@ namespace Dune {
                                 typename first_type<Children...>::type::Traits::ContainerIndex> Base;
 
     public:
+
+      static std::string name() {return "CompositeEntityBlockedLocalOrdering";}
 
       typedef typename Base::Traits Traits;
 
@@ -243,11 +244,10 @@ namespace Dune {
         TypeTree::applyToTree(gfs, es_visitor);
         assert(es_visitor._entity_set);
         auto& es = *es_visitor._entity_set;
-        bool blocked = gfs.backend().blocked(gfs);
         // build local ordering tree
         auto local_ordering = std::make_shared<LocalOrdering>(LocalOrderingTransformation::transform(gfs,gfs_to_local_ordering<Transformation>()));
         // create grid view ordering
-        transformed_type r(make_tuple(std::move(local_ordering)),blocked,const_cast<GFS*>(&gfs),es);
+        transformed_type r(make_tuple(std::move(local_ordering)),const_cast<GFS*>(&gfs),es);
         return r;
       }
 
@@ -258,11 +258,10 @@ namespace Dune {
         TypeTree::applyToTree(*gfs, es_visitor);
         assert(es_visitor._entity_set);
         auto& es = *es_visitor._entity_set;
-        bool blocked = gfs->backend().blocked(*gfs);
         // build local ordering tree
         auto local_ordering = make_tuple(LocalOrderingTransformation::transform_storage(gfs,gfs_to_local_ordering<Transformation>()));
         // create grid view ordering
-        transformed_storage_type r(std::make_shared<transformed_type>(std::move(local_ordering),blocked,const_cast<GFS*>(gfs.get()),es));
+        transformed_storage_type r(std::make_shared<transformed_type>(std::move(local_ordering),const_cast<GFS*>(gfs.get()),es));
         return r;
       }
 

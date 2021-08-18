@@ -15,23 +15,50 @@
 namespace Dune {
   namespace PDELab {
 
-    namespace {
+    namespace Impl {
 
-      template<typename EntityIndex>
-      struct get_size_for_entity
+      template<class OrderingNode>
+      using GridViewOrderingConcept = decltype((std::declval<OrderingNode>().localOrdering(),true));
+
+      template<class Entity, class EntityIndex>
+      struct entity_index_visitor
         : public TypeTree::TreeVisitor
         , public TypeTree::DynamicTraversal
       {
 
-        template<typename Ordering, typename TreePath>
-        void leaf(const Ordering& ordering, TreePath tp)
+        template<class OrderingNode, class TreePath>
+        void pre(const OrderingNode& ordering, const TreePath& tp)
         {
-          _size += ordering.size(_entity_index);
+          if constexpr (Std::is_detected<GridViewOrderingConcept,OrderingNode>{}) {
+            OrderingNode::Traits::DOFIndexAccessor::GeometryIndex::store(
+              _entity_index,
+              _entity.type(),
+              ordering.entitySet().gridView().indexSet().index(_entity)
+            );
+          }
         }
 
-        get_size_for_entity(const EntityIndex& entity_index)
-          : _size(0)
-          , _entity_index(entity_index)
+        entity_index_visitor(const Entity& entity) : _entity{entity} {}
+
+        EntityIndex _entity_index;
+      private:
+        const Entity& _entity;
+      };
+
+      template<class Entity, class EntityIndex>
+      struct get_size_for_entity
+        : public entity_index_visitor<Entity, EntityIndex>
+      {
+        using Base = entity_index_visitor<Entity, EntityIndex>;
+
+        template<typename Ordering, typename TreePath>
+        void leaf(const Ordering& ordering, const TreePath& tp)
+        {
+          _size += ordering.size(this->_entity_index);
+        }
+
+        get_size_for_entity(const Entity& entity)
+          : Base(entity)
         {}
 
         std::size_t size() const
@@ -42,26 +69,24 @@ namespace Dune {
       private:
 
         std::size_t _size;
-        const EntityIndex& _entity_index;
-
       };
 
 
-      template<typename EntityIndex, typename OffsetIterator>
+      template<class Entity, class EntityIndex, class OffsetIterator>
       struct get_leaf_offsets_for_entity
-        : public TypeTree::TreeVisitor
-        , public TypeTree::DynamicTraversal
+        : public entity_index_visitor<Entity, EntityIndex>
       {
+        using Base = entity_index_visitor<Entity, EntityIndex>;
 
         template<typename Ordering, typename TreePath>
-        void leaf(const Ordering& ordering, TreePath tp)
+        void leaf(const Ordering& ordering, const TreePath& tp)
         {
-          *(++_oit) = ordering.size(_entity_index);
+          *(++_oit) = ordering.size(this->_entity_index);
         }
 
-        get_leaf_offsets_for_entity(const EntityIndex& entity_index, OffsetIterator oit)
-          : _oit(oit)
-          , _entity_index(entity_index)
+        get_leaf_offsets_for_entity(const Entity& entity, OffsetIterator oit)
+          : Base(entity)
+          , _oit(oit)
         {}
 
         //! Export current position of offset iterator - required for MultiDomain support
@@ -73,19 +98,16 @@ namespace Dune {
       private:
 
         OffsetIterator _oit;
-        const EntityIndex& _entity_index;
-
       };
 
 
-      template<typename DOFIndex, typename ContainerIndex, std::size_t tree_depth, bool map_dof_indices = false>
+      template<class Entity, class DOFIndex, class ContainerIndex, std::size_t tree_depth, bool map_dof_indices = false>
       struct indices_for_entity
-        : public TypeTree::TreeVisitor
-        , public TypeTree::DynamicTraversal
+        : public entity_index_visitor<Entity, typename DOFIndex::EntityIndex>
       {
+        using Base = entity_index_visitor<Entity, typename DOFIndex::EntityIndex>;
 
         typedef std::size_t size_type;
-        typedef typename DOFIndex::EntityIndex EntityIndex;
         typedef typename std::vector<ContainerIndex>::iterator CIIterator;
         typedef typename std::conditional<
           map_dof_indices,
@@ -95,16 +117,16 @@ namespace Dune {
 
 
         template<typename Ordering, typename Child, typename TreePath, typename ChildIndex>
-        void beforeChild(const Ordering& ordering, const Child& child, TreePath tp, ChildIndex childIndex)
+        void beforeChild(const Ordering& ordering, const Child& child, const TreePath& tp, const ChildIndex& childIndex)
         {
           _stack.push(std::make_pair(_ci_it,_di_it));
         }
 
         template<typename Ordering, typename TreePath>
-        void leaf(const Ordering& ordering, TreePath tp)
+        void leaf(const Ordering& ordering, const TreePath& tp)
         {
           static_assert(tp.size()>=1, "Cannot call method 'indices_for_entity::leaf' for empty tree path");
-          size_type size = ordering.extract_entity_indices(_entity_index,
+          size_type size = ordering.extract_entity_indices(this->_entity_index,
                                                            tp.back(),
                                                            _ci_it,
                                                            _ci_end,
@@ -117,10 +139,10 @@ namespace Dune {
         }
 
         template<typename Ordering, typename Child, typename TreePath, typename ChildIndex>
-        void afterChild(const Ordering& ordering, const Child& child, TreePath tp, ChildIndex childIndex)
+        void afterChild(const Ordering& ordering, const Child& child, const TreePath& tp, const ChildIndex& childIndex)
         {
           // pop
-          ordering.extract_entity_indices(_entity_index,
+          ordering.extract_entity_indices(this->_entity_index,
                                           childIndex,
                                           _stack.top().first,
                                           _ci_end);
@@ -135,10 +157,10 @@ namespace Dune {
         }
 
 
-        indices_for_entity(const EntityIndex& entity_index,
+        indices_for_entity(const Entity& entity,
                            CIIterator ci_begin,
                            DIIterator di_begin = DIIterator())
-          : _entity_index(entity_index)
+          : Base(entity)
           , _ci_it(ci_begin)
           , _ci_end(ci_begin)
           , _di_it(di_begin)
@@ -160,7 +182,6 @@ namespace Dune {
 
       private:
 
-        const EntityIndex& _entity_index;
         CIIterator _ci_it;
         CIIterator _ci_end;
         DIIterator _di_it;
@@ -225,7 +246,8 @@ namespace Dune {
        */
       constexpr bool sendLeafSizes() const
       {
-        return false;
+        using OrderingTag = typename GFS::OrderingTag;
+        return not (std::is_same_v<OrderingTag, EntityBlockedOrderingTag> or std::is_same_v<OrderingTag, DefaultLeafOrderingTag>);
       }
 
       /*! how many objects of type DataType have to be sent for a given entity
@@ -246,7 +268,7 @@ namespace Dune {
           gfs().gridView().indexSet().index(e)
         );
 
-        get_size_for_entity<EntityIndex> get_size(ei);
+        Impl::get_size_for_entity<Entity,EntityIndex> get_size(e);
         TypeTree::applyToTree(gfs().ordering(),get_size);
 
         return get_size.size();
@@ -297,15 +319,8 @@ namespace Dune {
                       "dataHandleContainerIndices() called with invalid ContainerIndex type.");
 
         typedef typename Ordering::Traits::DOFIndex::EntityIndex EntityIndex;
-        EntityIndex ei;
 
-        Ordering::Traits::DOFIndexAccessor::GeometryIndex::store(
-          ei,
-          e.type(),
-          gfs().entitySet().indexSet().index(e)
-        );
-
-        get_leaf_offsets_for_entity<EntityIndex,OffsetIterator> get_offsets(ei,oit);
+        Impl::get_leaf_offsets_for_entity<Entity,EntityIndex,OffsetIterator> get_offsets{e,oit};
         TypeTree::applyToTree(gfs().ordering(),get_offsets);
         OffsetIterator end_oit = oit + (TypeTree::TreeInfo<Ordering>::leafCount + 1);
 
@@ -315,28 +330,24 @@ namespace Dune {
 
         container_indices.resize(size);
         // Clear index state
-        for (typename std::vector<ContainerIndex>::iterator it = container_indices.begin(),
-               endit = container_indices.end();
-             it != endit;
-             ++it)
-          it->clear();
+        for (auto& ci : container_indices)
+          ci.clear();
 
-        setup_dof_indices(dof_indices,size,ei,map_dof_indices_value);
+        // setup_dof_indices
+        if constexpr (map_dof_indices_value)
+        {
+          dof_indices.resize(size);
+          for (auto& di : dof_indices)
+              di.clear();
+        }
 
-#ifndef NDEBUG
-        // this checks that gfs has common entity set on leaf nodes (throw if that's not the case)
-        // in case of multidomain gfs, indices_for_entity will fail
-        // because DOFIndex will have wrong entity indices
-        auto es_visitor = impl::common_entity_set<typename GFS::Traits::EntitySet>{};
-        TypeTree::applyToTree(gfs(), es_visitor);
-#endif
-
-        indices_for_entity<
+        Impl::indices_for_entity<
+          Entity,
           DOFIndex,
           ContainerIndex,
           TypeTree::TreeInfo<Ordering>::depth,
           map_dof_indices
-          > extract_indices(ei,container_indices.begin(),dof_indices_begin(dof_indices,map_dof_indices_value));
+          > extract_indices(e,container_indices.begin(),dof_indices_begin(dof_indices,map_dof_indices_value));
         TypeTree::applyToTree(gfs().ordering(),extract_indices);
 
       }

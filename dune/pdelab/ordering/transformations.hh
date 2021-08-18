@@ -51,18 +51,18 @@ namespace Dune {
 
 
     //! GridFunctionSpace to Ordering transformation descriptor
-    template<typename RootGFS>
+    template<typename UnorderedGFS>
     struct gfs_to_ordering
     {
-      static const std::size_t ci_depth =
-        TypeTree::AccumulateValue<RootGFS,
-                                  extract_max_container_depth,
-                                  TypeTree::max<std::size_t>,
-                                  0,
-                                  TypeTree::plus<std::size_t>
-                                  >::result + 1;
+      // extract max blocking depth (notice that this is an unevaluated context,
+      // and the resulting type know the depth at compile-time)
+      using Container = typename Backend::impl::ContainerVectorSelector<UnorderedGFS,double>::Type;
+      static const std::size_t ci_depth = Dune::blockLevel<Container>();
 
-      typedef typename gfs_to_lfs<RootGFS>::DOFIndex DOFIndex;
+      // This assert makes sense only of people use UnorderedGFS before getting to the final GFS
+      // static_assert(ci_depth > 0, "Container index has size 0. Choose an appropiated blocking!");
+
+      typedef typename gfs_to_lfs<UnorderedGFS>::DOFIndex DOFIndex;
       typedef MultiIndex<std::size_t,ci_depth> ContainerIndex;
     };
 
