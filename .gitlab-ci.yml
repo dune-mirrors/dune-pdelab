@@ -27,7 +27,7 @@ variables:
     - duneci-standard-test
     # test tutorials as well
     - export DUNE_CONTROL_PATH=$(pwd):/duneci/modules:$DUNE_CONTROL_PATH
-    - duneci-install-module https://gitlab.dune-project.org/pdelab/dune-pdelab-tutorials.git
+    # - duneci-install-module https://gitlab.dune-project.org/pdelab/dune-pdelab-tutorials.git
   tags:
     - "cores:4"
     - "mem:16G"
@@ -37,25 +37,25 @@ debian:10--gcc:
   image: registry.dune-project.org/docker/ci/debian:10
   before_script:
     - *dune_setup
-    - echo "CMAKE_FLAGS+=' -DCOVERAGE_REPORT=ON' " >> /duneci/cmake-flags/overage.opts
+    - echo "CMAKE_FLAGS+=' -DCOVERAGE_REPORT=ON' " >> /duneci/cmake-flags/coverage.opts
   after_script:
     - gcovr $GCOVR_OPTS $CI_PROJECT_DIR/build-cmake
   variables:
-    # Create a coverage report 
+    # Create a coverage report
     #
     # Notes:
     # - Only works for gcc
     # - The gcov executable needs to match the version of the gcc toolchain
     GCOVR_OPTS:
-      --gcov-executable gcov-7
+      --gcov-executable gcov-8
       --root $CI_PROJECT_DIR
-      --exclude $CI_PROJECT_DIR/dune/pdelab/test
-      --exclude $CI_PROJECT_DIR/build-cmake
+      --exclude-directories $CI_PROJECT_DIR/dune/pdelab/test
+      --exclude-directories /duneci/modules
       --exclude-unreachable-branches
       --xml-pretty
       --print-summary
       --output $CI_PROJECT_DIR/coverage.xml
-    DUNECI_TOOLCHAIN: gcc-7-17
+    DUNECI_TOOLCHAIN: gcc-8-17
   artifacts:
     reports:
       junit: junit/*.xml
@@ -70,7 +70,7 @@ debian:10--clang:
   before_script:
     - *dune_setup
   variables:
-    DUNECI_TOOLCHAIN: clang-6-17
+    DUNECI_TOOLCHAIN: clang-7-libcpp-17
   artifacts:
     reports:
       junit: junit/*.xml

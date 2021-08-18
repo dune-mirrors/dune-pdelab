@@ -172,6 +172,7 @@ namespace Dune {
             using size_type      = std::size_t;
             using SizeType       = size_type;
 
+            using EntitySet      = typename GridFunctionSpace::Traits::EntitySet;
             using DOFIndexAccessor = Dune::PDELab::DefaultDOFIndexAccessor;
 
             //! Inform about ContainerIndex multi-index order semantics
@@ -230,12 +231,13 @@ namespace Dune {
           extract_entity_indices(const typename Traits::DOFIndex::EntityIndex& entityIndex,
                                  typename Traits::SizeType child_index,
                                  CIOutIterator ci_out, const CIOutIterator ci_end,
-                                 DIOutIterator dummy) const
+                                 DIOutIterator di_out) const
           {
-            for (size_type i=0; i<_containerIndices[entityIndex[0]][entityIndex[1]].size(); i++)
+            for (size_type i=0; i<_containerIndices[entityIndex[0]][entityIndex[1]].size(); ++i, ++ci_out, ++di_out)
             {
               *ci_out = _containerIndices[entityIndex[0]][entityIndex[1]][i];
-              ci_out++;
+              di_out->treeIndex().push_back(i);
+              di_out->entityIndex() = entityIndex;
             }
 
             return _containerIndices[entityIndex[0]][entityIndex[1]].size();
@@ -244,6 +246,11 @@ namespace Dune {
           ContainerIndex containerIndex(const DOFIndex& i) const
           {
             return _containerIndices[i.entityIndex()[0]][i.entityIndex()[1]][i.treeIndex()[0]];
+          }
+
+          const typename Traits::EntitySet& entitySet() const
+          {
+            return _gfs._es;
           }
 
           void update()
@@ -391,24 +398,24 @@ namespace Dune {
 
           size_type size(ContainerIndex suffix) const
           {
-            return this->child(Indices::_0).size(suffix);
+            return localOrdering().size(suffix);
           }
 
           size_type size() const
           {
-            return this->child(Indices::_0).size();
+            return localOrdering().size();
           }
 
           /** \brief Same as size(), because block size is always 1
            */
           size_type blockCount() const
           {
-            return this->child(Indices::_0).size();
+            return localOrdering().size();
           }
 
           size_type maxLocalSize() const
           {
-            return this->child(Indices::_0).maxLocalSize();
+            return localOrdering().maxLocalSize();
           }
 
           /** \brief Returns true if there is at least one entity of the given codim
@@ -416,14 +423,14 @@ namespace Dune {
            */
           bool contains(typename Traits::SizeType codim) const
           {
-            return this->child(Indices::_0).contains(codim);
+            return localOrdering().contains(codim);
           }
 
           /** \brief True if for all entities of the given codim the same number of data items has to be communicated
            */
           bool fixedSize(typename Traits::SizeType codim) const
           {
-            return this->child(Indices::_0).fixedSize(codim);
+            return localOrdering().fixedSize(codim);
           }
 
           template<typename CIOutIterator, typename DIOutIterator = DummyDOFIndexIterator>
@@ -435,16 +442,31 @@ namespace Dune {
             return 0;
           }
 
+          LeafOrdering& localOrdering()
+          {
+            return this->child(Indices::_0);
+          }
+
+          const LeafOrdering& localOrdering() const
+          {
+            return this->child(Indices::_0);
+          }
+
+          const typename Traits::EntitySet& entitySet() const
+          {
+            return localOrdering().entitySet();
+          }
+
           void update()
           {
-            this->child(Indices::_0).update();
+            localOrdering().update();
           }
 
         private:
 
           ContainerIndex containerIndex(const DOFIndex& i) const
           {
-            return this->child(Indices::_0).containerIndex(i);
+            return localOrdering().containerIndex(i);
           }
 
         };
