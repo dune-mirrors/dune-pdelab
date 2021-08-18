@@ -41,7 +41,7 @@ namespace Dune {
 // we just want the descriptors here, so we temporarily switch off the warning for
 // directly including ISTL backend headers
 #define _DUNE_PDELAB_SUPPRESS_ISTL_HH_WARNING
-#include <dune/pdelab/backend/istl/descriptors.hh>
+#include <dune/pdelab/backend/istl/vector.hh>
 #undef _DUNE_PDELAB_SUPPRESS_ISTL_HH_WARNING
 
 #include <dune/pdelab/constraints/noconstraints.hh>

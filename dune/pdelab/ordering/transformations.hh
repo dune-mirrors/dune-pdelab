@@ -56,8 +56,8 @@ namespace Dune {
     {
       // extract max blocking depth (notice that this is an unevaluated context,
       // and the resulting type know the depth at compile-time)
-      using Container = typename Backend::impl::ContainerVectorSelector<UnorderedGFS,double>::Type;
-      static const std::size_t ci_depth = Dune::blockLevel<Container>();
+      using ContainerSelector = typename Backend::impl::ContainerVectorSelector<UnorderedGFS,double>;
+      static const std::size_t ci_depth = ContainerSelector::block_level;
 
       // This assert makes sense only of people use UnorderedGFS before getting to the final GFS
       // static_assert(ci_depth > 0, "Container index has size 0. Choose an appropiated blocking!");

@@ -79,7 +79,8 @@ namespace Dune {
 
           using FiniteElementType = typename DFBasis::LocalView::Tree::FiniteElement;  // DiscreteGridFunction wants this
 
-          using Basis = DFBasis;
+          using Basis         = DFBasis;
+          using OrderingTag   = DefaultLeafOrderingTag;
 
           // The following code recognizes whether the given VectorBackend (VBE) is an ISTL backend.
           // If this is the case, then we replace it by ISTL::SimpleVectorBackend,
@@ -143,6 +144,7 @@ namespace Dune {
         };
 
         using Basis          = DFBasis;
+        using OrderingTag    = DefaultLeafOrderingTag;
 
         /** \brief The actual Ordering object of the grid function space
          *

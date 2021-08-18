@@ -299,23 +299,22 @@ namespace Dune {
 
 #ifndef DOXYGEN
 
-    template<typename GFS, typename E>
-    struct SimpleVectorSelectorHelper
-    {
-
-      using vector_type = typename GFS::Traits::Backend::template vector_type<E>;
-
-      using Type = Simple::VectorContainer<GFS,vector_type>;
-
-    };
-
     namespace Backend {
       namespace impl {
 
-        template<template<typename> class Container, typename GFS, typename E>
-        struct BackendVectorSelectorHelper<Simple::VectorBackend<Container>, GFS, E>
-          : public SimpleVectorSelectorHelper<GFS,E>
-        {};
+        template<template<typename> class C, typename GFS, typename E>
+        struct ContainerVectorSelectorHelper<Simple::VectorBackend<C>, GFS, E>
+        {
+          using Type = typename GFS::Traits::Backend::template vector_type<E>;
+          static const std::size_t block_level = 1;
+        };
+
+        template<template<typename> class C, typename GFS, typename E>
+        struct BackendVectorSelectorHelper<Simple::VectorBackend<C>, GFS, E>
+        {
+          using Container = typename ContainerVectorSelectorHelper<Simple::VectorBackend<C>,GFS,E>::Type;
+          using Type = Simple::VectorContainer<GFS,Container>;
+        };
 
       } // namespace impl
     } // namespace Backend

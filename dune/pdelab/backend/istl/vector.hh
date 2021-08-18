@@ -377,6 +377,7 @@ namespace Dune {
         struct ContainerVectorSelectorHelper<PDELab::ISTL::VectorBackend<blocking,block_size>, GFS, E>
         {
           using Type = typename TypeTree::AccumulateType<GFS,ISTL::vector_creation_policy<E>>::type::vector_type;
+          static const std::size_t block_level = Dune::blockLevel<Type>();
         };
 
         template<Dune::PDELab::ISTL::Blocking blocking, std::size_t block_size, typename GFS, typename E>
@@ -390,6 +391,7 @@ namespace Dune {
         struct ContainerVectorSelectorHelper<PDELab::ISTL::BackendOptions<NodeBlocking>, GFS, E>
         {
           using Type = decltype(ISTL::registerVectorContainer<GFS,E>(PDELab::ISTL::BackendOptions<NodeBlocking>{}));
+          static const std::size_t block_level = Dune::blockLevel<Type>();
         };
 
         template<Dune::PDELab::ISTL::Blocking NodeBlocking, typename GFS, typename E>

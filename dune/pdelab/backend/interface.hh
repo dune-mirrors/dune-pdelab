@@ -21,8 +21,12 @@ namespace Dune {
         template<typename GridFunctionSpace, typename FieldType>
         struct ContainerVectorSelector
         {
-          typedef typename GridFunctionSpace::Traits::Backend Backend;
-          typedef typename ContainerVectorSelectorHelper<Backend, GridFunctionSpace, FieldType>::Type Type;
+        private:
+          using Backend = typename GridFunctionSpace::Traits::Backend;
+          using Helper = ContainerVectorSelectorHelper<Backend, GridFunctionSpace, FieldType>;
+        public:
+          using Type = typename Helper::Type;
+          static const std::size_t block_level = Helper::block_level;
         };
 
         // This class needs to be specialized by each backend and return the correct

@@ -4,11 +4,13 @@
 
 dune_add_test(NAME matrix_free_linear_partial_matrix_free_fastdg
               SOURCES matrix_free_linear.cc
-              COMPILE_DEFINITIONS PARTIAL_MATRIX_FREE FASTDG)
+              COMPILE_DEFINITIONS PARTIAL_MATRIX_FREE FASTDG
+              CMAKE_GUARD EIGEN3_FOUND)
 
 dune_add_test(NAME matrix_free_linear_partial_matrix_free_nonfast
               SOURCES matrix_free_linear.cc
-              COMPILE_DEFINITIONS PARTIAL_MATRIX_FREE)
+              COMPILE_DEFINITIONS PARTIAL_MATRIX_FREE
+              CMAKE_GUARD EIGEN3_FOUND)
 
 dune_add_test(NAME matrix_free_linear_fully_matrix_free_fastdg
               SOURCES matrix_free_linear.cc
@@ -35,11 +37,13 @@ dune_symlink_to_source_files(FILES matrix_free_linear.ini)
 
 dune_add_test(NAME matrix_free_nonlinear_partial_matrix_free_fastdg
               SOURCES matrix_free_nonlinear.cc
-              COMPILE_DEFINITIONS PARTIAL_MATRIX_FREE FASTDG)
+              COMPILE_DEFINITIONS PARTIAL_MATRIX_FREE FASTDG
+              CMAKE_GUARD EIGEN3_FOUND)
 
 dune_add_test(NAME matrix_free_nonlinear_partial_matrix_free_nonfast
               SOURCES matrix_free_nonlinear.cc
-              COMPILE_DEFINITIONS PARTIAL_MATRIX_FREE)
+              COMPILE_DEFINITIONS PARTIAL_MATRIX_FREE
+              CMAKE_GUARD EIGEN3_FOUND)
 
 dune_add_test(NAME matrix_free_nonlinear_fully_matrix_free_fastdg
               SOURCES matrix_free_nonlinear.cc

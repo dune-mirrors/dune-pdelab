@@ -274,22 +274,24 @@ namespace Dune {
 
 #ifndef DOXYGEN
 
-    template<typename GFS, typename E>
-    struct EigenVectorSelectorHelper
-    {
-      using Type = PDELab::Eigen::VectorContainer<GFS, E>;
-    };
-
     namespace Backend {
       namespace impl {
 
-        template<typename GFS, typename E>
+        template<class GFS, class E>
+        struct ContainerVectorSelectorHelper<Eigen::VectorBackend, GFS, E>
+        {
+          using Type = ::Eigen::Matrix<E, ::Eigen::Dynamic, 1>;
+          static const std::size_t block_level = 1;
+        };
+
+        template<class GFS, class E>
         struct BackendVectorSelectorHelper<Eigen::VectorBackend, GFS, E>
-          : public EigenVectorSelectorHelper<GFS,E>
-        {};
+        {
+          using Type = PDELab::Eigen::VectorContainer<GFS, E>;
+        };
 
       } // namespace impl
-    } // namespace Backend
+    } // namespace Ba
 
 #endif // DOXYGEN
 

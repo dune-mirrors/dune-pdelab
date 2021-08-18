@@ -59,6 +59,7 @@ namespace Dune {
 
         get_size_for_entity(const Entity& entity)
           : Base(entity)
+          , _size{0}
         {}
 
         std::size_t size() const
@@ -125,7 +126,7 @@ namespace Dune {
         template<typename Ordering, typename TreePath>
         void leaf(const Ordering& ordering, const TreePath& tp)
         {
-          static_assert(tp.size()>=1, "Cannot call method 'indices_for_entity::leaf' for empty tree path");
+          static_assert(TreePath::size()>=1, "Cannot call method 'indices_for_entity::leaf' for empty tree path");
           size_type size = ordering.extract_entity_indices(this->_entity_index,
                                                            tp.back(),
                                                            _ci_it,
@@ -246,7 +247,7 @@ namespace Dune {
        */
       constexpr bool sendLeafSizes() const
       {
-        using OrderingTag = typename GFS::OrderingTag;
+        using OrderingTag = typename GFS::Traits::OrderingTag;
         return not (std::is_same_v<OrderingTag, EntityBlockedOrderingTag> or std::is_same_v<OrderingTag, DefaultLeafOrderingTag>);
       }
 

@@ -113,7 +113,7 @@ int main(int argc, char** argv)
     auto leaf_gfs    = FlatGFS(es,fem);
 
     using FlatGFS    = Dune::PDELab::PowerGridFunctionSpace<LeafGFS,2,FlatBackend,Ordering>;
-    using BlockedGFS = Dune::PDELab::PowerGridFunctionSpace<LeafGFS,2,BlockedBackend,Ordering>;
+    using BlockedGFS = Dune::PDELab::PowerGridFunctionSpace<LeafGFS,2,FlatBackend,Ordering>;
 
     auto flat_gfs    = FlatGFS(leaf_gfs);
     auto blocked_gfs = BlockedGFS(leaf_gfs);
