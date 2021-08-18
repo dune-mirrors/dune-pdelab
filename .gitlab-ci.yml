@@ -12,7 +12,7 @@ variables:
 
 .dune_setup: &dune_setup |-
   . /duneci/bin/duneci-init-job
-  duneci-install-module https://gitlab.dune-project.org/core/dune-common.git
+  duneci-install-module --branch 257-assignement-of-scalar-values-in-densevector https://gitlab.dune-project.org/core/dune-common.git
   duneci-install-module https://gitlab.dune-project.org/core/dune-geometry.git
   duneci-install-module https://gitlab.dune-project.org/core/dune-localfunctions.git
   duneci-install-module https://gitlab.dune-project.org/staging/dune-uggrid.git
