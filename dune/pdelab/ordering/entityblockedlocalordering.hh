@@ -123,8 +123,9 @@ namespace Dune {
         // build local ordering tree
         auto local_ordering = std::make_shared<LocalOrdering>(LocalOrderingTransformation::transform(gfs,gfs_to_local_ordering<Transformation>()));
         bool blocked = gfs.backend().blocked(gfs);
+        auto data = impl::gfs_data(const_cast<GFS&>(gfs));
         // create grid view ordering
-        transformed_type r(make_tuple(std::move(local_ordering)),blocked,const_cast<GFS*>(&gfs),es);
+        transformed_type r(make_tuple(std::move(local_ordering)),blocked,data,es);
         return r;
       }
 
@@ -138,8 +139,9 @@ namespace Dune {
         // build local ordering tree
         auto local_ordering = LocalOrderingTransformation::transform_storage(gfs,gfs_to_local_ordering<Transformation>());
         bool blocked = gfs->backend().blocked(*gfs);
+        auto data = impl::gfs_data(const_cast<GFS&>(*gfs));
         // create grid view ordering
-        transformed_storage_type r(std::make_shared<transformed_type>(make_tuple(std::move(local_ordering)),blocked,const_cast<GFS*>(gfs.get()),es));
+        transformed_storage_type r(std::make_shared<transformed_type>(make_tuple(std::move(local_ordering)),blocked,data,es));
         return r;
       }
 
@@ -246,8 +248,9 @@ namespace Dune {
         bool blocked = gfs.backend().blocked(gfs);
         // build local ordering tree
         auto local_ordering = std::make_shared<LocalOrdering>(LocalOrderingTransformation::transform(gfs,gfs_to_local_ordering<Transformation>()));
+        auto data = impl::gfs_data(const_cast<GFS&>(gfs));
         // create grid view ordering
-        transformed_type r(make_tuple(std::move(local_ordering)),blocked,const_cast<GFS*>(&gfs),es);
+        transformed_type r(make_tuple(std::move(local_ordering)),blocked,data,es);
         return r;
       }
 
@@ -261,8 +264,9 @@ namespace Dune {
         bool blocked = gfs->backend().blocked(*gfs);
         // build local ordering tree
         auto local_ordering = make_tuple(LocalOrderingTransformation::transform_storage(gfs,gfs_to_local_ordering<Transformation>()));
+        auto data = impl::gfs_data(const_cast<GFS&>(*gfs));
         // create grid view ordering
-        transformed_storage_type r(std::make_shared<transformed_type>(std::move(local_ordering),blocked,const_cast<GFS*>(gfs.get()),es));
+        transformed_storage_type r(std::make_shared<transformed_type>(std::move(local_ordering),blocked,data,es));
         return r;
       }
 

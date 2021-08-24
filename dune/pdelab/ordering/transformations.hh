@@ -94,7 +94,7 @@ namespace Dune {
     power_gfs_to_ordering_descriptor<
       GridFunctionSpace,
       gfs_to_ordering<Params>,
-      typename GridFunctionSpace::OrderingTag
+      typename GridFunctionSpace::Traits::OrderingTag
       >
     registerNodeTransformation(GridFunctionSpace*, gfs_to_ordering<Params>*, PowerGridFunctionSpaceTag*);
 
@@ -142,7 +142,7 @@ namespace Dune {
     composite_gfs_to_ordering_descriptor<
       GridFunctionSpace,
       gfs_to_ordering<Params>,
-      typename GridFunctionSpace::OrderingTag
+      typename GridFunctionSpace::Traits::OrderingTag
       >
     registerNodeTransformation(GridFunctionSpace*, gfs_to_ordering<Params>*, CompositeGridFunctionSpaceTag*);
 
@@ -156,7 +156,7 @@ namespace Dune {
     power_gfs_to_local_ordering_descriptor<
       GFS,
       gfs_to_local_ordering<Params>,
-      typename GFS::OrderingTag
+      typename GFS::Traits::OrderingTag
       >
     registerNodeTransformation(GFS*, gfs_to_local_ordering<Params>*, PowerGridFunctionSpaceTag*);
 
@@ -184,7 +184,7 @@ namespace Dune {
     composite_gfs_to_local_ordering_descriptor<
       GFS,
       gfs_to_local_ordering<Params>,
-      typename GFS::OrderingTag
+      typename GFS::Traits::OrderingTag
       >
     registerNodeTransformation(GFS*, gfs_to_local_ordering<Params>*, CompositeGridFunctionSpaceTag*);
 

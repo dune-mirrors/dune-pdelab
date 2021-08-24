@@ -233,12 +233,14 @@ namespace Dune {
 
       static transformed_type transform(const GFS& gfs, const Transformation& t)
       {
-        return transformed_type(make_tuple(std::make_shared<LocalOrdering>(gfs.finiteElementMapStorage(),gfs.entitySet())),gfs.backend().blocked(gfs),const_cast<GFS*>(&gfs));
+        auto data = impl::gfs_data(const_cast<GFS&>(gfs));
+        return transformed_type(make_tuple(std::make_shared<LocalOrdering>(gfs.finiteElementMapStorage(),gfs.entitySet())),gfs.backend().blocked(gfs),data);
       }
 
       static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t)
       {
-        return std::make_shared<transformed_type>(make_tuple(std::make_shared<LocalOrdering>(gfs->finiteElementMapStorage(),gfs->entitySet())),gfs->backend().blocked(*gfs),const_cast<GFS*>(gfs.get()));
+        auto data = impl::gfs_data(const_cast<GFS&>(*gfs));
+        return std::make_shared<transformed_type>(make_tuple(std::make_shared<LocalOrdering>(gfs->finiteElementMapStorage(),gfs->entitySet())),gfs->backend().blocked(*gfs),data);
       }
 
     };

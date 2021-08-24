@@ -20,30 +20,13 @@ namespace Dune {
 #ifndef DOXYGEN
 
     // forward declaration for friend declaration
-    template<typename GFS, typename GFSTraits>
+    template<typename, typename>
     class GridFunctionSpaceBase;
 
+    template<typename, typename>
+    class OrderedGridFunctionSpace;
+
     namespace impl {
-
-      struct reset_root_space_flag
-        : public TypeTree::DirectChildrenVisitor
-        , public TypeTree::DynamicTraversal
-      {
-
-        template<typename GFS, typename Child, typename TreePath, typename ChildIndex>
-        void afterChild(const GFS& gfs, Child& child, TreePath, ChildIndex) const
-        {
-          if (child._initialized && child._is_root_space)
-            {
-              DUNE_THROW(GridFunctionSpaceHierarchyError,"initialized space cannot become part of larger GridFunctionSpace tree");
-            }
-          child._is_root_space = false;
-        }
-
-      };
-
-      template<typename size_type>
-      struct update_ordering_data;
 
       // helper class with minimal dependencies. Orderings keep a pointer to this structure and populate it
       // during their update procedure.
@@ -55,8 +38,8 @@ namespace Dune {
         template<typename,typename>
         friend class ::Dune::PDELab::GridFunctionSpaceBase;
 
-        template<typename>
-        friend struct update_ordering_data;
+        template<class,class>
+        friend class ::Dune::PDELab::OrderedGridFunctionSpace;
 
         GridFunctionSpaceOrderingData()
           : _size(0)
@@ -78,54 +61,15 @@ namespace Dune {
 
       };
 
-      template<typename size_type>
-      struct update_ordering_data
-        : public TypeTree::TreeVisitor
-        , public TypeTree::DynamicTraversal
-      {
-
-        typedef GridFunctionSpaceOrderingData<size_type> Data;
-
-        template<typename Ordering>
-        void update(const Ordering& ordering, bool is_root)
-        {
-          if (ordering._gfs_data)
-            {
-              Data& data = *ordering._gfs_data;
-              // if (data._initialized && data._is_root_space && !is_root)
-              //   {
-              //     DUNE_THROW(GridFunctionSpaceHierarchyError,"former root space is now part of a larger tree");
-              //   }
-              data._initialized = true;
-              data._global_size = _global_size;
-              data._max_local_size = _max_local_size;
-              data._size_available = ordering.update_gfs_data_size(data._size,data._block_count);
-            }
-        }
-
-        template<typename Ordering, typename TreePath>
-        void leaf(const Ordering& ordering, TreePath tp)
-        {
-          update(ordering,tp.size() == 0);
-        }
-
-        template<typename Ordering, typename TreePath>
-        void post(const Ordering& ordering, TreePath tp)
-        {
-          update(ordering,tp.size() == 0);
-        }
-
-        template<typename Ordering>
-        explicit update_ordering_data(const Ordering& ordering)
-          : _global_size(ordering.size())
-          , _max_local_size(ordering.maxLocalSize())
-        {}
-
-        const size_type _global_size;
-        const size_type _max_local_size;
-
-      };
-
+      template<class GFS>
+      auto gfs_data(GFS& gfs) {
+        using SizeType = typename GFS::Traits::SizeType;
+        using GFSData = impl::GridFunctionSpaceOrderingData<SizeType>;
+        if constexpr (std::is_base_of<GFSData,GFS>{})
+          return static_cast<GFSData*>(&gfs);
+        else
+          return (GFSData*)nullptr;
+      }
 
       //! Checks that every leaf node has the same entity set
       template<class EntitySet>
@@ -150,106 +94,43 @@ namespace Dune {
         std::optional<EntitySet> _entity_set;
       };
 
-      /**
-       * @brief  Updates every entity set in leaf nodes
-       * @details Potentially, every leaf node has a different entity set.
-       *  We only update the first of common entity sets
-       */
-      template<class EntitySet>
-      struct update_leaf_entity_set
-        : public TypeTree::TreeVisitor
-        , public TypeTree::DynamicTraversal
-      {
-        update_leaf_entity_set(const std::optional<EntitySet>& entity_set, bool force_update)
-          : _force_update{force_update}
-          , _entity_set{entity_set}
-        {}
-
-        template<typename GFSNode, typename TreePath>
-        void leaf(GFSNode&& gfs_node, TreePath treePath) {
-          if (not _entity_set)
-            _entity_set = gfs_node.entitySet();
-          if (*_entity_set != gfs_node.entitySet()) {
-            gfs_node.entitySet().update(_force_update);
-            _entity_set = gfs_node.entitySet();
-          }
-        }
-
-        bool _force_update;
-        std::optional<EntitySet> _entity_set;
-      };
-
     } // namespace impl
 
 #endif // DOXYGEN
 
 
-    template<typename GFS, typename GFSTraits>
-    class GridFunctionSpaceBase
-      : public impl::GridFunctionSpaceOrderingData<typename GFSTraits::SizeType>
+    template<class B, class O>
+    struct GridFunctionSpaceNodeTraits
     {
+      //! vector backend
+      [[deprecated]] typedef B BackendType;
 
-      friend struct impl::reset_root_space_flag;
+      typedef B Backend;
 
+      //! short cut for size type exported by Backend
+      typedef typename B::size_type SizeType;
+
+      //! tag describing the ordering.
+      /**
+       * The tag type may contain additional constants and typedefs to
+       * control the behavior of the created ordering.
+       */
+      typedef O OrderingTag;
+
+    };
+
+    template<typename GFSTraits>
+    class GridFunctionSpaceNode
+    {
     public:
 
       typedef GFSTraits Traits;
 
       template<typename Backend_, typename OrderingTag_>
-      GridFunctionSpaceBase(Backend_&& backend, OrderingTag_&& ordering_tag)
+      GridFunctionSpaceNode(Backend_&& backend, OrderingTag_&& ordering_tag)
         : _backend(std::forward<Backend_>(backend))
         , _ordering_tag(std::forward<OrderingTag_>(ordering_tag))
-      {
-        TypeTree::applyToTree(gfs(),impl::reset_root_space_flag());
-      }
-
-      typename Traits::SizeType size() const
-      {
-        if (!_initialized)
-          {
-            DUNE_THROW(UninitializedGridFunctionSpaceError,"space is not initialized");
-          }
-        if (!_size_available)
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Size cannot be calculated at this point in the GFS tree.");
-          }
-        return _size;
-      }
-
-      typename Traits::SizeType blockCount() const
-      {
-        if (!_initialized)
-          {
-            DUNE_THROW(UninitializedGridFunctionSpaceError,"space is not initialized");
-          }
-        if (!_size_available)
-          {
-            DUNE_THROW(GridFunctionSpaceHierarchyError,
-                       "Block count cannot be calculated at this point in the GFS tree.");
-          }
-        return _block_count;
-      }
-
-      typename Traits::SizeType globalSize() const
-      {
-        if (!_initialized)
-          {
-            DUNE_THROW(UninitializedGridFunctionSpaceError,"space is not initialized");
-          }
-        return _global_size;
-      }
-
-      //! get max dimension of shape function space
-      typename Traits::SizeType maxLocalSize () const
-      {
-        if (!_initialized)
-          {
-            DUNE_THROW(UninitializedGridFunctionSpaceError,"space is not initialized");
-          }
-        return _max_local_size;
-      }
-
+      {}
 
       const std::string& name() const
       {
@@ -271,47 +152,6 @@ namespace Dune {
         return _backend;
       }
 
-      //! get grid view
-      const typename Traits::GridView& gridView () const
-      {
-        return gfs().entitySet().gridView();
-      }
-
-      //! get entity set
-      const typename Traits::EntitySet& entitySet () const
-      {
-        assert(_entity_set && "No entity set has been assigned to this node");
-        return *_entity_set;
-      }
-
-      //! get entity set
-      typename Traits::EntitySet& entitySet ()
-      {
-        assert(_entity_set && "No entity set has been assigned to this node");
-        return *_entity_set;
-      }
-
-
-      /**
-       * @brief Set the Entity Set object to this grid function space
-       * @details The passed entity set will be stored and modified by the grid
-       *          function space. In case of a tree, all entity sets below an
-       *          entity blocking tag are expected to be the same, otherwise,
-       *          the ordering will issue an exception. (e.g. compartments with
-       *          different function spaces). Additionally, the root node in a
-       *          grid function space tree may also contain a different partition
-       *          which will be used in the assembly process (e.g. a union of
-       *          all entity sets from leaf nodes). If no other entity set was
-       *          given, the root node will usually take the first leaf node
-       *          entity set.
-       *
-       * @param entity_set An object of the type PartitionViewEntitySet
-       */
-      void setEntitySet(typename Traits::EntitySet entity_set)
-      {
-        _entity_set.emplace(std::move(entity_set));
-      }
-
       typename Traits::OrderingTag& orderingTag()
       {
         return _ordering_tag;
@@ -322,20 +162,21 @@ namespace Dune {
         return _ordering_tag;
       }
 
-      bool isRootSpace() const
-      {
-        return _is_root_space;
-      }
-
-    protected:
-
-
-      mutable std::optional<typename Traits::EntitySet> _entity_set;
 
     private:
 
-      typedef impl::GridFunctionSpaceOrderingData<typename GFSTraits::SizeType> BaseT;
+      std::string _name;
+      typename Traits::Backend _backend;
+      typename Traits::OrderingTag _ordering_tag;
+    };
 
+
+    template<typename GFS, typename GFSTraits>
+    class [[deprecated]] GridFunctionSpaceBase
+      : public GridFunctionSpaceNode<GFSTraits>
+      , public impl::GridFunctionSpaceOrderingData<typename GFSTraits::SizeType>
+    {
+      using Base = GridFunctionSpaceNode<GFSTraits>;
       GFS& gfs()
       {
         return static_cast<GFS&>(*this);
@@ -345,21 +186,9 @@ namespace Dune {
       {
         return static_cast<const GFS&>(*this);
       }
-
-      std::string _name;
-      typename Traits::Backend _backend;
-      typename Traits::OrderingTag _ordering_tag;
-
-      using BaseT::_size;
-      using BaseT::_block_count;
-      using BaseT::_global_size;
-      using BaseT::_max_local_size;
-      using BaseT::_is_root_space;
-      using BaseT::_initialized;
-      using BaseT::_size_available;
-
+    public:
+      using Base::Base;
     };
-
 
   } // namespace PDELab
 } // namespace Dune

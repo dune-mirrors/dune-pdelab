@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) try {
       PDELab::EntityBlockedOrderingTag, PDELab::DefaultLeafOrderingTag>
       DisplacementGFS;
 
-  DisplacementGFS displacementGFS(entitySet, fem);
+  DisplacementGFS displacementGFS(entitySet, stackobject_to_shared_ptr(fem));
   displacementGFS.name("displacement");
 
   typedef PDELab::UnorderedVectorGridFunctionSpace<
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) try {
       PDELab::EntityBlockedOrderingTag, PDELab::DefaultLeafOrderingTag>
       PlasticStrainGFS;
 
-  PlasticStrainGFS plasticStrainGFS(entitySet, fem);
+  PlasticStrainGFS plasticStrainGFS(entitySet, stackobject_to_shared_ptr(fem));
   plasticStrainGFS.name("plastic strain");
 
   typedef PDELab::ISTL::VectorBackend<PDELab::ISTL::Blocking::fixed> VBE;

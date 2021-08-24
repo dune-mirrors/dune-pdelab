@@ -9,6 +9,8 @@
 #include <dune/typetree/compositenode.hh>
 #include <dune/typetree/utility.hh>
 
+#include <dune/pdelab/common/utility.hh>
+#include <dune/pdelab/gridfunctionspace/gridfunctionspacebase.hh>
 #include <dune/pdelab/gridfunctionspace/powercompositegridfunctionspacebase.hh>
 #include <dune/pdelab/gridfunctionspace/orderedgridfunctionspace.hh>
 #include <dune/pdelab/gridfunctionspace/tags.hh>
@@ -39,101 +41,76 @@ namespace Dune {
              typename... Children>
     class UnorderedCompositeGridFunctionSpace
       : public TypeTree::CompositeNode<Children...>
-      , public PowerCompositeGridFunctionSpaceBase<
-          UnorderedCompositeGridFunctionSpace<
-            Backend,
-            OrderingTag,
-            Children...>,
-          typename TypeTree::Child<TypeTree::CompositeNode<Children...>,0>::Traits::EntitySet,
-          Backend,
-          OrderingTag,
-          sizeof...(Children)
-        >
+      , public GridFunctionSpaceNode<GridFunctionSpaceNodeTraits<Backend,OrderingTag>>
     {
       typedef TypeTree::CompositeNode<Children...> NodeT;
 
-      typedef PowerCompositeGridFunctionSpaceBase<
-        UnorderedCompositeGridFunctionSpace,
-        typename TypeTree::Child<NodeT,0>::Traits::EntitySet,
-        Backend,
-        OrderingTag,
-        sizeof...(Children)> ImplementationBase;
-
-      friend class PowerCompositeGridFunctionSpaceBase<
-        UnorderedCompositeGridFunctionSpace,
-        typename TypeTree::Child<NodeT,0>::Traits::EntitySet,
-        Backend,
-        OrderingTag,
-        sizeof...(Children)>;
-
-      template<typename,typename>
-      friend class GridFunctionSpaceBase;
+      typedef GridFunctionSpaceNode<GridFunctionSpaceNodeTraits<Backend,OrderingTag>> ImplementationBase;
 
     public:
       typedef CompositeGridFunctionSpaceTag ImplementationTag;
 
       typedef typename ImplementationBase::Traits Traits;
 
+      //! Initialize the CompositeNode with a copy of the passed-in storage
+      //! type.
+      UnorderedCompositeGridFunctionSpace(
+          const std::tuple<std::shared_ptr<Children>...> &children,
+          const Backend &backend = Backend(),
+          const OrderingTag ordering_tag = OrderingTag())
+          : NodeT(children), ImplementationBase(backend, ordering_tag) {}
+    };
+
+    //! \copydoc UnorderedCompositeGridFunctionSpace
+    template<class Backend,
+             class OrderingTag,
+             class... Children>
+    class CompositeGridFunctionSpace
+      : public OrderedGridFunctionSpace<UnorderedCompositeGridFunctionSpace<Backend,OrderingTag,Children...>,typename Impl::FirstLeaf<Children...>::Traits::EntitySet>
+    {
+      using Base = OrderedGridFunctionSpace<UnorderedCompositeGridFunctionSpace<Backend,OrderingTag,Children...>, typename Impl::FirstLeaf<Children...>::Traits::EntitySet>;
+
+    public:
+
       // ********************************************************************************
       // constructors for stack-constructed children passed in by reference
       // ********************************************************************************
 
-      UnorderedCompositeGridFunctionSpace(const Backend& backend, Children&... children)
-        : NodeT(TypeTree::assertGridViewType<typename NodeT::template Child<0>::Type>(children)...)
-        , ImplementationBase(backend,OrderingTag())
+      CompositeGridFunctionSpace(const Backend& backend, Children&... children)
+        : Base(std::in_place, std::make_tuple(stackobject_to_shared_ptr(children)...), backend)
       { }
 
-      UnorderedCompositeGridFunctionSpace(const OrderingTag& ordering_tag, Children&... children)
-        : NodeT(TypeTree::assertGridViewType<typename NodeT::template Child<0>::Type>(children)...)
-        , ImplementationBase(Backend(),ordering_tag)
+      CompositeGridFunctionSpace(const OrderingTag& ordering_tag, Children&... children)
+        : Base(std::in_place, std::make_tuple(stackobject_to_shared_ptr(children)...), Backend{}, ordering_tag)
       { }
 
-      UnorderedCompositeGridFunctionSpace(const Backend& backend, const OrderingTag& ordering_tag, Children&... children)
-        : NodeT(TypeTree::assertGridViewType<typename NodeT::template Child<0>::Type>(children)...)
-        , ImplementationBase(backend,ordering_tag)
+      CompositeGridFunctionSpace(const Backend& backend, const OrderingTag& ordering_tag, Children&... children)
+        : Base(std::in_place, std::make_tuple(stackobject_to_shared_ptr(children)...), backend, ordering_tag)
       { }
 
-      UnorderedCompositeGridFunctionSpace(Children&... children)
-        : NodeT(TypeTree::assertGridViewType<typename NodeT::template Child<0>::Type>(children)...)
-        , ImplementationBase(Backend(),OrderingTag())
+      CompositeGridFunctionSpace(Children&... children)
+        : Base(std::in_place, std::make_tuple(stackobject_to_shared_ptr(children)...))
       { }
 
       // ********************************************************************************
       // constructors for heap-constructed children passed in as shared_ptrs
       // ********************************************************************************
 
-      UnorderedCompositeGridFunctionSpace(const Backend& backend, std::shared_ptr<Children>... children)
-        : NodeT(children...)
-        , ImplementationBase(backend,OrderingTag())
+      CompositeGridFunctionSpace(const Backend& backend, const std::shared_ptr<Children>&... children)
+        : Base(std::in_place, std::make_tuple(children...), backend)
       { }
 
-      UnorderedCompositeGridFunctionSpace(const OrderingTag& ordering_tag, std::shared_ptr<Children>... children)
-        : NodeT(children...)
-        , ImplementationBase(Backend(),ordering_tag)
+      CompositeGridFunctionSpace(const OrderingTag& ordering_tag, const std::shared_ptr<Children>&... children)
+        : Base(std::in_place, std::make_tuple(children...), Backend{}, ordering_tag)
       { }
 
-      UnorderedCompositeGridFunctionSpace(const Backend& backend, const OrderingTag& ordering_tag, std::shared_ptr<Children>... children)
-        : NodeT(children...)
-        , ImplementationBase(backend,ordering_tag)
+      CompositeGridFunctionSpace(const Backend& backend, const OrderingTag& ordering_tag, const std::shared_ptr<Children>&... children)
+        : Base(std::in_place, std::make_tuple(children...), Backend{}, ordering_tag)
       { }
 
-      UnorderedCompositeGridFunctionSpace(std::shared_ptr<Children>... children)
-        : NodeT(children...)
-        , ImplementationBase(Backend(),OrderingTag())
+      CompositeGridFunctionSpace(const std::shared_ptr<Children>&... children)
+        : Base(std::in_place, std::make_tuple(children...))
       { }
-
-    };
-
-    //! \copydoc UnorderedCompositeGridFunctionSpace
-    template<typename Backend,
-             typename OrderingTag,
-             typename... Children>
-    class CompositeGridFunctionSpace
-      : public OrderedGridFunctionSpace<UnorderedCompositeGridFunctionSpace<Backend,OrderingTag,Children...>>
-    {
-      using Base = OrderedGridFunctionSpace<UnorderedCompositeGridFunctionSpace<Backend,OrderingTag,Children...>>;
-    public:
-      using Base::Base;
     };
 
 

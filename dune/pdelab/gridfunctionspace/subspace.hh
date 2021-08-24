@@ -148,7 +148,7 @@ namespace Dune {
         typedef typename ChildGridFunctionSpace::Traits Traits;
 
         //! Re-exported OrderingTag from the original GridFunctionSpace.
-        typedef typename ChildGridFunctionSpace::OrderingTag OrderingTag;
+        typedef typename Traits::OrderingTag OrderingTag;
 
 
         //! Re-exported constraints container from the original GridFunctionSpace.
@@ -177,7 +177,7 @@ namespace Dune {
         }
 
         //! Returns the underlying EntitySet.
-        const typename Traits::EntitySet& entitySet() const
+        typename Traits::EntitySet entitySet() const
         {
           return subSpace().childGridFunctionSpace().entitySet();
         }

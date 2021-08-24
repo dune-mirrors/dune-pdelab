@@ -145,13 +145,13 @@ namespace Dune {
         -> decltype(
           _unwind_decorators(
             gfs.ordering(),
-            impl::decoration_level<typename GFS::OrderingTag>()
+            impl::decoration_level<typename GFS::Traits::OrderingTag>()
             )
           )
       {
         return _unwind_decorators(
           gfs.ordering(),
-          impl::decoration_level<typename GFS::OrderingTag>()
+          impl::decoration_level<typename GFS::Traits::OrderingTag>()
           );
       }
 

@@ -51,6 +51,20 @@ namespace Dune {
 
 #endif // DOXYGEN
 
+      namespace Impl {
+
+        template<class Node0, class... Others>
+        auto first_leaf(Node0&& node0, Others&&...) {
+          using TypeTree::child;
+          if constexpr (std::decay_t<Node0>::isLeaf)
+            return std::forward<Node0>(node0);
+          else
+            return first_leaf(child(std::forward<Node0>(node0),Indices::_0));
+        }
+
+        template<class... Nodes>
+        using FirstLeaf = decltype(first_leaf(std::declval<Nodes>()...));
+      }
     //! \}
 
   } // namespace PDELab

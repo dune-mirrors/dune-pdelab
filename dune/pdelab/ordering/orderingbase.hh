@@ -20,8 +20,8 @@ namespace Dune {
     class OrderingBase
     {
 
-      template<typename size_type>
-      friend struct ::Dune::PDELab::impl::update_ordering_data;
+      template<class, class>
+      friend class ::Dune::PDELab::OrderedGridFunctionSpace;
 
     public:
 
@@ -261,8 +261,7 @@ namespace Dune {
       }
 
     private:
-
-      bool update_gfs_data_size(typename Traits::SizeType& size, typename Traits::SizeType& block_count) const
+      bool update_gfs_data_size(typename Traits::SizeType& size, typename Traits::SizeType& block_count)
       {
         size = _size;
         block_count = _block_count;

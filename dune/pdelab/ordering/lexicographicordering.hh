@@ -198,13 +198,15 @@ namespace Dune {
       template<typename TC>
       static typename result<TC>::type transform(const GFS& gfs, const Transformation& t, const std::array<std::shared_ptr<TC>,TypeTree::StaticDegree<GFS>::value>& children)
       {
-        return typename result<TC>::type(gfs.backend().blocked(gfs),children,const_cast<GFS*>(&gfs));
+        auto data = impl::gfs_data(const_cast<GFS&>(gfs));
+        return typename result<TC>::type(gfs.backend().blocked(gfs),children,data);
       }
 
       template<typename TC>
       static typename result<TC>::storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t, const std::array<std::shared_ptr<TC>,TypeTree::StaticDegree<GFS>::value>& children)
       {
-        return std::make_shared<typename result<TC>::type>(gfs->backend().blocked(*gfs),children,const_cast<GFS*>(gfs.get()));
+        auto data = impl::gfs_data(const_cast<GFS&>(*gfs));
+        return std::make_shared<typename result<TC>::type>(gfs->backend().blocked(*gfs),children,data);
       }
 
     };
@@ -324,13 +326,15 @@ namespace Dune {
       template<typename... TC>
       static typename result<TC...>::type transform(const GFS& gfs, const Transformation& t, std::shared_ptr<TC>... children)
       {
-        return typename result<TC...>::type(gfs.backend().blocked(gfs),const_cast<GFS*>(&gfs),children...);
+        auto data = impl::gfs_data(const_cast<GFS&>(gfs));
+        return typename result<TC...>::type(gfs.backend().blocked(gfs),data,children...);
       }
 
       template<typename... TC>
       static typename result<TC...>::storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t, std::shared_ptr<TC>... children)
       {
-        return std::make_shared<typename result<TC...>::type>(gfs->backend().blocked(*gfs),const_cast<GFS*>(gfs.get()),children...);
+        auto data = impl::gfs_data(const_cast<GFS&>(*gfs));
+        return std::make_shared<typename result<TC...>::type>(gfs->backend().blocked(*gfs),data,children...);
       }
 
     };

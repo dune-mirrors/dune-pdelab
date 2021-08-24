@@ -31,7 +31,7 @@ namespace Dune {
 
     //! Trait class for the multi component grid function spaces
     template<typename G, typename B, typename O, std::size_t k>
-    struct PowerCompositeGridFunctionSpaceTraits
+    struct [[deprecated]] PowerCompositeGridFunctionSpaceTraits
     {
       enum{
         //! \brief True if this grid function space is composed of others.
@@ -65,7 +65,7 @@ namespace Dune {
 
     //! Mixin class providing common functionality of PowerGridFunctionSpace and CompositeGridFunctionSpace
     template<typename GridFunctionSpace, typename GV, typename B, typename O, std::size_t k>
-    class PowerCompositeGridFunctionSpaceBase
+    class [[deprecated]] PowerCompositeGridFunctionSpaceBase
       : public GridFunctionSpaceBase<
                  GridFunctionSpace,
                  PowerCompositeGridFunctionSpaceTraits<GV,B,O,k>

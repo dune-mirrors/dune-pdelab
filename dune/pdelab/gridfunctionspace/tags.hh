@@ -237,7 +237,7 @@ namespace Dune {
     template<typename GFS>
     struct build_dof_index_type
     {
-      typedef typename _build_dof_index_type<GFS,typename GFS::OrderingTag>::type type;
+      typedef typename _build_dof_index_type<GFS,typename GFS::Traits::OrderingTag>::type type;
     };
 
 
