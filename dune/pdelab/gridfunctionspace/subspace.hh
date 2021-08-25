@@ -177,7 +177,7 @@ namespace Dune {
         }
 
         //! Returns the underlying EntitySet.
-        typename Traits::EntitySet entitySet() const
+        const typename Traits::EntitySet& entitySet() const
         {
           return subSpace().childGridFunctionSpace().entitySet();
         }

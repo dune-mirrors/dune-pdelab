@@ -49,22 +49,24 @@ static void test_interpolate_old_interface(const GV& gv)
   // instantiate finite element maps
   auto gt = Dune::GeometryTypes::quadrilateral;
   typedef Dune::PDELab::P0LocalFiniteElementMap<double,double,GV::dimension> P0FEM;
-  P0FEM p0fem(gt);
+  auto p0fem = std::make_shared<P0FEM>(gt);
   typedef Dune::PDELab::QkLocalFiniteElementMap<GV,double,double,1> Q12DFEM;
-  Q12DFEM q12dfem(gv);
+  auto q12dfem = std::make_shared<Q12DFEM>(gv);
   typedef Dune::PDELab::QkLocalFiniteElementMap<GV,double,double,2> Q22DFEM;
-  Q22DFEM q22dfem(gv);
+  auto q22dfem = std::make_shared<Q22DFEM>(gv);
 
+  using EntitySet = Dune::PDELab::AllEntitySet<GV>;
+  EntitySet es{gv};
   // make a grid function space
-  typedef Dune::PDELab::UnorderedGridFunctionSpace<GV,P0FEM> P0GFS;
-  P0GFS p0gfs(gv,p0fem);
-  typedef Dune::PDELab::UnorderedGridFunctionSpace<GV,Q12DFEM> GFS1;
-  GFS1 gfs1(gv,q12dfem);
-  typedef Dune::PDELab::UnorderedGridFunctionSpace<GV,Q22DFEM> GFS2;
-  GFS2 gfs2(gv,q22dfem);
-  typedef Dune::PDELab::UnorderedGridFunctionSpace<GV,Q22DFEM,Dune::PDELab::NoConstraints,
+  typedef Dune::PDELab::UnorderedGridFunctionSpace<EntitySet,P0FEM> P0GFS;
+  P0GFS p0gfs(es,p0fem);
+  typedef Dune::PDELab::UnorderedGridFunctionSpace<EntitySet,Q12DFEM> GFS1;
+  GFS1 gfs1(es,q12dfem);
+  typedef Dune::PDELab::UnorderedGridFunctionSpace<EntitySet,Q22DFEM> GFS2;
+  GFS2 gfs2(es,q22dfem);
+  typedef Dune::PDELab::UnorderedGridFunctionSpace<EntitySet,Q22DFEM,Dune::PDELab::NoConstraints,
                                           Dune::PDELab::ISTL::VectorBackend<> > GFS3;
-  GFS3 gfs3(gv,q22dfem);
+  GFS3 gfs3(es,q22dfem);
 
   // test power
   typedef Dune::PDELab::UnorderedPowerGridFunctionSpace<GFS2,3,Dune::PDELab::ISTL::VectorBackend<> > PGFS;

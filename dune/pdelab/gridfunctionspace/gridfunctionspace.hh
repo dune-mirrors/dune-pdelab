@@ -132,14 +132,14 @@ namespace Dune {
       //! the entity set of this function space.
       using EntitySet = impl::EntitySet<G>;
 
-      using GridViewType /*[[deprecated]]*/ = GridView;
+      using GridViewType = GridView;
 
-      [[deprecated]] typedef L FiniteElementMapType;
+      typedef L FiniteElementMapType;
 
       //! finite element map
       typedef L FiniteElementMap;
 
-      [[deprecated]] typedef typename L::Traits::FiniteElementType FiniteElementType;
+      typedef typename L::Traits::FiniteElementType FiniteElementType;
 
       //! finite element
       typedef typename L::Traits::FiniteElementType FiniteElement;

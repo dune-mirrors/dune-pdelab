@@ -54,20 +54,25 @@ namespace Dune {
       typedef GridFunctionSpaceNode<GridFunctionSpaceNodeTraits<Backend,OrderingTag>> ImplementationBase;
 
       static std::array<std::shared_ptr<T>,k> make_storage(std::initializer_list<std::reference_wrapper<T>> list) {
-        assert(list.size() == k);
         std::array<std::shared_ptr<T>,k> storage;
-        auto it = begin(storage);
-        for (auto& val: list){
-          *it = std::make_shared<T>(val.get());
-          ++it;
+        assert(list.size() == k or list.size() == 1);
+        auto it = begin(list);
+        for (std::size_t i = 0; i < k; ++i) {
+          storage[i] = std::make_shared<T>(it->get());
+          if (list.size() == k) ++it;
         }
+
         return storage;
       }
 
       static std::array<std::shared_ptr<T>,k> make_storage(std::initializer_list<std::shared_ptr<T>> list) {
-        assert(list.size() == k);
         std::array<std::shared_ptr<T>,k> storage;
-        std::move(begin(list), end(list), begin(storage));
+        if(list.size() == 1)
+          std::fill(storage.begin(), storage.end(), list.front());
+        else {
+          assert(list.size() == k);
+          std::move(begin(list), end(list), begin(storage));
+        }
         return storage;
       }
 

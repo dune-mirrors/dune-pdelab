@@ -111,9 +111,9 @@ class OrderedGridFunctionSpace
 
 public:
   struct Traits : public UnorderedGFS::Traits {
-    using EntitySet = AssemblyEntitySet; // overload entity set if already existing
+    using EntitySet = AssemblyEntitySet;
     using GridView = typename EntitySet::GridView;
-    using GridViewType /*[[deprecated]]*/ = GridView;
+    using GridViewType = GridView;
     using Ordering = typename ordering_transformation::Type;
   };
 
@@ -132,10 +132,11 @@ public:
     // because we allow the whole tree to be ordered in order to be backwards
     // compatible, we need to check that when using this constructor, the whole tree is unordered
     TypeTree::forEachNode(static_cast<UnorderedGFS&>(*this),[&](auto& gfs_node, auto& path){
-      if (HasOrdering<decltype(gfs_node)>)
-        DUNE_THROW(GridFunctionSpaceHierarchyError,"initialized space cannot become part of larger GridFunctionSpace tree");
+      if constexpr (HasOrdering<decltype(gfs_node)>)
+        if (gfs_node.data()->_initialized)
+          DUNE_THROW(GridFunctionSpaceHierarchyError,"initialized space cannot become part of larger GridFunctionSpace tree");
     });
-    _data->_is_root_space = true;
+    reset_root_flag();
     create_ordering();
     update_ordering();
   }
@@ -149,17 +150,7 @@ public:
   {
     if constexpr (UnorderedGFS::isLeaf)
       static_assert(std::is_same<typename UnorderedGFS::Traits::EntitySet, AssemblyEntitySet>{});
-
-    // the backwards compatible behavior: every node of this tree is also
-    // ordered, thus, we need to make sure that no two of them are initialized at the same time
-    TypeTree::forEachNode(*this,[&](auto& gfs_node, auto& path){
-      if constexpr (HasOrdering<decltype(gfs_node)>) {
-        if (gfs_node.data()->_initialized and  gfs_node.data()->_is_root_space and not gfs_node.isLeaf)
-          DUNE_THROW(GridFunctionSpaceHierarchyError,"initialized space cannot become part of larger GridFunctionSpace tree");
-        gfs_node.data()->_is_root_space = (path.size() == 0);
-      }
-    });
-
+    reset_root_flag();
     const auto& first_entity_set = Impl::first_leaf(static_cast<const UnorderedGFS&>(*this)).entitySet();
     _entity_set.emplace(first_entity_set);
   }
@@ -274,6 +265,18 @@ public:
   }
 
 private:
+
+  void reset_root_flag() {
+    // the backwards compatible behavior: every node of this tree is also
+    // ordered, thus, we need to make sure that no two of them are initialized at the same time
+    TypeTree::forEachNode(*this,[&](auto& gfs_node, auto& path){
+      if constexpr (HasOrdering<decltype(gfs_node)>) {
+        if (gfs_node.data()->_initialized and  gfs_node.data()->_is_root_space and not gfs_node.isLeaf)
+          DUNE_THROW(GridFunctionSpaceHierarchyError,"initialized space cannot become part of larger GridFunctionSpace tree");
+        gfs_node.data()->_is_root_space = (path.size() == 0);
+      }
+    });
+  }
 
   void update_ordering() {
     check_root_space();

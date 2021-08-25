@@ -106,7 +106,7 @@ static void testpermutedordering(const GV& gv)
     P1GFS p1gfs(gfs1,gfs1,gfs1,VBE(),p1_gfs_block_sizes);
   }
 
-  P1GFS p1gfs(gfs1,gfs1,gfs1,VBE(),{{1,1,1}});
+  P1GFS p1gfs(gfs1,gfs1,gfs1,VBE(),Dune::PDELab::InterleavedOrderingTag{{1,1,1}});
 
   typedef Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,6> NVBE;
 

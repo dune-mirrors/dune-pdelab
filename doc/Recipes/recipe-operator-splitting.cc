@@ -796,7 +796,10 @@ void driver (const GV& gv, const FEM& fem, Param& param)
   using VBES = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::none>;
   using OrderingTag = Dune::PDELab::EntityBlockedOrderingTag;
   using GFSC = Dune::PDELab::PowerGridFunctionSpace<GFS,2,VBES,OrderingTag>;
-  GFSC gfsc(gfs); // GridFunctionSpace for contaminant
+
+  GFS gfspc0(gv,fem); // individual contaminant compoents
+  GFSC gfsc(gfspc0); // GridFunctionSpace for contaminant
+
   // gfsc names for VTK output
   using namespace Dune::TypeTree::Indices;
   gfsc.child(_0).name("C0");

@@ -54,7 +54,7 @@ namespace Dune {
       namespace Impl {
 
         template<class Node0, class... Others>
-        auto first_leaf(Node0&& node0, Others&&...) {
+        decltype(auto) first_leaf(Node0&& node0, Others&&...) {
           using TypeTree::child;
           if constexpr (std::decay_t<Node0>::isLeaf)
             return std::forward<Node0>(node0);
@@ -63,7 +63,7 @@ namespace Dune {
         }
 
         template<class... Nodes>
-        using FirstLeaf = decltype(first_leaf(std::declval<Nodes>()...));
+        using FirstLeaf = std::decay_t<decltype(first_leaf(std::declval<Nodes>()...))>;
       }
     //! \}
 
