@@ -97,8 +97,9 @@ namespace Dune {
                                                            const LeafOrderingTag& leaf_ordering_tag)
       {
         typename BaseT::NodeStorage r;
+        auto leaf_gfs = std::make_shared<LeafGFS>(es,fem_ptr,leaf_backend,leaf_ordering_tag);
         for (std::size_t i = 0; i < k; ++i)
-          r[i] = std::make_shared<LeafGFS>(es,fem_ptr,leaf_backend,leaf_ordering_tag);
+          r[i] = leaf_gfs;
         return r;
       }
 
@@ -123,8 +124,6 @@ namespace Dune {
             this->child(i).name(ns.str());
           }
       }
-
-      //! TODO: Do we need entity set here?
     };
 
 

@@ -47,6 +47,11 @@ namespace Dune {
 
       typedef GridFunctionSpaceNode<GridFunctionSpaceNodeTraits<Backend,OrderingTag>> ImplementationBase;
 
+
+      static std::tuple<std::shared_ptr<Children>...> make_storage(const Children&... children) {
+        return std::make_tuple(std::make_shared<Children>(children)...);
+      }
+
     public:
       typedef CompositeGridFunctionSpaceTag ImplementationTag;
 
@@ -59,6 +64,46 @@ namespace Dune {
           const Backend &backend = Backend(),
           const OrderingTag ordering_tag = OrderingTag())
           : NodeT(children), ImplementationBase(backend, ordering_tag) {}
+
+      // ********************************************************************************
+      // constructors for stack-constructed children passed in by reference
+      // ********************************************************************************
+
+      UnorderedCompositeGridFunctionSpace(const Backend& backend, Children&... children)
+        : UnorderedCompositeGridFunctionSpace(make_storage(children...), backend)
+      { }
+
+      UnorderedCompositeGridFunctionSpace(const OrderingTag& ordering_tag, Children&... children)
+        : UnorderedCompositeGridFunctionSpace(make_storage(children...), Backend{}, ordering_tag)
+      { }
+
+      UnorderedCompositeGridFunctionSpace(const Backend& backend, const OrderingTag& ordering_tag, Children&... children)
+        : UnorderedCompositeGridFunctionSpace(make_storage(children...), backend, ordering_tag)
+      { }
+
+      UnorderedCompositeGridFunctionSpace(Children&... children)
+        : UnorderedCompositeGridFunctionSpace(make_storage(children...))
+      { }
+
+      // ********************************************************************************
+      // constructors for heap-constructed children passed in as shared_ptrs
+      // ********************************************************************************
+
+      UnorderedCompositeGridFunctionSpace(const Backend& backend, const std::shared_ptr<Children>&... children)
+        : UnorderedCompositeGridFunctionSpace(std::make_tuple(children...), backend)
+      { }
+
+      UnorderedCompositeGridFunctionSpace(const OrderingTag& ordering_tag, const std::shared_ptr<Children>&... children)
+        : UnorderedCompositeGridFunctionSpace(std::make_tuple(children...), Backend{}, ordering_tag)
+      { }
+
+      UnorderedCompositeGridFunctionSpace(const Backend& backend, const OrderingTag& ordering_tag, const std::shared_ptr<Children>&... children)
+        : UnorderedCompositeGridFunctionSpace(std::make_tuple(children...), Backend{}, ordering_tag)
+      { }
+
+      UnorderedCompositeGridFunctionSpace(const std::shared_ptr<Children>&... children)
+        : UnorderedCompositeGridFunctionSpace(std::make_tuple(children...))
+      { }
     };
 
     //! \copydoc UnorderedCompositeGridFunctionSpace
@@ -72,45 +117,10 @@ namespace Dune {
 
     public:
 
-      // ********************************************************************************
-      // constructors for stack-constructed children passed in by reference
-      // ********************************************************************************
-
-      CompositeGridFunctionSpace(const Backend& backend, Children&... children)
-        : Base(std::in_place, std::make_tuple(stackobject_to_shared_ptr(children)...), backend)
-      { }
-
-      CompositeGridFunctionSpace(const OrderingTag& ordering_tag, Children&... children)
-        : Base(std::in_place, std::make_tuple(stackobject_to_shared_ptr(children)...), Backend{}, ordering_tag)
-      { }
-
-      CompositeGridFunctionSpace(const Backend& backend, const OrderingTag& ordering_tag, Children&... children)
-        : Base(std::in_place, std::make_tuple(stackobject_to_shared_ptr(children)...), backend, ordering_tag)
-      { }
-
-      CompositeGridFunctionSpace(Children&... children)
-        : Base(std::in_place, std::make_tuple(stackobject_to_shared_ptr(children)...))
-      { }
-
-      // ********************************************************************************
-      // constructors for heap-constructed children passed in as shared_ptrs
-      // ********************************************************************************
-
-      CompositeGridFunctionSpace(const Backend& backend, const std::shared_ptr<Children>&... children)
-        : Base(std::in_place, std::make_tuple(children...), backend)
-      { }
-
-      CompositeGridFunctionSpace(const OrderingTag& ordering_tag, const std::shared_ptr<Children>&... children)
-        : Base(std::in_place, std::make_tuple(children...), Backend{}, ordering_tag)
-      { }
-
-      CompositeGridFunctionSpace(const Backend& backend, const OrderingTag& ordering_tag, const std::shared_ptr<Children>&... children)
-        : Base(std::in_place, std::make_tuple(children...), Backend{}, ordering_tag)
-      { }
-
-      CompositeGridFunctionSpace(const std::shared_ptr<Children>&... children)
-        : Base(std::in_place, std::make_tuple(children...))
-      { }
+      template<class... Args>
+      CompositeGridFunctionSpace(Args&&... args)
+        : Base(std::in_place, std::forward<Args>(args)...)
+      {}
     };
 
 

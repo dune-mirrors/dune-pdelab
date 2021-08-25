@@ -35,7 +35,7 @@ namespace Dune {
 
       typedef typename BaseT::Traits Traits;
 
-      LeafLocalOrdering(const std::shared_ptr<const FEM>& fem, const ES& es, bool backend_blocked, typename BaseT::GFSData* gfs_data)
+      LeafLocalOrdering(const std::shared_ptr<const FEM>& fem, const ES& es, bool backend_blocked, const std::shared_ptr<typename BaseT::GFSData>& gfs_data)
         : BaseT(*this,backend_blocked,gfs_data)
         , _fem(fem)
         , _es(es)

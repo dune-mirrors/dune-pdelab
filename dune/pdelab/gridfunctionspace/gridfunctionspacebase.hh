@@ -34,13 +34,7 @@ namespace Dune {
       template<typename size_type>
       class GridFunctionSpaceOrderingData
       {
-
-        template<typename,typename>
-        friend class ::Dune::PDELab::GridFunctionSpaceBase;
-
-        template<class,class>
-        friend class ::Dune::PDELab::OrderedGridFunctionSpace;
-
+      public:
         GridFunctionSpaceOrderingData()
           : _size(0)
           , _block_count(0)
@@ -51,6 +45,14 @@ namespace Dune {
           , _size_available(true)
         {}
 
+      private:
+
+        template<typename,typename>
+        friend class ::Dune::PDELab::GridFunctionSpaceBase;
+
+        template<class,class>
+        friend class ::Dune::PDELab::OrderedGridFunctionSpace;
+
         size_type _size;
         size_type _block_count;
         size_type _global_size;
@@ -60,16 +62,6 @@ namespace Dune {
         bool _size_available;
 
       };
-
-      template<class GFS>
-      auto gfs_data(GFS& gfs) {
-        using SizeType = typename GFS::Traits::SizeType;
-        using GFSData = impl::GridFunctionSpaceOrderingData<SizeType>;
-        if constexpr (std::is_base_of<GFSData,GFS>{})
-          return static_cast<GFSData*>(&gfs);
-        else
-          return (GFSData*)nullptr;
-      }
 
       //! Checks that every leaf node has the same entity set
       template<class EntitySet>
@@ -88,16 +80,33 @@ namespace Dune {
                 "A reason for getting this error is creating GridFunctionSpaces with "
                 "a grid view in the constructor. To solve this, create an entity set"
                 "(e.g. AllEntitySet<GV>) and use one instance to construct all of your GridFunctionSpaces."
-);
+          );
         }
 
         std::optional<EntitySet> _entity_set;
       };
 
+      template<class GFS>
+      using HasOrderingConcept = decltype((std::declval<GFS>().ordering(),true));
+
     } // namespace impl
 
 #endif // DOXYGEN
 
+    template<class GFS>
+    constexpr bool HasOrdering = Std::is_detected<impl::HasOrderingConcept,GFS>{};
+
+    namespace impl {
+      template<class GFS>
+      auto gfs_data(GFS& gfs) {
+        using SizeType = typename GFS::Traits::SizeType;
+        using GFSData = impl::GridFunctionSpaceOrderingData<SizeType>;
+        if constexpr (HasOrdering<GFS>)
+          return gfs.data();
+        else
+          return std::make_shared<GFSData>();
+      }
+    }
 
     template<class B, class O>
     struct GridFunctionSpaceNodeTraits

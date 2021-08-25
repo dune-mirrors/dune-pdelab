@@ -65,9 +65,8 @@ public:
     return decltype(HasNoConstraints{}.apply(std::declval<GFS>())){};
   }
 };
+
 } // namespace Impl
-
-
 
 /*
 The OrderedGridFunctionSpace intends to demangle the strong relationship that
@@ -97,7 +96,6 @@ OrderedGridFunctionSpace. In other words, we want to deprecate XXXGridFunctionSp
 template <class UnorderedGFS, class AssemblyEntitySet>
 class OrderedGridFunctionSpace
     : public UnorderedGFS
-    , public impl::GridFunctionSpaceOrderingData<typename UnorderedGFS::Traits::SizeType>
     , public DataHandleProvider<OrderedGridFunctionSpace<UnorderedGFS, AssemblyEntitySet>>
 {
   static_assert(isEntitySet<AssemblyEntitySet>{});
@@ -125,6 +123,7 @@ public:
   OrderedGridFunctionSpace(const UnorderedGFS& ugfs, AssemblyEntitySet entity_set)
     : UnorderedGFS{ugfs}
     , _entity_set{entity_set}
+    , _data{std::make_shared<GFSData>()}
   {
     if constexpr (UnorderedGFS::isLeaf)
       static_assert(std::is_same<typename UnorderedGFS::Traits::EntitySet, AssemblyEntitySet>{});
@@ -133,10 +132,10 @@ public:
     // because we allow the whole tree to be ordered in order to be backwards
     // compatible, we need to check that when using this constructor, the whole tree is unordered
     TypeTree::forEachNode(static_cast<UnorderedGFS&>(*this),[&](auto& gfs_node, auto& path){
-      if (impl::gfs_data(gfs_node))
+      if (HasOrdering<decltype(gfs_node)>)
         DUNE_THROW(GridFunctionSpaceHierarchyError,"initialized space cannot become part of larger GridFunctionSpace tree");
     });
-    _is_root_space = true;
+    _data->_is_root_space = true;
     create_ordering();
     update_ordering();
   }
@@ -146,6 +145,7 @@ public:
   template<class... Args>
   OrderedGridFunctionSpace(std::in_place_t, Args&&... args)
     : UnorderedGFS(std::forward<Args>(args)...)
+    , _data{std::make_shared<GFSData>()}
   {
     if constexpr (UnorderedGFS::isLeaf)
       static_assert(std::is_same<typename UnorderedGFS::Traits::EntitySet, AssemblyEntitySet>{});
@@ -153,15 +153,15 @@ public:
     // the backwards compatible behavior: every node of this tree is also
     // ordered, thus, we need to make sure that no two of them are initialized at the same time
     TypeTree::forEachNode(*this,[&](auto& gfs_node, auto& path){
-      if constexpr (std::is_base_of<GFSData,std::decay_t<decltype(gfs_node)>>{}) {
-        if (gfs_node._initialized and  gfs_node._is_root_space and not gfs_node.isLeaf)
+      if constexpr (HasOrdering<decltype(gfs_node)>) {
+        if (gfs_node.data()->_initialized and  gfs_node.data()->_is_root_space and not gfs_node.isLeaf)
           DUNE_THROW(GridFunctionSpaceHierarchyError,"initialized space cannot become part of larger GridFunctionSpace tree");
-        gfs_node._is_root_space = (path.size() == 0);
+        gfs_node.data()->_is_root_space = (path.size() == 0);
       }
     });
 
-    const auto first_entity_set = Impl::first_leaf(static_cast<const UnorderedGFS&>(*this)).entitySet();
-     _entity_set.emplace(first_entity_set);
+    const auto& first_entity_set = Impl::first_leaf(static_cast<const UnorderedGFS&>(*this)).entitySet();
+    _entity_set.emplace(first_entity_set);
   }
 
 
@@ -180,44 +180,44 @@ public:
   };
 
   typename Traits::SizeType size() const {
-    if (!_initialized)
+    if (!_data->_initialized)
       DUNE_THROW(UninitializedGridFunctionSpaceError,
                  "space is not initialized");
-    if (!_size_available)
+    if (!_data->_size_available)
       DUNE_THROW(GridFunctionSpaceHierarchyError,
                  "Size cannot be calculated at this point in the GFS tree.");
-    return _size;
+    return _data->_size;
   }
 
   typename Traits::SizeType blockCount() const {
-    if (!_initialized)
+    if (!_data->_initialized)
       DUNE_THROW(UninitializedGridFunctionSpaceError,
                  "space is not initialized");
-    if (!_size_available)
+    if (!_data->_size_available)
       DUNE_THROW(
           GridFunctionSpaceHierarchyError,
           "Block count cannot be calculated at this point in the GFS tree.");
-    return _block_count;
+    return _data->_block_count;
   }
 
   typename Traits::SizeType globalSize() const {
-    if (!_initialized)
+    if (!_data->_initialized)
       DUNE_THROW(UninitializedGridFunctionSpaceError,
                  "space is not initialized");
-    return _global_size;
+    return _data->_global_size;
   }
 
   //! get max dimension of shape function space
   typename Traits::SizeType maxLocalSize() const {
-    if (!_initialized)
+    if (!_data->_initialized)
       DUNE_THROW(UninitializedGridFunctionSpaceError,
                  "space is not initialized");
-    return _max_local_size;
+    return _data->_max_local_size;
   }
 
   bool isRootSpace() const
   {
-    return _is_root_space;
+    return _data->_is_root_space;
   }
 
   //! get grid view
@@ -227,13 +227,13 @@ public:
   }
 
   //! get entity set
-  typename Traits::EntitySet entitySet () const
+  const typename Traits::EntitySet& entitySet () const
   {
     return *_entity_set;
   }
 
   //! get entity set
-  typename Traits::EntitySet entitySet ()
+  typename Traits::EntitySet& entitySet ()
   {
     return *_entity_set;
   }
@@ -245,10 +245,10 @@ public:
   Ordering &ordering() { return *orderingStorage(); }
 
   //! Direct access to the storage of the DOF ordering.
-  std::shared_ptr<const Ordering> orderingStorage() const { backwards_create_ordering(); return _ordering; }
+  std::shared_ptr<const Ordering> orderingStorage() const { create_ordering_in_place(); return _ordering; }
 
   //! Direct access to the storage of the DOF ordering.
-  std::shared_ptr<Ordering> orderingStorage() { backwards_create_ordering(); return _ordering; }
+  std::shared_ptr<Ordering> orderingStorage() { create_ordering_in_place(); return _ordering; }
 
   //! Update the indexing information of the GridFunctionSpace.
   /**
@@ -269,12 +269,16 @@ public:
     update_ordering();
   }
 
+  std::shared_ptr<GFSData> data() {
+    return _data;
+  }
+
 private:
 
   void update_ordering() {
     check_root_space();
-    backwards_create_ordering();
-
+    create_ordering_in_place();
+    _ordering->update();
     TypeTree::forEachNode(*_ordering, [&](auto& ordering_node, auto& path){
       // bool is_root = (path.size() == 0);
       if (ordering_node._gfs_data) {
@@ -295,10 +299,10 @@ private:
                  "Ordering can only be obtained initialized once.");
     _ordering = std::make_shared<Ordering>(ordering_transformation::transform(*this));
     // ordering is in charge of filling out our data
-    _ordering->_gfs_data = static_cast<GFSData*>(this);
+    _ordering->_gfs_data = _data;
   }
 
-  void backwards_create_ordering() const {
+  void create_ordering_in_place() const {
     // we do this only to be backwards compatible
     if (not _ordering) {
       const_cast<OrderedGridFunctionSpace*>(this)->create_ordering();
@@ -307,7 +311,7 @@ private:
   }
 
   void check_root_space() const {
-    if (!this->isRootSpace()) {
+    if (!isRootSpace()) {
       DUNE_THROW(GridFunctionSpaceHierarchyError,
                  "update() may only be called on the root of the function "
                  "space hierarchy");
@@ -316,14 +320,7 @@ private:
 
   std::shared_ptr<Ordering> _ordering;
   std::optional<typename Traits::EntitySet> _entity_set;
-
-  using GFSData::_size;
-  using GFSData::_block_count;
-  using GFSData::_global_size;
-  using GFSData::_max_local_size;
-  using GFSData::_is_root_space;
-  using GFSData::_initialized;
-  using GFSData::_size_available;
+  std::shared_ptr<GFSData> _data;
 };
 
 } // namespace PDELab

@@ -51,7 +51,7 @@ namespace Dune {
          * construction.  This must be done by a seperate call to update()
          * after all the children have been properly set up.
          */
-        Base(Node& node, bool container_blocked, typename BaseT::GFSData* gfs_data)
+        Base(Node& node, bool container_blocked, const std::shared_ptr<typename BaseT::GFSData>& gfs_data)
           : BaseT(node,container_blocked,gfs_data,nullptr)
         {
         }
@@ -129,7 +129,7 @@ namespace Dune {
        * \note This constructor must be present for ordering objects not at
        *       the leaf of the tree.
        */
-      PowerLexicographicOrdering(bool container_blocked, const typename Node::NodeStorage& children, typename Base::GFSData* gfs_data)
+      PowerLexicographicOrdering(bool container_blocked, const typename Node::NodeStorage& children, const std::shared_ptr<typename Base::GFSData>& gfs_data)
         : Node(children)
         , Base(*this,container_blocked,gfs_data)
       { }
@@ -255,7 +255,7 @@ namespace Dune {
        * \note This constructor must be present for ordering objects not at
        *       the leaf of the tree.
        */
-      CompositeLexicographicOrdering(bool backend_blocked, typename Base::GFSData* gfs_data, std::shared_ptr<Children>... children)
+      CompositeLexicographicOrdering(bool backend_blocked, const std::shared_ptr<typename Base::GFSData>& gfs_data, std::shared_ptr<Children>... children)
         : Node(children...)
         , Base(*this,backend_blocked,gfs_data)
       { }

@@ -464,7 +464,7 @@ namespace Dune {
        */
       GridViewOrdering(const typename NodeT::NodeStorage &local_ordering,
                        bool container_blocked,
-                       typename BaseT::GFSData *gfs_data,
+                       const std::shared_ptr<typename BaseT::GFSData>& gfs_data,
                        const EntitySet &entity_Set)
           : NodeT(local_ordering),
             BaseT(*this, container_blocked, gfs_data, this), _es(entity_Set) {

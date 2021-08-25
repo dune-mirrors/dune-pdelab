@@ -214,21 +214,23 @@ void poisson(const Grid &grid, const FEM &fem_1, const FEM &fem_2,
 
   // make function space
   using VBE = Dune::PDELab::ISTL::VectorBackend<>;
-  using DomainGFS = Dune::PDELab::GridFunctionSpace<EntitySet, FEM, CON, VBE>;
+  using DomainGFS = Dune::PDELab::UnorderedGridFunctionSpace<EntitySet, FEM, CON, VBE>;
   // create two grid function spaces with different entity sets!
-  DomainGFS gfs_1(es_1, fem_1);
-  DomainGFS gfs_2(es_2, fem_2);
+  DomainGFS gfs_1(es_1, Dune::stackobject_to_shared_ptr(fem_1));
+  DomainGFS gfs_2(es_2, Dune::stackobject_to_shared_ptr(fem_2));
   gfs_1.name("domain_1");
   gfs_2.name("domain_2");
 
   // combine them with a power GFS
-  using GFS = Dune::PDELab::PowerGridFunctionSpace<DomainGFS, 2,VBE>;
-  GFS gfs{gfs_1, gfs_2};
+  using UGFS = Dune::PDELab::UnorderedPowerGridFunctionSpace<DomainGFS, 2,VBE>;
+  UGFS ugfs{gfs_1, gfs_2};
 
   // the root node is in charge of the assembly loop, thus we need another
   // entity set that contains entities needed in every child space
   EntitySet assembly_es{grid.subDomain(0).leafGridView()};
-  gfs.setEntitySet(assembly_es);
+
+  using GFS =  Dune::PDELab::OrderedGridFunctionSpace<UGFS,EntitySet>;
+  GFS gfs{ugfs,assembly_es};
 
   // make model problem
   typedef PoissonModelProblem<GV, R> Problem;

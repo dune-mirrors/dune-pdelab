@@ -139,7 +139,7 @@ namespace Dune {
       template<typename Node>
       OrderingBase(Node& node,
                    bool container_blocked,
-                   GFSData* gfs_data,
+                   const std::shared_ptr<GFSData>& gfs_data,
                    VirtualOrderingBase<DI,CI>* delegate = nullptr)
         : _fixed_size(false)
         , _container_blocked(container_blocked)
@@ -161,7 +161,7 @@ namespace Dune {
       OrderingBase(Node& node,
                    bool container_blocked,
                    const std::vector<std::size_t>& merge_offsets,
-                   GFSData* gfs_data,
+                   const std::shared_ptr<GFSData>& gfs_data,
                    VirtualOrderingBase<DI,CI>* delegate = nullptr)
         : _fixed_size(false)
         , _container_blocked(container_blocked)
@@ -288,7 +288,7 @@ namespace Dune {
       std::size_t _block_count;
 
       const VirtualOrderingBase<DI,CI>* _delegate;
-      GFSData* _gfs_data;
+      std::shared_ptr<GFSData> _gfs_data;
 
     };
 

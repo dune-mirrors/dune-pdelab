@@ -53,6 +53,24 @@ namespace Dune {
 
       typedef GridFunctionSpaceNode<GridFunctionSpaceNodeTraits<Backend,OrderingTag>> ImplementationBase;
 
+      static std::array<std::shared_ptr<T>,k> make_storage(std::initializer_list<std::reference_wrapper<T>> list) {
+        assert(list.size() == k);
+        std::array<std::shared_ptr<T>,k> storage;
+        auto it = begin(storage);
+        for (auto& val: list){
+          *it = std::make_shared<T>(val.get());
+          ++it;
+        }
+        return storage;
+      }
+
+      static std::array<std::shared_ptr<T>,k> make_storage(std::initializer_list<std::shared_ptr<T>> list) {
+        assert(list.size() == k);
+        std::array<std::shared_ptr<T>,k> storage;
+        std::move(begin(list), end(list), begin(storage));
+        return storage;
+      }
+
     public:
 
 
@@ -71,78 +89,45 @@ namespace Dune {
         , ImplementationBase(backend,ordering_tag)
       {}
 
-    };
-
-    //! \copydoc UnorderedPowerGridFunctionSpace
-    template<typename T, std::size_t k,
-             typename Backend,
-             typename OrderingTag = LexicographicOrderingTag>
-    class PowerGridFunctionSpace
-      : public OrderedGridFunctionSpace<UnorderedPowerGridFunctionSpace<T,k,Backend,OrderingTag>, typename Impl::FirstLeaf<T>::Traits::EntitySet>
-    {
-      using Base = OrderedGridFunctionSpace<UnorderedPowerGridFunctionSpace<T,k,Backend,OrderingTag>, typename Impl::FirstLeaf<T>::Traits::EntitySet>;
-
-
-      static std::array<std::shared_ptr<T>,k> make_storage(std::initializer_list<std::reference_wrapper<T>> list) {
-        assert(list.size() == k);
-        std::array<std::shared_ptr<T>,k> storage;
-        auto it = begin(storage);
-        for (auto& val: list){
-          *it = stackobject_to_shared_ptr(val.get());
-          ++it;
-        }
-        return storage;
-      }
-
-      static std::array<std::shared_ptr<T>,k> make_storage(std::initializer_list<std::shared_ptr<T>> list) {
-        assert(list.size() == k);
-        std::array<std::shared_ptr<T>,k> storage;
-        std::move(begin(list), end(list), begin(storage));
-        return storage;
-      }
-
-    public:
-
-
-      PowerGridFunctionSpace(T& c, const Backend& backend = Backend(), const OrderingTag ordering_tag = OrderingTag())
-        : Base(std::in_place, make_storage({c}), backend, ordering_tag)
+      UnorderedPowerGridFunctionSpace(T& c, const Backend& backend = Backend(), const OrderingTag ordering_tag = OrderingTag())
+        : UnorderedPowerGridFunctionSpace(make_storage({c}), backend, ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               const Backend& backend = Backend(),
                               const OrderingTag ordering_tag = OrderingTag())
-        : Base(std::in_place, make_storage({c0,c1}), backend, ordering_tag)
+        : UnorderedPowerGridFunctionSpace(make_storage({c0,c1}), backend, ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               const Backend& backend = Backend(),
                               const OrderingTag ordering_tag = OrderingTag())
-        : Base(std::in_place, make_storage({c0,c1,c2}),backend,ordering_tag)
+        : UnorderedPowerGridFunctionSpace(make_storage({c0,c1,c2}),backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               T& c3,
                               const Backend& backend = Backend(),
                               const OrderingTag ordering_tag = OrderingTag())
-        : Base(std::in_place, make_storage({c0,c1,c2,c3}),backend,ordering_tag)
+        : UnorderedPowerGridFunctionSpace(make_storage({c0,c1,c2,c3}),backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               T& c3,
                               T& c4,
                               const Backend& backend = Backend(),
                               const OrderingTag ordering_tag = OrderingTag())
-        : Base(std::in_place, make_storage({c0,c1,c2,c3,c4}),backend,ordering_tag)
+        : UnorderedPowerGridFunctionSpace(make_storage({c0,c1,c2,c3,c4}),backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               T& c3,
@@ -150,10 +135,10 @@ namespace Dune {
                               T& c5,
                               const Backend& backend = Backend(),
                               const OrderingTag ordering_tag = OrderingTag())
-        : Base(std::in_place, make_storage({c0,c1,c2,c3,c4,c5}),backend,ordering_tag)
+        : UnorderedPowerGridFunctionSpace(make_storage({c0,c1,c2,c3,c4,c5}),backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               T& c3,
@@ -162,10 +147,10 @@ namespace Dune {
                               T& c6,
                               const Backend& backend = Backend(),
                               const OrderingTag ordering_tag = OrderingTag())
-        : Base(std::in_place, make_storage({c0,c1,c2,c3,c4,c5,c6}),backend,ordering_tag)
+        : UnorderedPowerGridFunctionSpace(make_storage({c0,c1,c2,c3,c4,c5,c6}),backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               T& c3,
@@ -175,10 +160,10 @@ namespace Dune {
                               T& c7,
                               const Backend& backend = Backend(),
                               const OrderingTag ordering_tag = OrderingTag())
-        : Base(std::in_place, make_storage({c0,c1,c2,c3,c4,c5,c6,c7}),backend,ordering_tag)
+        : UnorderedPowerGridFunctionSpace(make_storage({c0,c1,c2,c3,c4,c5,c6,c7}),backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               T& c3,
@@ -189,10 +174,10 @@ namespace Dune {
                               T& c8,
                               const Backend& backend = Backend(),
                               const OrderingTag ordering_tag = OrderingTag())
-        : Base(std::in_place, make_storage({c0,c1,c2,c3,c4,c5,c6,c7,c8}),backend,ordering_tag)
+        : UnorderedPowerGridFunctionSpace(make_storage({c0,c1,c2,c3,c4,c5,c6,c7,c8}),backend,ordering_tag)
       {}
 
-      PowerGridFunctionSpace (T& c0,
+      UnorderedPowerGridFunctionSpace (T& c0,
                               T& c1,
                               T& c2,
                               T& c3,
@@ -204,14 +189,31 @@ namespace Dune {
                               T& c9,
                               const Backend& backend = Backend(),
                               const OrderingTag ordering_tag = OrderingTag())
-        : Base(std::in_place, make_storage({c0,c1,c2,c3,c4,c5,c6,c7,c8,c9}),backend,ordering_tag)
+        : UnorderedPowerGridFunctionSpace(make_storage({c0,c1,c2,c3,c4,c5,c6,c7,c8,c9}),backend,ordering_tag)
       {}
 
       template<typename... Children>
-      PowerGridFunctionSpace(std::shared_ptr<Children>... children)
-        : Base(std::in_place, make_storage({std::move(children)...}))
+      UnorderedPowerGridFunctionSpace(std::shared_ptr<Children>... children)
+        : UnorderedPowerGridFunctionSpace(make_storage({std::move(children)...}))
       {}
 
+    };
+
+    //! \copydoc UnorderedPowerGridFunctionSpace
+    template<typename T, std::size_t k,
+             typename Backend,
+             typename OrderingTag = LexicographicOrderingTag>
+    class PowerGridFunctionSpace
+      : public OrderedGridFunctionSpace<UnorderedPowerGridFunctionSpace<T,k,Backend,OrderingTag>, typename Impl::FirstLeaf<T>::Traits::EntitySet>
+    {
+      using Base = OrderedGridFunctionSpace<UnorderedPowerGridFunctionSpace<T,k,Backend,OrderingTag>, typename Impl::FirstLeaf<T>::Traits::EntitySet>;
+
+    public:
+
+      template<class... Args>
+      PowerGridFunctionSpace(Args&&... args)
+        : Base(std::in_place, std::forward<Args>(args)...)
+      {}
     };
 
   } // namespace PDELab

@@ -30,7 +30,7 @@ namespace Dune {
 
     public:
 
-      LeafGridViewOrdering(const typename NodeT::NodeStorage& local_ordering, bool container_blocked, typename BaseT::GFSData* gfs_data)
+      LeafGridViewOrdering(const typename NodeT::NodeStorage& local_ordering, bool container_blocked, const std::shared_ptr<typename BaseT::GFSData>& gfs_data)
         : BaseT(local_ordering, container_blocked, gfs_data)
         , _es(this->template child<0>().entitySet())
       {}

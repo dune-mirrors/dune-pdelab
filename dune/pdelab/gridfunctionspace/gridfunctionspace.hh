@@ -274,13 +274,13 @@ namespace Dune {
       }
 
       //! get entity set
-      typename Traits::EntitySet entitySet () const
+      const typename Traits::EntitySet& entitySet () const
       {
         return _entity_set;
       }
 
       //! get entity set
-      typename Traits::EntitySet entitySet ()
+      typename Traits::EntitySet& entitySet ()
       {
         return _entity_set;
       }

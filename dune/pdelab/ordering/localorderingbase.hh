@@ -344,7 +344,7 @@ namespace Dune {
       }
 
       template<typename Node>
-      LocalOrderingBase(Node& node, bool container_blocked, GFSData* gfs_data)
+      LocalOrderingBase(Node& node, bool container_blocked, const std::shared_ptr<GFSData>& gfs_data)
         : _fixed_size(false)
         , _fixed_size_possible(false)
         , _container_blocked(container_blocked)
@@ -448,7 +448,7 @@ namespace Dune {
       std::vector<typename Traits::SizeType> _gt_dof_offsets;
       std::vector<typename Traits::SizeType> _entity_dof_offsets;
 
-      GFSData* _gfs_data;
+      std::shared_ptr<GFSData> _gfs_data;
 
     };
 

@@ -52,7 +52,7 @@ namespace Dune {
       }
 
 
-      LeafOrderingBase(const typename NodeT::NodeStorage& local_ordering, bool container_blocked, typename BaseT::GFSData* gfs_data)
+      LeafOrderingBase(const typename NodeT::NodeStorage& local_ordering, bool container_blocked, const std::shared_ptr<typename BaseT::GFSData>& gfs_data)
         : NodeT(local_ordering)
         , BaseT(*this,container_blocked,gfs_data,this)
       {}

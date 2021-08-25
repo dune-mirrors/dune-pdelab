@@ -343,7 +343,7 @@ namespace Dune {
 
       // This is only here to make the visitor happy that traverses all
       // Orderings to manipulate the contained GFSData
-      GFSData* _gfs_data;
+      std::shared_ptr<GFSData> _gfs_data;
 
     };
 
