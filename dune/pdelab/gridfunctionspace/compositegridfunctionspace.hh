@@ -115,6 +115,27 @@ namespace Dune {
       using Base = OrderedGridFunctionSpace<UnorderedCompositeGridFunctionSpace<Backend,OrderingTag,Children...>, typename Impl::FirstLeaf<Children...>::Traits::EntitySet>;
 
     public:
+      struct Traits : public Base::Traits {
+        enum {
+          //! \brief True if this grid function space is composed of others.
+          isComposite
+          [[deprecated("This enum will be removed after PDELab 2.9.")]] = 1,
+          //! \brief number of child spaces
+          noChilds
+          [[deprecated("This enum will be removed after PDELab 2.9.")]] =
+              sizeof...(Children)
+        };
+
+        [[deprecated(
+            "This enum will be removed after PDELab 2.9. Use degree() from the "
+            "TypeTree base class")]] const static std::size_t CHILDREN =
+            sizeof...(Children);
+
+        //! \brief mapper
+        using MapperType [[deprecated("This enum will be removed after PDELab "
+                                      "2.9. Use OrderingTag instead.")]] =
+            typename Base::Traits::OrderingTag;
+      };
 
       template<class... Args>
       CompositeGridFunctionSpace(Args&&... args)

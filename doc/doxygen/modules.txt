@@ -32,6 +32,78 @@
   @ingroup  PDELab
 
 
+  @addtogroup GridFunctionSpace
+  @{
+    @brief Representation of an function space in a grid
+
+    ## Overview
+      A Grid Function Space (often `GFS`) is a representation of an function space
+      in a grid. There are several attributes that a GFS has and one has to be
+      aware when using them:
+
+    ## Tree Structure
+      A GFS is a tree of nodes that describe different type of space products.
+      A leaf node represents a space spanned by local finite elements. This is
+      acheived with the help of an EntitySet and FiniteElementMap wich gives the
+      node a local finite element for each entity.
+
+    ## Ordering
+      The root node of the tree contains an @ref Ordering and an entity set used
+      for assembly. For a given GFS tree, only one ordering is allowed to be
+      active.
+
+    ## Construction
+      Grid Function Spaces are constructed bottom-up. That is, we first declare
+      the leaf nodes and then compose them into product spaces:
+
+      @code{.cpp}
+        // define some finite element map
+        using FEM = ...;
+        auto fem = std::make_shared<FEM>(...);
+
+        // create entity set
+        using EntitySet = Dune::PDELab::AllEntitySet<GV>;
+        EntitySet es{grid.leafGridView()};
+
+        // make leaf grid function space (bottom)
+        using LeafGFS = Dune::PDELab::UnorderedGridFunctionSpace<EntitySet, FEM, CON, VBE>;
+        LeafGFS gfs_1{es, fem};
+        LeafGFS gfs_2{es, fem};
+
+        // make a product space them with a power GFS (up)
+        using PowerGFS = Dune::PDELab::UnorderedPowerGridFunctionSpace<LeafGFS, 2>;
+        PowerGFS pgfs{gfs_1, gfs_2};
+
+        // enable ordering on root node
+        using GFS = Dune::PDELab::OrderedGridFunctionSpace<PowerGFS, EntitySet>;
+        GFS gfs{pgfs, es};
+      @endcode
+
+    ## Eager and Lazy construction
+      The example above shows an example of eager construction of GFS. That is,
+      by the time the `gfs` is constructed, the ordering is eagerly
+      initializated and ready for usage. However, a lazy initialization is also
+      possible and is indeed the traditional way of using PDELab:
+
+      @code{.cpp}
+        // make leaf grid function space (bottom)
+        using LeafGFS = Dune::PDELab::GridFunctionSpace<EntitySet, FEM, CON, VBE>;
+        // this leaf node contains an ordering, but since it may become part of
+        // another bigger tree, it is not yet initializated.
+        LeafGFS gfs_1{es, fem};
+        LeafGFS gfs_2{es, fem};
+
+        // make a product space them with a power GFS (up)
+        using PowerGFS = Dune::PDELab::PowerGridFunctionSpace<LeafGFS, 2>;
+        // this node also contains an ordering which is not yet initializated.
+        PowerGFS gfs{gfs_1, gfs_2};
+
+        // when we use the ordering, it gets initializated internally and is ready to use.
+        std::cout << "DOF count: " << gfs.ordering().size() << std::endl;
+      @endcode
+  @}
+
+
   @addtogroup Ordering
   @{
     @brief Map between DOFIndex and ContainerIndex

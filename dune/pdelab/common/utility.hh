@@ -52,7 +52,7 @@ namespace Dune {
 #endif // DOXYGEN
 
       namespace Impl {
-
+        //! internal utility to fetch the first leaf node on a type-tree
         template<class Node0, class... Others>
         decltype(auto) first_leaf(Node0&& node0, Others&&...) {
           using TypeTree::child;
@@ -62,6 +62,7 @@ namespace Dune {
             return first_leaf(child(std::forward<Node0>(node0),Indices::_0));
         }
 
+        //! internal utility to fetch the first leaf node type on a type-tree
         template<class... Nodes>
         using FirstLeaf = std::decay_t<decltype(first_leaf(std::declval<Nodes>()...))>;
       }

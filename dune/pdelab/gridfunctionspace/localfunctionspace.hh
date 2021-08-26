@@ -303,15 +303,15 @@ namespace Dune {
     struct GridViewLocalFunctionSpaceBaseTraits : public LocalFunctionSpaceBaseTraits<GFS,DOFIndex>
     {
       //! \brief Type of the grid view that the underlying grid function space is defined on.
-      using GridView [[deprecated]] = typename Impl::FirstLeaf<GFS>::Traits::GridView;
+      using GridView [[deprecated("This alias will be removed after PDELab 2.9.")]] = typename Impl::FirstLeaf<GFS>::Traits::GridView;
 
       //! \brief Type of the grid view that the underlying grid function space is defined on.
-      using GridViewType [[deprecated]] = GridView;
+      using GridViewType [[deprecated("This alias will be removed after PDELab 2.9.")]] = GridView;
 
-      using EntitySet [[deprecated]] = typename Impl::FirstLeaf<GFS>::Traits::EntitySet;
+      using EntitySet [[deprecated("This alias will be removed after PDELab 2.9.")]] = typename Impl::FirstLeaf<GFS>::Traits::EntitySet;
 
       //! \brief Type of codim 0 entity in the grid
-      using Element [[deprecated]] = typename EntitySet::Element;
+      using Element [[deprecated("This alias will be removed after PDELab 2.9. Use a template argument instead.")]] = typename EntitySet::Element;
     };
 
     template <typename GFS, typename DOFIndex>

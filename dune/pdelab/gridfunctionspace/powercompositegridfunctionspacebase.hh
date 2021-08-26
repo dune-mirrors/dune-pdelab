@@ -123,8 +123,7 @@ namespace Dune {
 
     };
 
+    //! \}
   }
-
 }
-//! \}
 #endif // DUNE_PDELAB_GRIDFUNCTIONSPACE_POWERCOMPOSITEGRIDFUNCTIONSPACEBASE_HH

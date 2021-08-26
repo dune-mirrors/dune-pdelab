@@ -52,11 +52,13 @@ namespace Dune {
 
       typedef GridFunctionSpaceNode<GridFunctionSpaceNodeTraits<Backend,OrderingTag>> ImplementationBase;
 
+      //! helper function to create storage at initialization
       static std::array<std::shared_ptr<T>,k> make_storage(std::initializer_list<std::reference_wrapper<T>> list) {
         std::array<std::shared_ptr<T>,k> storage;
-        assert(list.size() == k or list.size() == 1);
+        assert(list.size() == k or list.size() == 1 && "Wrong number of arguments, use k or 1 arguments");
         auto it = begin(list);
         for (std::size_t i = 0; i < k; ++i) {
+          // notice that we copy content because gfs have value semantics
           storage[i] = std::make_shared<T>(it->get());
           if (list.size() == k) ++it;
         }
@@ -64,12 +66,13 @@ namespace Dune {
         return storage;
       }
 
+      //! helper function to create storage at initialization
       static std::array<std::shared_ptr<T>,k> make_storage(std::initializer_list<std::shared_ptr<T>> list) {
         std::array<std::shared_ptr<T>,k> storage;
-        if(list.size() == 1)
+        if (list.size() == 1)
           std::fill(storage.begin(), storage.end(), list.front());
         else {
-          assert(list.size() == k);
+          assert(list.size() == k && "Wrong number of arguments, use k or 1 arguments");
           std::move(begin(list), end(list), begin(storage));
         }
         return storage;
@@ -213,6 +216,25 @@ namespace Dune {
       using Base = OrderedGridFunctionSpace<UnorderedPowerGridFunctionSpace<T,k,Backend,OrderingTag>, typename Impl::FirstLeaf<T>::Traits::EntitySet>;
 
     public:
+      struct Traits : public Base::Traits {
+        enum {
+          //! \brief True if this grid function space is composed of others.
+          isComposite
+          [[deprecated("This enum will be removed after PDELab 2.9.")]] = 1,
+          //! \brief number of child spaces
+          noChilds
+          [[deprecated("This enum will be removed after PDELab 2.9.")]] = k
+        };
+
+        [[deprecated(
+            "This enum will be removed after PDELab 2.9. Use degree() from the "
+            "TypeTree base class")]] const static std::size_t CHILDREN = k;
+
+        //! \brief mapper
+        using MapperType [[deprecated("This enum will be removed after PDELab "
+                                      "2.9. Use OrderingTag instead.")]] =
+            typename Base::Traits::OrderingTag;
+      };
 
       template<class... Args>
       PowerGridFunctionSpace(Args&&... args)

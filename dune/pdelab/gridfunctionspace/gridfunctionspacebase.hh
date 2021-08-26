@@ -28,8 +28,8 @@ namespace Dune {
 
     namespace impl {
 
-      // helper class with minimal dependencies. Orderings keep a pointer to this structure and populate it
-      // during their update procedure.
+      //! Helper class with minimal dependencies.
+      // Orderings keep a pointer to this structure and populate it during their update procedure.
 
       template<typename size_type>
       class GridFunctionSpaceOrderingData
@@ -93,10 +93,14 @@ namespace Dune {
 
 #endif // DOXYGEN
 
+    //! Checks whether an object has function called ordering.
+    // Used to distinguish betwen unordered and ordered grid function spaces
     template<class GFS>
     constexpr bool HasOrdering = Std::is_detected<impl::HasOrderingConcept,GFS>{};
 
     namespace impl {
+    //! Helper function to extract ordering data from a grid function space
+    // In particular, if the space is not ordered, it creates new ordering data.
       template<class GFS>
       auto gfs_data(GFS& gfs) {
         using SizeType = typename GFS::Traits::SizeType;
@@ -112,22 +116,24 @@ namespace Dune {
     struct GridFunctionSpaceNodeTraits
     {
       //! vector backend
-      [[deprecated]] typedef B BackendType;
+      [[deprecated("Use Backend instead. This alias will be removed after "
+                   "PDELab 2.9.")]] typedef B BackendType;
 
-      typedef B Backend;
+      //! vector backend
+      using Backend = B;
 
       //! short cut for size type exported by Backend
-      typedef typename B::size_type SizeType;
+      using SizeType = typename B::size_type;
 
       //! tag describing the ordering.
       /**
        * The tag type may contain additional constants and typedefs to
        * control the behavior of the created ordering.
        */
-      typedef O OrderingTag;
-
+      using OrderingTag = O;
     };
 
+    //! Base class for every grid function space node
     template<typename GFSTraits>
     class GridFunctionSpaceNode
     {
@@ -181,7 +187,9 @@ namespace Dune {
 
 
     template<typename GFS, typename GFSTraits>
-    class [[deprecated]] GridFunctionSpaceBase
+    class [[deprecated("Use GridFunctionSpaceNode instead."
+            "This class will be removed after PDELab 2.9.")]]
+    GridFunctionSpaceBase
       : public GridFunctionSpaceNode<GFSTraits>
       , public impl::GridFunctionSpaceOrderingData<typename GFSTraits::SizeType>
     {
@@ -198,6 +206,8 @@ namespace Dune {
     public:
       using Base::Base;
     };
+
+    //! \}
 
   } // namespace PDELab
 } // namespace Dune

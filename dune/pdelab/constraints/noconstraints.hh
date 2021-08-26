@@ -47,6 +47,7 @@ namespace Dune {
 
     };
 
+    //! \}
   } // namespace PDELab
 } // namespace Dune
 

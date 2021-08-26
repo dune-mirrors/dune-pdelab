@@ -25,7 +25,7 @@ namespace Dune {
 
     //! \addtogroup GridFunctionSpace grid function space
     //! \ingroup PDELab
-    //! \{
+    //! \}
 
     namespace Experimental {
 
@@ -594,6 +594,8 @@ namespace Dune {
       };
 
     } // namespace Experimental
+
+    //! \}
 
   } // namespace PDELab
 } // namespace Dune

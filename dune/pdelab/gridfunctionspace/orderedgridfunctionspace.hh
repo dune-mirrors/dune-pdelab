@@ -13,6 +13,10 @@ namespace PDELab {
 template <class GFS, class Tag> class LocalFunctionSpace;
 template<class LFS, class C, bool fast> class LFSIndexCache;
 
+//! \addtogroup GridFunctionSpace grid function space
+//! \ingroup PDELab
+//! \{
+
 namespace Impl {
 /**
  * @brief Constraint type accumulator
@@ -70,28 +74,26 @@ public:
 
 } // namespace Impl
 
-/*
-The OrderedGridFunctionSpace intends to demangle the strong relationship that
-pdelab currently has between trees of grid function spaces and its ordering.
-The problem is that there is not a clear separation of concerns and is very
-difficult to reason about one without the other. Moreover, the construction at
-compile time and initialization at run time follow different order. This make
-the two of them very difficult to debug. In particular, the
-OrderedGridFunctionSpace intends to perform all the interactions between the grid
-function space and the ordering.
-
-The plan for the future is that the user uses UnorderedXXXGridFunctionSpace
-to build a tree of spaces and when this is finished, it pipes the tree to the
-OrderedGridFunctionSpace. In other words, we want to deprecate XXXGridFunctionSpace.
-
-*/
 /**
  * @brief Add ordering and data handler to an unordered grid function space
  * @details This class extends the grid function space interface to have
- * an ordering and a data handler for parallel communication. In particular,
- * this is intened to only be used on the root node.
+ * an ordering and a data handler for parallel communication.
  *
- * @tparam UnorderedGFS  A grid function space that has no ordering
+ * The OrderedGridFunctionSpace intends to demangle the strong relationship that
+ * pdelab previously has between trees of grid function spaces and its ordering.
+ * The problem is that there was not a clear separation of concerns and is very
+ * difficult to reason about one without the other. Moreover, the construction
+ * at compile time and initialization at run time follow different order
+ * (lazy initialization). This makes the two of them very difficult to debug.
+ * The OrderedGridFunctionSpace intends to perform all the interactions between
+ * the grid function space and the ordering.
+ *
+ * This class, in particular, separates the initialization of the ordering in
+ * eager and lazy initialization. If you want to understand how grid function
+ * spaces interact with orderings, try to do so with the eager initialization
+ * where _every_ node un the UnorderedGFS type has no ordering.
+ *
+ * @tparam UnorderedGFS  A grid function space that may not have an ordering
  *
  * \see Ordering
  */
@@ -100,14 +102,16 @@ class OrderedGridFunctionSpace
     : public UnorderedGFS
     , public DataHandleProvider<OrderedGridFunctionSpace<UnorderedGFS, AssemblyEntitySet>>
 {
-  static_assert(isEntitySet<AssemblyEntitySet>{});
+  static_assert(
+      isEntitySet<AssemblyEntitySet>{},
+      "OrderedGridFunctionSpace does not accept grid views, use entity sets!");
 
   using ordering_transformation =
       TypeTree::TransformTree<OrderedGridFunctionSpace, gfs_to_ordering<OrderedGridFunctionSpace>>;
 
   using GFSData = impl::GridFunctionSpaceOrderingData<typename UnorderedGFS::Traits::SizeType>;
 
-  // the backwards compatible case requires us to access other gfs data to check initialization
+  // ensure that we can access other ordered nodes data (lazy ordering only).
   template<class,class>
   friend class ::Dune::PDELab::OrderedGridFunctionSpace;
 
@@ -119,9 +123,20 @@ public:
     using Ordering = typename ordering_transformation::Type;
   };
 
-  using OrderingTag [[deprecated]] = typename Traits::OrderingTag;
+  using OrderingTag [[deprecated("This alias will be removed after "
+                                 "PDELab 2.9. Use Traits::OrderingTag.")]] =
+      typename Traits::OrderingTag;
 
-  // in this case othe order is created and updated at construction time
+  /**
+   * @brief Construct a new Eager Ordered Grid Function Space object
+   * @details This constructor initializes an ordering object eagerly.
+   * Notice that when this constructor is used, this node **cannot** be used to
+   * construct bigger grid function space trees. This is because it is only
+   * allowed to have one ordering in the whole tree.
+   *
+   * @param ugfs  Unordered grid function space
+   * @param entity_set  Entity set used for assembly algorithms
+   */
   OrderedGridFunctionSpace(const UnorderedGFS& ugfs, AssemblyEntitySet entity_set)
     : UnorderedGFS{ugfs}
     , _entity_set{entity_set}
@@ -130,21 +145,34 @@ public:
     if constexpr (UnorderedGFS::isLeaf)
       static_assert(std::is_same<typename UnorderedGFS::Traits::EntitySet, AssemblyEntitySet>{});
 
-    // new behavior: we are the only node in the tree that is ordered. But
-    // because we allow the whole tree to be ordered in order to be backwards
-    // compatible, we need to check that when using this constructor, the whole tree is unordered
+    // Eager behavior: we need to check that no other node is initialized.
     TypeTree::forEachNode(static_cast<UnorderedGFS&>(*this),[&](auto& gfs_node, auto& path){
       if constexpr (HasOrdering<decltype(gfs_node)>)
         if (gfs_node.data()->_initialized)
-          DUNE_THROW(GridFunctionSpaceHierarchyError,"initialized space cannot become part of larger GridFunctionSpace tree");
+          DUNE_THROW(GridFunctionSpaceHierarchyError,
+            "Initialized space cannot become part of larger GridFunctionSpace tree");
     });
     reset_root_flag();
+
+    // set up ordering eagerly
     create_ordering();
     update_ordering();
   }
 
   // backwards compatible constructor
   // in this case, the ordering is delayed to be constructed and updated until the ordering is called or explicitely constructed
+
+  /**
+   * @brief Construct a new Lazy Ordered Grid Function Space object
+   * @details This constructor **does not** initialize an ordering object,
+   * instead, this process is delayed until the ordering is required.
+   * Notice that when this constructor is used, this node **can** be used to
+   * construct bigger grid function space trees. However, only the root node
+   * will be allowed to hold an ordering.
+   *
+   * @tparam Args  Argument types of the UnorderedGFS constructor
+   * @param args   Argument types of the UnorderedGFS constructor
+   */
   template<class... Args>
   OrderedGridFunctionSpace(std::in_place_t, Args&&... args)
     : UnorderedGFS(std::forward<Args>(args)...)
@@ -158,7 +186,7 @@ public:
   }
 
 
-  //! Ordering tree type TODO deprecate in the future
+  //! Ordering tree type
   using Ordering = typename Traits::Ordering;
 
   //! extract type for storing constraints
@@ -238,10 +266,10 @@ public:
   Ordering &ordering() { return *orderingStorage(); }
 
   //! Direct access to the storage of the DOF ordering.
-  std::shared_ptr<const Ordering> orderingStorage() const { create_ordering_in_place(); return _ordering; }
+  std::shared_ptr<const Ordering> orderingStorage() const { lazy_create_ordering(); return _ordering; }
 
   //! Direct access to the storage of the DOF ordering.
-  std::shared_ptr<Ordering> orderingStorage() { create_ordering_in_place(); return _ordering; }
+  std::shared_ptr<Ordering> orderingStorage() { lazy_create_ordering(); return _ordering; }
 
   //! Update the indexing information of the GridFunctionSpace.
   /**
@@ -269,8 +297,8 @@ public:
 private:
 
   void reset_root_flag() {
-    // the backwards compatible behavior: every node of this tree is also
-    // ordered, thus, we need to make sure that no two of them are initialized at the same time
+    // lazy behavior: every node of this tree may also be ordered, thus, we need
+    // to make sure that no two of them are initialized at the same time.
     TypeTree::forEachNode(*this,[&](auto& gfs_node, auto& path){
       if constexpr (HasOrdering<decltype(gfs_node)>) {
         if (gfs_node.data()->_initialized and  gfs_node.data()->_is_root_space and not gfs_node.isLeaf)
@@ -282,7 +310,7 @@ private:
 
   void update_ordering() {
     check_root_space();
-    create_ordering_in_place();
+    lazy_create_ordering();
     _ordering->update();
     TypeTree::forEachNode(*_ordering, [&](auto& ordering_node, auto& path){
       // bool is_root = (path.size() == 0);
@@ -307,8 +335,10 @@ private:
     _ordering->_gfs_data = _data;
   }
 
-  void create_ordering_in_place() const {
-    // we do this only to be backwards compatible
+  void lazy_create_ordering() const {
+    // Since the usage may come from a const object, we need to const_cast to
+    // mutate ourselves. Yes, this is as bad as it sounds but we need some
+    // backwards compatibility.
     if (not _ordering) {
       const_cast<OrderedGridFunctionSpace*>(this)->create_ordering();
       const_cast<OrderedGridFunctionSpace*>(this)->update_ordering();
@@ -327,6 +357,8 @@ private:
   std::optional<typename Traits::EntitySet> _entity_set;
   std::shared_ptr<GFSData> _data;
 };
+
+// \}
 
 } // namespace PDELab
 } // namespace Dune

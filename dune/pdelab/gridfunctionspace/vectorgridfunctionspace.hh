@@ -125,7 +125,7 @@ namespace Dune {
       }
     };
 
-
+    //! \copydoc UnorderedVectorGridFunctionSpace
     template<typename ES,
              typename FEM,
              std::size_t k,
@@ -137,32 +137,52 @@ namespace Dune {
     class VectorGridFunctionSpace
       : public OrderedGridFunctionSpace<UnorderedVectorGridFunctionSpace<impl::EntitySet<ES>,FEM,k,Backend,LeafBackend,Constraints,OrderingTag,LeafOrderingTag>,impl::EntitySet<ES>>
     {
-      using OrderedGFS = OrderedGridFunctionSpace<UnorderedVectorGridFunctionSpace<impl::EntitySet<ES>,FEM,k,Backend,LeafBackend,Constraints,OrderingTag,LeafOrderingTag>,impl::EntitySet<ES>>;
-      using LeafGFS = typename OrderedGFS::ChildType;
+      using Base = OrderedGridFunctionSpace<UnorderedVectorGridFunctionSpace<impl::EntitySet<ES>,FEM,k,Backend,LeafBackend,Constraints,OrderingTag,LeafOrderingTag>,impl::EntitySet<ES>>;
+      using LeafGFS = typename Base::ChildType;
     public:
+
+      struct Traits : public Base::Traits {
+        enum {
+          //! \brief True if this grid function space is composed of others.
+          isComposite
+          [[deprecated("This enum will be removed after PDELab 2.9.")]] = 1,
+          //! \brief number of child spaces
+          noChilds
+          [[deprecated("This enum will be removed after PDELab 2.9.")]] = k
+        };
+
+        [[deprecated(
+            "This enum will be removed after PDELab 2.9. Use degree() from the "
+            "TypeTree base class")]] const static std::size_t CHILDREN = k;
+
+        //! \brief mapper
+        using MapperType [[deprecated("This enum will be removed after PDELab "
+                                      "2.9. Use OrderingTag instead.")]] =
+            typename Base::Traits::OrderingTag;
+      };
 
       VectorGridFunctionSpace(const typename LeafGFS::Traits::GridView& gv, const FEM& fem,
                               const Backend& backend = Backend(), const LeafBackend& leaf_backend = LeafBackend(),
                               const OrderingTag& ordering_tag = OrderingTag(), const LeafOrderingTag& leaf_ordering_tag = LeafOrderingTag())
-        : OrderedGFS(std::in_place, typename LeafGFS::Traits::EntitySet{gv}, stackobject_to_shared_ptr(fem), backend, leaf_backend, ordering_tag, leaf_ordering_tag)
+        : Base(std::in_place, typename LeafGFS::Traits::EntitySet{gv}, stackobject_to_shared_ptr(fem), backend, leaf_backend, ordering_tag, leaf_ordering_tag)
       {}
 
       VectorGridFunctionSpace(typename LeafGFS::Traits::EntitySet es, const FEM& fem,
                               const Backend& backend = Backend(), const LeafBackend& leaf_backend = LeafBackend(),
                               const OrderingTag& ordering_tag = OrderingTag(), const LeafOrderingTag& leaf_ordering_tag = LeafOrderingTag())
-        : OrderedGFS(std::in_place, es, stackobject_to_shared_ptr(fem), backend, leaf_backend, ordering_tag, leaf_ordering_tag)
+        : Base(std::in_place, es, stackobject_to_shared_ptr(fem), backend, leaf_backend, ordering_tag, leaf_ordering_tag)
       {}
 
       VectorGridFunctionSpace(const typename LeafGFS::Traits::GridView& gv, std::shared_ptr<const FEM> fem,
                               const Backend& backend = Backend(), const LeafBackend& leaf_backend = LeafBackend(),
                               const OrderingTag& ordering_tag = OrderingTag(), const LeafOrderingTag& leaf_ordering_tag = LeafOrderingTag())
-        : OrderedGFS(std::in_place, typename LeafGFS::Traits::EntitySet{gv}, fem, backend, leaf_backend, ordering_tag, leaf_ordering_tag)
+        : Base(std::in_place, typename LeafGFS::Traits::EntitySet{gv}, fem, backend, leaf_backend, ordering_tag, leaf_ordering_tag)
       {}
 
       VectorGridFunctionSpace(typename LeafGFS::Traits::EntitySet es, std::shared_ptr<const FEM> fem,
                                     const Backend& backend = Backend(), const LeafBackend& leaf_backend = LeafBackend(),
                                     const OrderingTag& ordering_tag = OrderingTag(), const LeafOrderingTag& leaf_ordering_tag = LeafOrderingTag())
-        : OrderedGFS(std::in_place, es, fem, backend, leaf_backend, ordering_tag, leaf_ordering_tag)
+        : Base(std::in_place, es, fem, backend, leaf_backend, ordering_tag, leaf_ordering_tag)
       {}
     };
 
