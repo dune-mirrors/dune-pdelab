@@ -22,6 +22,8 @@
 #include <dune/pdelab/ordering/lexicographicordering.hh>
 #include <dune/pdelab/ordering/entityblockedlocalordering.hh>
 
+#warning "This header will be deprecated after 2.9"
+
 namespace Dune {
   namespace PDELab {
 

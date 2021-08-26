@@ -10,7 +10,6 @@
 #include <dune/typetree/powernode.hh>
 
 #include <dune/pdelab/common/utility.hh>
-#include <dune/pdelab/gridfunctionspace/powercompositegridfunctionspacebase.hh>
 #include <dune/pdelab/gridfunctionspace/orderedgridfunctionspace.hh>
 #include <dune/pdelab/gridfunctionspace/tags.hh>
 

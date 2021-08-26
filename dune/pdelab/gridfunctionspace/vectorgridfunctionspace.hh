@@ -13,7 +13,6 @@
 #include <dune/typetree/powernode.hh>
 
 #include <dune/pdelab/gridfunctionspace/orderedgridfunctionspace.hh>
-#include <dune/pdelab/gridfunctionspace/powercompositegridfunctionspacebase.hh>
 #include <dune/pdelab/gridfunctionspace/tags.hh>
 #include <dune/pdelab/gridfunctionspace/gridfunctionspace.hh>
 #include <dune/pdelab/gridfunctionspace/powergridfunctionspace.hh>

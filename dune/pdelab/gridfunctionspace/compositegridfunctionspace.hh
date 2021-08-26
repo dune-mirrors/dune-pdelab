@@ -11,7 +11,6 @@
 
 #include <dune/pdelab/common/utility.hh>
 #include <dune/pdelab/gridfunctionspace/gridfunctionspacebase.hh>
-#include <dune/pdelab/gridfunctionspace/powercompositegridfunctionspacebase.hh>
 #include <dune/pdelab/gridfunctionspace/orderedgridfunctionspace.hh>
 #include <dune/pdelab/gridfunctionspace/tags.hh>
 

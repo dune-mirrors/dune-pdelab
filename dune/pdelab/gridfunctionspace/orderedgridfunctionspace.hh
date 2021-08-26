@@ -4,6 +4,8 @@
 #define DUNE_PDELAB_GRIDFUNCTIONSPACE_ORDEREDGRIDFUNCTIONSPACE_HH
 
 #include <dune/pdelab/gridfunctionspace/datahandleprovider.hh>
+#include <dune/pdelab/constraints/common/constraintstransformation.hh>
+#include <dune/pdelab/constraints/noconstraints.hh>
 
 namespace Dune {
 namespace PDELab {
