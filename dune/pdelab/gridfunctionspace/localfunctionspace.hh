@@ -303,15 +303,15 @@ namespace Dune {
     struct GridViewLocalFunctionSpaceBaseTraits : public LocalFunctionSpaceBaseTraits<GFS,DOFIndex>
     {
       //! \brief Type of the grid view that the underlying grid function space is defined on.
-      using GridView = typename Impl::FirstLeaf<GFS>::Traits::GridView;
+      using GridView [[deprecated]] = typename Impl::FirstLeaf<GFS>::Traits::GridView;
 
       //! \brief Type of the grid view that the underlying grid function space is defined on.
-      using GridViewType /*[[deprecated]]*/ = GridView;
+      using GridViewType [[deprecated]] = GridView;
 
-      using EntitySet = typename Impl::FirstLeaf<GFS>::Traits::EntitySet;
+      using EntitySet [[deprecated]] = typename Impl::FirstLeaf<GFS>::Traits::EntitySet;
 
       //! \brief Type of codim 0 entity in the grid
-      using Element = typename EntitySet::Element;
+      using Element [[deprecated]] = typename EntitySet::Element;
     };
 
     template <typename GFS, typename DOFIndex>
@@ -343,17 +343,16 @@ namespace Dune {
          \param node reference to the derived node, the address must be the same as this
          \param e entity to bind to
        */
-      template<typename NodeType, bool fast = false>
-      void bind (NodeType& node, const typename Traits::Element& e, std::integral_constant<bool,fast> = std::integral_constant<bool,fast>{});
+      template<typename NodeType, typename Element, bool fast = false>
+      void bind (NodeType& node, const Element& e, std::integral_constant<bool,fast> = std::integral_constant<bool,fast>{});
     };
 
     template <typename GFS, typename DOFIndex>
-    template <typename NodeType, bool fast>
+    template <typename NodeType, typename Element, bool fast>
     void GridViewLocalFunctionSpaceBaseNode<GFS,DOFIndex>::bind (NodeType& node,
-                                                                 const typename GridViewLocalFunctionSpaceBaseNode<GFS,DOFIndex>::Traits::Element& e,
+                                                                 const Element& e,
                                                                  std::integral_constant<bool,fast>)
     {
-      typedef typename GridViewLocalFunctionSpaceBaseNode<GFS,DOFIndex>::Traits::Element Element;
       assert(&node == this);
 
       // compute sizes
@@ -422,8 +421,8 @@ namespace Dune {
       {}
 
       //! \brief bind local function space to entity
-      template<bool fast = false>
-      void bind (const typename Traits::Element& e, std::integral_constant<bool,fast> fast_ = std::integral_constant<bool,fast>{})
+      template<typename Element, bool fast = false>
+      void bind (const Element& e, std::integral_constant<bool,fast> fast_ = std::integral_constant<bool,fast>{})
       {
         // call method on base class, this avoid the barton neckman trick
         BaseT::bind(*this,e,fast_);
@@ -500,8 +499,8 @@ namespace Dune {
       {}
 
       //! \brief bind local function space to entity
-      template<bool fast = false>
-      void bind (const typename Traits::Element& e, std::integral_constant<bool,fast> fast_ = std::integral_constant<bool,fast>{})
+      template<typename Element, bool fast = false>
+      void bind (const Element& e, std::integral_constant<bool,fast> fast_ = std::integral_constant<bool,fast>{})
       {
         // call method on base class, this avoid the barton neckman trick
         BaseT::bind(*this,e,fast_);
