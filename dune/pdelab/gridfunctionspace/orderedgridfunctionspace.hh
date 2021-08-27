@@ -109,7 +109,7 @@ class OrderedGridFunctionSpace
       "OrderedGridFunctionSpace does not accept grid views, use entity sets!");
 
   using ordering_transformation =
-      TypeTree::TransformTree<OrderedGridFunctionSpace, gfs_to_ordering<OrderedGridFunctionSpace>>;
+      TypeTree::TransformTree<UnorderedGFS, gfs_to_ordering<UnorderedGFS>>;
 
   using GFSData = impl::GridFunctionSpaceOrderingData<typename UnorderedGFS::Traits::SizeType>;
 
