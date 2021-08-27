@@ -8,6 +8,7 @@
 #include <dune/pdelab/constraints/noconstraints.hh>
 #include <dune/pdelab/ordering/lexicographicordering.hh>
 #include <dune/pdelab/ordering/entityblockedlocalordering.hh>
+#include <dune/pdelab/ordering/decorator.hh>
 
 namespace Dune {
 namespace PDELab {
@@ -309,10 +310,14 @@ private:
 
   void update_ordering() {
     check_root_space();
-    lazy_create_ordering();
+    if (not _ordering)
+      create_ordering();
     _ordering->update();
     TypeTree::forEachNode(*_ordering, [&](auto& ordering_node, auto& path){
-      bool is_root = (path.size() == 0);
+      // in case of decorated tags, the first decorated ordering nodes are
+      // considered to belong to the gfs root node
+      const std::size_t decoration_level = ordering::impl::decoration_level<typename Traits::OrderingTag>();
+      const bool is_root = (path.size() <= decoration_level);
       if (ordering_node._gfs_data) {
         auto& data = *ordering_node._gfs_data;
         if (data._initialized && data._is_root_space && !is_root)
