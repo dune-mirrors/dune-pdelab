@@ -6,6 +6,8 @@
 #include <dune/pdelab/gridfunctionspace/datahandleprovider.hh>
 #include <dune/pdelab/constraints/common/constraintstransformation.hh>
 #include <dune/pdelab/constraints/noconstraints.hh>
+#include <dune/pdelab/ordering/lexicographicordering.hh>
+#include <dune/pdelab/ordering/entityblockedlocalordering.hh>
 
 namespace Dune {
 namespace PDELab {

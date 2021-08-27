@@ -69,8 +69,13 @@ namespace Dune {
         : public TypeTree::TreeVisitor
         , public TypeTree::DynamicTraversal
       {
-        template<typename T, typename TreePath>
-        void leaf(T&& t, TreePath treePath) {
+        template<typename GFS, typename TreePath>
+        void leaf(const GFS& t, TreePath treePath) {
+          static_assert(
+              std::is_same<EntitySet, typename GFS::Traits::EntitySet>{},
+              "Entity set types of leaf nodes do not have have equal type! "
+              "Ensure that all entity sets below an entity block ordering tag "
+              "have the same type");
           if (not _entity_set)
             _entity_set = t.entitySet();
           else if (*_entity_set != t.entitySet())

@@ -111,7 +111,8 @@ namespace Dune {
 
       typedef std::shared_ptr<transformed_type> transformed_storage_type;
 
-      using EntitySet = typename GFS::Traits::EntitySet;
+      // entity sets in leaf nodes shall be the same, so we take the first one
+      using EntitySet = typename Impl::FirstLeaf<GFS>::Traits::EntitySet;
 
       static transformed_type transform(const GFS& gfs, const Transformation& t)
       {
@@ -236,7 +237,8 @@ namespace Dune {
 
       typedef std::shared_ptr<transformed_type> transformed_storage_type;
 
-      using EntitySet = typename GFS::Traits::EntitySet;
+      // entity sets in leaf nodes shall be the same, so we take the first one
+      using EntitySet = typename Impl::FirstLeaf<GFS>::Traits::EntitySet;
 
       static transformed_type transform(const GFS& gfs, const Transformation& t)
       {
