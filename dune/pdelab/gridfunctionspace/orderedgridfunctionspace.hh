@@ -204,8 +204,7 @@ public:
 
   typename Traits::SizeType size() const {
     if (!_data->_initialized)
-      DUNE_THROW(UninitializedGridFunctionSpaceError,
-                 "space is not initialized");
+      lazy_create_ordering();
     if (!_data->_size_available)
       DUNE_THROW(GridFunctionSpaceHierarchyError,
                  "Size cannot be calculated at this point in the GFS tree.");
@@ -214,8 +213,7 @@ public:
 
   typename Traits::SizeType blockCount() const {
     if (!_data->_initialized)
-      DUNE_THROW(UninitializedGridFunctionSpaceError,
-                 "space is not initialized");
+      lazy_create_ordering();
     if (!_data->_size_available)
       DUNE_THROW(
           GridFunctionSpaceHierarchyError,
@@ -225,16 +223,14 @@ public:
 
   typename Traits::SizeType globalSize() const {
     if (!_data->_initialized)
-      DUNE_THROW(UninitializedGridFunctionSpaceError,
-                 "space is not initialized");
+      lazy_create_ordering();
     return _data->_global_size;
   }
 
   //! get max dimension of shape function space
   typename Traits::SizeType maxLocalSize() const {
     if (!_data->_initialized)
-      DUNE_THROW(UninitializedGridFunctionSpaceError,
-                 "space is not initialized");
+      lazy_create_ordering();
     return _data->_max_local_size;
   }
 
@@ -304,7 +300,8 @@ private:
     TypeTree::forEachNode(*this,[&](auto& gfs_node, auto& path){
       if constexpr (HasOrdering<decltype(gfs_node)>) {
         if (gfs_node.data()->_initialized and  gfs_node.data()->_is_root_space and not gfs_node.isLeaf)
-          DUNE_THROW(GridFunctionSpaceHierarchyError,"initialized space cannot become part of larger GridFunctionSpace tree");
+          DUNE_THROW(GridFunctionSpaceHierarchyError,
+            "Initialized space cannot become part of larger GridFunctionSpace tree");
         gfs_node.data()->_is_root_space = (path.size() == 0);
       }
     });
@@ -315,11 +312,12 @@ private:
     lazy_create_ordering();
     _ordering->update();
     TypeTree::forEachNode(*_ordering, [&](auto& ordering_node, auto& path){
-      // bool is_root = (path.size() == 0);
+      bool is_root = (path.size() == 0);
       if (ordering_node._gfs_data) {
         auto& data = *ordering_node._gfs_data;
-        // if (data._initialized && data._is_root_space && !is_root)
-        //     DUNE_THROW(GridFunctionSpaceHierarchyError,"former root space is now part of a larger tree");
+        if (data._initialized && data._is_root_space && !is_root)
+            DUNE_THROW(GridFunctionSpaceHierarchyError,
+              "Former root space is now part of a larger tree");
         data._initialized = true;
         data._global_size = _ordering->size();
         data._max_local_size = _ordering->maxLocalSize();
@@ -332,6 +330,9 @@ private:
     if (_ordering)
       DUNE_THROW(GridFunctionSpaceError,
                  "Ordering can only be obtained initialized once.");
+    if (_data->_initialized)
+      DUNE_THROW(UninitializedGridFunctionSpaceError,
+                 "Space is already initialized by other node");
     _ordering = std::make_shared<Ordering>(ordering_transformation::transform(*this));
     // ordering is in charge of filling out our data
     _ordering->_gfs_data = _data;
