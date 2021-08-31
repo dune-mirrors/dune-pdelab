@@ -13,6 +13,7 @@
 #include <dune/common/stdstreams.hh>
 #include <dune/common/typetraits.hh>
 #include <dune/common/deprecated.hh>
+#include <dune/common/hybridutilities.hh>
 
 #include <dune/typetree/compositenode.hh>
 #include <dune/typetree/powernode.hh>
@@ -52,12 +53,21 @@ namespace Dune {
         , BaseT(*this,container_blocked,nullptr)
       {}
 
-      const typename Traits::EntitySet& entitySet() const
-      {
-        return this->child(0).entitySet();
-      }
+      using BaseT::size;
 
+      /**
+       * @brief Returns the size for a given suffix
+       * @param suffix  MultiIndex with a partial path to a container
+       * @param index Entity index to compute the size
+       * @return Traits::SizeType  The size required for such a path.
+       */
+      typename Traits::SizeType
+      size(const typename Traits::ContainerIndex& suffix,
+           const typename Traits::DOFIndex::EntityIndex &index) const {
+        return this->node_size(*this,suffix,index);
+      }
     };
+
 
     template<typename GFS, typename Transformation>
     struct power_gfs_to_local_ordering_descriptor<GFS,Transformation,EntityBlockedOrderingTag>
@@ -101,15 +111,35 @@ namespace Dune {
 
       typedef std::shared_ptr<transformed_type> transformed_storage_type;
 
+      using EntitySet = typename GFS::Traits::EntitySet;
+
       static transformed_type transform(const GFS& gfs, const Transformation& t)
       {
-        transformed_type r(make_tuple(std::make_shared<LocalOrdering>(LocalOrderingTransformation::transform(gfs,gfs_to_local_ordering<Transformation>()))),gfs.backend().blocked(gfs),const_cast<GFS*>(&gfs));
+        // check and extract common entity set on leaf nodes
+        auto es_visitor = impl::common_entity_set<EntitySet>{};
+        TypeTree::applyToTree(gfs, es_visitor);
+        assert(es_visitor._entity_set);
+        auto& es = *es_visitor._entity_set;
+        // build local ordering tree
+        auto local_ordering = std::make_shared<LocalOrdering>(LocalOrderingTransformation::transform(gfs,gfs_to_local_ordering<Transformation>()));
+        bool blocked = gfs.backend().blocked(gfs);
+        // create grid view ordering
+        transformed_type r(make_tuple(std::move(local_ordering)),blocked,const_cast<GFS*>(&gfs),es);
         return r;
       }
 
       static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t)
       {
-        transformed_storage_type r(std::make_shared<transformed_type>(make_tuple(LocalOrderingTransformation::transform_storage(gfs,gfs_to_local_ordering<Transformation>())),gfs->backend().blocked(*gfs),const_cast<GFS*>(gfs.get())));
+        // check and extract common entity set on leaf nodes
+        auto es_visitor = impl::common_entity_set<EntitySet>{};
+        TypeTree::applyToTree(*gfs, es_visitor);
+        assert(es_visitor._entity_set);
+        auto& es = *es_visitor._entity_set;
+        // build local ordering tree
+        auto local_ordering = LocalOrderingTransformation::transform_storage(gfs,gfs_to_local_ordering<Transformation>());
+        bool blocked = gfs->backend().blocked(*gfs);
+        // create grid view ordering
+        transformed_storage_type r(std::make_shared<transformed_type>(make_tuple(std::move(local_ordering)),blocked,const_cast<GFS*>(gfs.get()),es));
         return r;
       }
 
@@ -145,9 +175,21 @@ namespace Dune {
         , Base(*this,container_blocked,nullptr)
       {}
 
-      const typename Traits::EntitySet& entitySet() const
-      {
-        return this->template child<0>().entitySet();
+      using Base::size;
+
+      /**
+       * @brief Returns the size for a given suffix
+       * @details This computes the size required for a given suffix of a
+       *  container index.
+       *
+       * @param suffix  MultiIndex with a partial path to a container
+       * @param index Entity index to compute the size
+       * @return Traits::SizeType  The size required for such a path.
+       */
+      typename Traits::SizeType
+      size(const typename Traits::ContainerIndex &suffix,
+           const typename Traits::DOFIndex::EntityIndex &index) const {
+        return this->node_size(*this,suffix,index);
       }
 
     };
@@ -183,7 +225,6 @@ namespace Dune {
     template<typename GFS, typename Transformation>
     struct composite_gfs_to_entityblocked_ordering_descriptor
     {
-
       static const bool recursive = false;
 
       typedef TypeTree::TransformTree<GFS,gfs_to_local_ordering<Transformation> > LocalOrderingTransformation;
@@ -193,15 +234,35 @@ namespace Dune {
 
       typedef std::shared_ptr<transformed_type> transformed_storage_type;
 
+      using EntitySet = typename GFS::Traits::EntitySet;
+
       static transformed_type transform(const GFS& gfs, const Transformation& t)
       {
-        transformed_type r(make_tuple(std::make_shared<LocalOrdering>(LocalOrderingTransformation::transform(gfs,gfs_to_local_ordering<Transformation>()))),gfs.backend().blocked(gfs),const_cast<GFS*>(&gfs));
+        // check and extract common entity set on leaf nodes
+        auto es_visitor = impl::common_entity_set<EntitySet>{};
+        TypeTree::applyToTree(gfs, es_visitor);
+        assert(es_visitor._entity_set);
+        auto& es = *es_visitor._entity_set;
+        bool blocked = gfs.backend().blocked(gfs);
+        // build local ordering tree
+        auto local_ordering = std::make_shared<LocalOrdering>(LocalOrderingTransformation::transform(gfs,gfs_to_local_ordering<Transformation>()));
+        // create grid view ordering
+        transformed_type r(make_tuple(std::move(local_ordering)),blocked,const_cast<GFS*>(&gfs),es);
         return r;
       }
 
       static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t)
       {
-        transformed_storage_type r(std::make_shared<transformed_type>(make_tuple(LocalOrderingTransformation::transform_storage(gfs,gfs_to_local_ordering<Transformation>())),gfs->backend().blocked(*gfs),const_cast<GFS*>(gfs.get())));
+        // check and extract common entity set on leaf nodes
+        auto es_visitor = impl::common_entity_set<EntitySet>{};
+        TypeTree::applyToTree(*gfs, es_visitor);
+        assert(es_visitor._entity_set);
+        auto& es = *es_visitor._entity_set;
+        bool blocked = gfs->backend().blocked(*gfs);
+        // build local ordering tree
+        auto local_ordering = make_tuple(LocalOrderingTransformation::transform_storage(gfs,gfs_to_local_ordering<Transformation>()));
+        // create grid view ordering
+        transformed_storage_type r(std::make_shared<transformed_type>(std::move(local_ordering),blocked,const_cast<GFS*>(gfs.get()),es));
         return r;
       }
 

@@ -11,6 +11,7 @@
 #include <dune/common/classname.hh>
 #include <dune/common/exceptions.hh>
 #include <dune/common/stdstreams.hh>
+#include <dune/common/hybridutilities.hh>
 
 #include <dune/typetree/compositenode.hh>
 #include <dune/typetree/powernode.hh>
@@ -117,6 +118,8 @@ namespace Dune {
 
     public:
 
+      using Traits = typename Base::Traits;
+
       //! Construct ordering object
       /**
        * In general, an ordering object is not properly setup after
@@ -141,6 +144,33 @@ namespace Dune {
       }
 
       std::string name() const { return "PowerLexicographicOrdering"; }
+
+      using Base::size;
+
+      /**
+       * @brief Gives the size for a given suffix
+       * @param suffix  MultiIndex with a partial path to a container
+       * @return Traits::SizeType  The size required for such a path.
+       */
+      typename Traits::SizeType size(typename Traits::ContainerIndex suffix) const {
+        if (suffix.size() == Traits::ContainerIndex::max_depth)
+          return 0; // all indices in suffix were consumed, no more sizes to provide
+
+        if (suffix.size() == 0)
+          return this->blockCount();
+
+        if (this->containerBlocked()) {
+          auto child = suffix.back();
+          assert(this->degree() > child);
+          suffix.pop_back();
+          return this->child(child).size(suffix);
+        } else {
+          auto it = std::upper_bound(this->_child_block_offsets.begin(), this->_child_block_offsets.end(), suffix.back());
+          std::size_t child = *std::prev(it);
+          return this->child(child).size(suffix);
+        }
+      }
+
     };
 
 
@@ -212,6 +242,8 @@ namespace Dune {
         > Base;
 
     public:
+      using Traits = typename Base::Traits;
+
       //! Construct ordering object
       /**
        * In general, an ordering object is not properly setup after
@@ -232,6 +264,40 @@ namespace Dune {
       {
         TypeTree::applyToTree(*this,ordering::update_direct_children());
         Base::update();
+      }
+
+      using Base::size;
+
+      /**
+       * @brief Gives the size for a given suffix
+       * @param suffix  MultiIndex with a partial path to a container
+       * @return Traits::SizeType  The size required for such a path.
+       */
+      typename Traits::SizeType size(typename Traits::ContainerIndex suffix) const {
+        if (suffix.size() == Traits::ContainerIndex::max_depth)
+          return 0; // all indices in suffix were consumed, no more sizes to provide
+
+        if (suffix.size() == 0)
+          return this->blockCount();
+
+        auto indices = std::make_index_sequence<Node::degree()>{};
+        typename Traits::SizeType _size;
+        std::size_t _child;
+
+        if (this->containerBlocked()) {
+          _child = suffix.back();
+          assert(this->degree() > _child);
+          suffix.pop_back();
+        } else {
+          auto it = std::upper_bound(this->_child_block_offsets.begin(), this->_child_block_offsets.end(), suffix.back());
+          _child = *std::prev(it);
+        }
+
+        Hybrid::forEach(indices, [&](auto i){
+          if (i == _child)
+            _size = this->template child<i>().size(suffix);
+        });
+        return _size;
       }
     };
 

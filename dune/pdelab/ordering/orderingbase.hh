@@ -25,7 +25,7 @@ namespace Dune {
 
     public:
 
-      typedef OrderingTraits<DI,CI> Traits;
+      typedef OrderingTraits<DI,CI,MultiIndexOrder::Inner2Outer> Traits;
 
     protected:
 

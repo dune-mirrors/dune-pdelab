@@ -77,6 +77,25 @@ namespace Dune {
         return s;
       }
 
+      /**
+       * @brief Returns the size for a given suffix
+       * @details This computes the size required for a given suffix of a
+       *  container index.
+       *
+       * @param suffix MultiIndex with a partial path to a container
+       * @param index Entity index to compute the size
+       * @return Traits::SizeType  The size required for such a path.
+       */
+      typename Traits::SizeType
+      size(const typename Traits::ContainerIndex& suffix,
+           const typename Traits::DOFIndex::EntityIndex &index) const {
+        if (suffix.size() == 0) {
+          return size(index);
+        } else{
+          return 0; // Assume leaf local orderings are always field vectors
+        }
+      }
+
       typename Traits::SizeType size(const typename Traits::DOFIndex::EntityIndex& index) const
       {
         return size(

@@ -171,16 +171,25 @@ namespace Dune {
             using SizeType       = size_type;
 
             using DOFIndexAccessor = Dune::PDELab::DefaultDOFIndexAccessor;
+
+            //! Inform about ContainerIndex multi-index order semantics
+            static constexpr MultiIndexOrder ContainerIndexOrder = MultiIndexOrder::Inner2Outer;
           };
 
           using DOFIndex       = typename Traits::DOFIndex;
           using ContainerIndex = typename Traits::ContainerIndex;
           using size_type      = std::size_t;
 
+
           LeafOrdering(const GridFunctionSpace& gfs)
             : _gfs(gfs)
           {
             update();
+          }
+
+          size_type size(ContainerIndex suffix) const
+          {
+            return _gfs.basis().size(suffix);
           }
 
           size_type size() const
@@ -378,6 +387,11 @@ namespace Dune {
             : TypeTree::CompositeNode<LeafOrdering>(LeafOrdering(gfs))
           {}
 
+          size_type size(ContainerIndex suffix) const
+          {
+            return this->child(Indices::_0).size(suffix);
+          }
+
           size_type size() const
           {
             return this->child(Indices::_0).size();
@@ -463,7 +477,7 @@ namespace Dune {
           , _df_basis(std::move(df_basis))
           , _finiteElementMap(_df_basis)
           , _pce(std::move(ce))
-          , _ordering(*this)
+          , _ordering(std::make_shared<Ordering>(*this))
         {}
 
         GridFunctionSpace (std::shared_ptr<DFBasis> df_basis)
@@ -471,7 +485,7 @@ namespace Dune {
           , _df_basis(std::move(df_basis))
           , _finiteElementMap(_df_basis)
           , _pce(std::make_shared<CE>())
-          , _ordering(*this)
+          , _ordering(std::make_shared<Ordering>(*this))
         {}
 
         //! get grid view
@@ -507,27 +521,32 @@ namespace Dune {
         //! Direct access to the DOF ordering.
         const Ordering& ordering() const
         {
+          return *_ordering;
+        }
+
+        std::shared_ptr<const Ordering> orderingStorage() const
+        {
           return _ordering;
         }
 
         typename Traits::SizeType size() const
         {
-          return _ordering.size();
+          return _ordering->size();
         }
 
         typename Traits::SizeType blockCount() const
         {
-          return _ordering.blockCount();
+          return _ordering->blockCount();
         }
 
         typename Traits::SizeType globalSize() const
         {
-          return _ordering.size();
+          return _ordering->size();
         }
 
         typename Traits::SizeType maxLocalSize () const
         {
-          return _ordering.maxLocalSize();
+          return _ordering->maxLocalSize();
         }
 
         /** \brief Update the indexing information of the GridFunctionSpace.
@@ -541,7 +560,7 @@ namespace Dune {
           _df_basis->update(_es.gridView());
           _finiteElementMap.update();
           // Apparently there is no need to update the constraints assembler '_pce';
-          _ordering.update();
+          _ordering->update();
         }
 
         const std::string& name() const
@@ -570,7 +589,7 @@ namespace Dune {
         std::shared_ptr<DFBasis> _df_basis;
         typename Traits::FiniteElementMap _finiteElementMap;
         std::shared_ptr<CE const> _pce;
-        Ordering _ordering;
+        std::shared_ptr<Ordering> _ordering;
         std::string _name;
       };
 

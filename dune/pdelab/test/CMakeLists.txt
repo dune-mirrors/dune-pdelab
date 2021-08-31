@@ -89,6 +89,10 @@ dune_add_test(SOURCES testpoisson.cc
               COMPILE_DEFINITIONS GRIDSDIR=\"${CMAKE_CURRENT_SOURCE_DIR}/grids\")
 add_dune_alberta_flags(testpoisson WORLDDIM 2)
 
+dune_add_test(SOURCES testpoisson-multidomain.cc
+              COMPILE_DEFINITIONS GRIDSDIR=\"${CMAKE_CURRENT_SOURCE_DIR}/grids\"
+              CMAKE_GUARD dune-multidomaingrid_FOUND)
+
 dune_add_test(SOURCES testmatrixfree.cc)
 
 dune_add_test(SOURCES testchunkedblockordering.cc)
@@ -133,8 +137,7 @@ dune_add_test(SOURCES testeigenbackend.cc
               COMPILE_DEFINITIONS GRIDSDIR=\"${CMAKE_CURRENT_SOURCE_DIR}/grids\"
               CMAKE_GUARD EIGEN3_FOUND)
 
-dune_add_test(SOURCES testordering.cc
-              CMAKE_GUARD dune-alugrid_FOUND)
+dune_add_test(SOURCES testordering.cc)
 
 dune_add_test(SOURCES testloadbalancing.cc
               COMPILE_DEFINITIONS GRIDSDIR=\"${CMAKE_CURRENT_SOURCE_DIR}/grids\"

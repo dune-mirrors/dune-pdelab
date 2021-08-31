@@ -99,17 +99,19 @@ namespace Dune {
         void leaf(Node& node, TreePath treePath)
         {
           node.offset = offset;
-          if (fast)
-            {
-              node.pfe = nullptr;
-              node.n = node.pgfs->finiteElementMap().maxLocalSize();
-              Node::FESwitch::setStore(node.pfe, node.pgfs->finiteElementMap().find(e));
-            }
-          else
-            {
-              Node::FESwitch::setStore(node.pfe, node.pgfs->finiteElementMap().find(e));
-              node.n = Node::FESwitch::basis(*node.pfe).size();
-            }
+          node.pfe = nullptr;
+          node._in_entity_set = node.pgfs->entitySet().contains(e);
+          if (not node._in_entity_set) {
+            node.n = 0;
+          } else if (fast) {
+            node.n = node.pgfs->finiteElementMap().maxLocalSize();
+            Node::FESwitch::setStore(node.pfe,
+                                     node.pgfs->finiteElementMap().find(e));
+          } else {
+            Node::FESwitch::setStore(node.pfe,
+                                     node.pgfs->finiteElementMap().find(e));
+            node.n = Node::FESwitch::basis(*node.pfe).size();
+          }
           offset += node.n;
         }
 
@@ -217,7 +219,7 @@ namespace Dune {
         , n(0)
       {}
 
-      //! \brief get current size
+      //! \brief number of degrees of freedom contained in this lfs node
       typename Traits::IndexContainer::size_type size () const
       {
         return n;
@@ -596,6 +598,10 @@ namespace Dune {
       //! get finite element
       const typename Traits::FiniteElementType& finiteElement () const
       {
+        assert((_in_entity_set && pfe) &&
+               "Local function spaces outside their entity set should not "
+               "request `finiteElement()`. To check if function has support "
+               "use: `size()!= 0`");
         assert(pfe);
         return *pfe;
       }
@@ -610,42 +616,42 @@ namespace Dune {
       template<typename Entity, typename DOFIndexIterator, bool fast>
       void dofIndices(const Entity& e, DOFIndexIterator it, DOFIndexIterator endit, std::integral_constant<bool,fast>)
       {
-        if (fast)
-          {
-            auto gt = e.type();
-            auto index = this->gridFunctionSpace().entitySet().indexSet().index(e);
-            GFS::Ordering::Traits::DOFIndexAccessor::store(*it,gt,index,0);
-            ++it;
-          }
-        else
-          {
-            // get layout of entity
-            const typename FESwitch::Coefficients &coeffs =
+        using EntitySet = typename GFS::Traits::EntitySet;
+        auto es = this->gridFunctionSpace().entitySet();
+
+        if (not es.contains(e))
+          return;
+        else if (fast) {
+          auto gt = e.type();
+          auto index = es.indexSet().index(e);
+          GFS::Ordering::Traits::DOFIndexAccessor::store(*it, gt, index, 0);
+          ++it;
+        } else {
+          // get layout of entity
+          const typename FESwitch::Coefficients &coeffs =
               FESwitch::coefficients(*pfe);
 
-            using EntitySet = typename GFS::Traits::EntitySet;
-            auto es = this->gridFunctionSpace().entitySet();
+          auto refEl =
+              Dune::ReferenceElements<double, EntitySet::dimension>::general(
+                  this->pfe->type());
 
-            auto refEl = Dune::ReferenceElements<double,EntitySet::dimension>::general(this->pfe->type());
+          for (std::size_t i = 0; i < std::size_t(coeffs.size()); ++i, ++it) {
+            // get geometry type of subentity
+            auto gt = refEl.type(coeffs.localKey(i).subEntity(),
+                                 coeffs.localKey(i).codim());
 
-            for (std::size_t i = 0; i < std::size_t(coeffs.size()); ++i, ++it)
-              {
-                // get geometry type of subentity
-                auto gt = refEl.type(coeffs.localKey(i).subEntity(),
-                  coeffs.localKey(i).codim());
+            // evaluate consecutive index of subentity
+            auto index = es.indexSet().subIndex(
+                e, coeffs.localKey(i).subEntity(), coeffs.localKey(i).codim());
 
-                // evaluate consecutive index of subentity
-                auto index = es.indexSet().subIndex(e,
-                  coeffs.localKey(i).subEntity(),
-                  coeffs.localKey(i).codim());
+            // store data
+            GFS::Ordering::Traits::DOFIndexAccessor::store(
+                *it, gt, index, coeffs.localKey(i).index());
 
-                // store data
-                GFS::Ordering::Traits::DOFIndexAccessor::store(*it,gt,index,coeffs.localKey(i).index());
-
-                // make sure we don't write past the end of the iterator range
-                assert(it != endit);
-              }
+            // make sure we don't write past the end of the iterator range
+            assert(it != endit);
           }
+        }
       }
 
 
@@ -680,6 +686,8 @@ namespace Dune {
 
       //    private:
       typename FESwitch::Store pfe;
+    private:
+      bool _in_entity_set;
     };
 
     // Register LeafGFS -> LocalFunctionSpace transformation

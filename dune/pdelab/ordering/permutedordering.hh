@@ -155,6 +155,16 @@ namespace Dune {
 
       virtual ~PermutedOrdering() override = default;
 
+      using BaseT::size;
+
+      typename Traits::SizeType size(typename Traits::ContainerIndex suffix) const {
+        if (suffix.size() == 0)
+          return ordering().size(suffix);
+
+        suffix.back() = _tag.permutation()[suffix.back()];
+        return ordering().size(suffix);
+      }
+
       virtual void map_index_dynamic(typename Traits::DOFIndexView di, typename Traits::ContainerIndex& ci) const override
       {
         ordering().mapIndex(di,ci);

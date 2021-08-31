@@ -28,6 +28,15 @@ namespace Dune {
 
     };
 
+    //! Information about order semantics on multi-indices
+    enum class MultiIndexOrder {
+      //! indices are ordered from inner to outer container: {inner,...,outer}
+      Inner2Outer,
+      //! indices are ordered from outer to inner container: {outer,...,inner}
+      Outer2Inner,
+    };
+
+
 #ifndef DOXYGEN
 
     namespace ordering {
@@ -123,6 +132,13 @@ namespace Dune {
           index[1] = entity_index;
         }
 
+        template<typename Index, typename SizeType>
+        static void store(Index& index, SizeType geometry_index, SizeType entity_index)
+        {
+          index[0] = geometry_index;
+          index[1] = entity_index;
+        }
+
       };
 
       template<typename DOFIndex>
@@ -151,7 +167,7 @@ namespace Dune {
     };
 
 
-    template<typename DI, typename CI>
+    template<typename DI, typename CI, MultiIndexOrder CIOrder = MultiIndexOrder::Inner2Outer>
     struct SimpleOrderingTraits
     {
 
@@ -163,11 +179,13 @@ namespace Dune {
 
       typedef DefaultDOFIndexAccessor DOFIndexAccessor;
 
+      //! Inform about ContainerIndex multi-index order semantics
+      static constexpr MultiIndexOrder ContainerIndexOrder = CIOrder;
     };
 
 
-    template<typename SizeType_, typename CI>
-    struct SimpleOrderingTraits<SimpleDOFIndex<SizeType_>,CI>
+    template<typename SizeType_, typename CI, MultiIndexOrder CIOrder>
+    struct SimpleOrderingTraits<SimpleDOFIndex<SizeType_>,CI,CIOrder>
     {
 
       typedef SimpleDOFIndex<SizeType_> DOFIndex;
@@ -178,14 +196,13 @@ namespace Dune {
 
       typedef SimpleDOFIndexAccessor DOFIndexAccessor;
 
+      //! Inform about ContainerIndex multi-index order semantics
+      static constexpr MultiIndexOrder ContainerIndexOrder = CIOrder;
     };
 
-
-
-    template<typename DI, typename CI>
-    struct OrderingTraits
-      : public SimpleOrderingTraits<DI,CI>
-    {
+    template <typename DI, typename CI,
+              MultiIndexOrder CIOrder = MultiIndexOrder::Inner2Outer>
+    struct OrderingTraits : public SimpleOrderingTraits<DI, CI, CIOrder> {
 
       // The maximum dimension supported (length of bitsets)
       // 32 dimensions should probably be fine for now... ;-)
@@ -200,20 +217,14 @@ namespace Dune {
 
       typedef typename DI::size_type SizeType;
       typedef typename DI::size_type size_type;
-
     };
 
-
-    template<typename ES, typename DI, typename CI>
-    struct LocalOrderingTraits
-      : public OrderingTraits<DI,
-                              CI
-                              >
-    {
+    template <typename ES, typename DI, typename CI,
+              MultiIndexOrder CIOrder = MultiIndexOrder::Outer2Inner>
+    struct LocalOrderingTraits : public OrderingTraits<DI, CI, CIOrder> {
 
       using EntitySet = ES;
       using GridView = typename ES::GridView;
-
     };
 
     template<typename ES, typename DI, typename CI>
@@ -330,6 +341,84 @@ namespace Dune {
       {}
 
     };
+
+    /**
+     * @brief Adapter to create a size provider from an ordering
+     * @details This adapter is meant to be used in allocation and
+     *   resizing of vectors containers.
+     *   In particular, this adapter is needed because the ordering library give
+     *   sizes for multi-indices ordered with Inner2Outer semantis, while
+     *   resizing algorithms are faster and easier when using Outer2Inner
+     *   semantics.
+     *
+     *   - This class makes type erasure on the ordering type.
+     *   - This class has value semantics.
+     *   - This class always receives container indices with Outer2Inner order
+     *
+     * @tparam SizeType_ return type of the size method
+     * @tparam ContainerIndex_ argument type of the size method
+     * @tparam OriginOrder enum with MultiIndexOrder semantics of the origin ordering
+     */
+    template <class Size, class ContainerIndex_, MultiIndexOrder OriginOrder>
+    struct SizeProviderAdapter {
+
+      /**
+       * @brief Construct a new Size Provider Adapter object
+       *
+       * @tparam Ordering  The type of the ordering to adapt
+       * @param ordering   A shared pointer to the ordering
+       */
+      template <class Ordering>
+      SizeProviderAdapter(const std::shared_ptr<const Ordering> &ordering)
+          : _size_provider([=](const ContainerIndex_ &partial_multiindex) {
+              return ordering->size(partial_multiindex);
+            }) {
+        static_assert(Ordering::Traits::ContainerIndexOrder == OriginOrder);
+      }
+
+      //! Partial MultiIndex of a ContainerIndex
+      using ContainerIndex = ContainerIndex_;
+
+      //! Partial MultiIndex of a ContainerIndex
+      using SizePrefix = ContainerIndex;
+
+      //! Type that refers to the size of containers
+      using SizeType = Size;
+
+      //! Inform about ContainerIndex multi-index order semantics
+      static constexpr MultiIndexOrder ContainerIndexOrder = MultiIndexOrder::Outer2Inner;
+
+      /**
+       * @brief Gives the size for a given prefix
+       * @param prefix  MultiIndex with a partial path to a container
+       * @return Traits::SizeType  The size required for such a path
+       */
+      SizeType size(const SizePrefix &prefix) const {
+        if constexpr (OriginOrder == MultiIndexOrder::Inner2Outer) {
+          // reversing Outer2Inner prefix into a Inner2Outer suffix
+          ContainerIndex suffix;
+          suffix.resize(prefix.size());
+          std::reverse_copy(prefix.begin(), prefix.end(),suffix.begin());
+          // forward size request to ordering with new Inner2Outer suffix
+          return _size_provider(suffix);
+        } else {
+          // prefix is already Outer2Inner, forward to size provider
+          return _size_provider(prefix);
+        }
+      }
+
+    private:
+
+      const std::function<SizeType(const ContainerIndex &)> _size_provider;
+    };
+
+    //! template deduction guide for orderings
+    template<class Ordering>
+    SizeProviderAdapter(const std::shared_ptr<const Ordering>& ordering)
+        -> SizeProviderAdapter<typename Ordering::Traits::SizeType,
+                              typename Ordering::Traits::ContainerIndex,
+                              Ordering::Traits::ContainerIndexOrder>;
+
 
    //! \} group Ordering
   } // namespace PDELab
