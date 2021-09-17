@@ -236,9 +236,9 @@ namespace Impl
    *
    * We treat separately cases when both upper and lower bounds are present
    * and when only one is - to avoid traversing the vector twice or
-   * repeatingly checking the emptyness of the vector storing bounds.
+   * repeatedly checking the emptyness of the vector storing bounds.
    *
-   * Rely on ParameterClass = BoundedLineSearchParametersInterface<Newton>
+   * Relies on ParameterClass = BoundedLineSearchParametersInterface<Newton>
    * which carries information about which unknowns are bounded and how.
    */
 

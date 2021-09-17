@@ -265,13 +265,13 @@ namespace Dune::PDELab
           end = Clock::now();
           linear_solver_time += end-start;
           _result.linear_solver_time = to_seconds(linear_solver_time);
-          _result.linear_solver_iterations = _linearSolver.result().iterations;
+          _result.linear_solver_iterations += _linearSolver.result().iterations;
           throw;
         }
         end = Clock::now();
         linear_solver_time += end -start;
         _result.linear_solver_time = to_seconds(linear_solver_time);
-        _result.linear_solver_iterations = _linearSolver.result().iterations;
+        _result.linear_solver_iterations += _linearSolver.result().iterations;
 
         //===================================
         // Do line search and update solution
@@ -380,10 +380,7 @@ namespace Dune::PDELab
     //! Set how much output you get
     void setVerbosityLevel(unsigned int verbosity)
     {
-      if (_gridOperator.trialGridFunctionSpace().gridView().comm().rank()>0)
-        _verbosity = 0;
-      else
-        _verbosity = verbosity;
+      _verbosity = verbosity;
     }
 
     //! Get verbosity level
