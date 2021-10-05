@@ -366,7 +366,7 @@ namespace Dune {
       {
         // Doesn't matter which matrix we send here (we assume identical pattern), so just make sure one is ready
         if (loadedMatrixProc == -1) {
-            std::cout << "Assembling for " << proc << std::endl;
+            // std::cout << "Assembling for " << proc << std::endl;
           A = MatrixLambda(proc);
           loadedMatrixProc = proc;
         }
@@ -388,7 +388,7 @@ namespace Dune {
       void gatherWithRank(B& buffer, int i, int proc)
       {
         if (loadedMatrixProc != proc) {
-          std::cout << "Assembling for " << proc << std::endl;
+          // std::cout << "Assembling for " << proc << std::endl;
           A = MatrixLambda(proc);
           loadedMatrixProc = proc;
         }
@@ -1107,6 +1107,85 @@ namespace Dune {
     return pu;
   }
 
+  template<typename ExtendedParallelIndexSet, typename Matrix, typename Vector>
+  std::tuple<std::shared_ptr<Vector>, std::vector<int>>
+  makePartitionOfUnityRestricted (const ExtendedParallelIndexSet& epis, const Matrix& M, int overlapsize, int PoU_restriction=0)
+  {
+    using FieldType = typename Matrix::field_type;
+    using ScalarVector = Dune::BlockVector<Dune::FieldVector<FieldType,1>>;
+    using ParallelIndexSet = typename ExtendedParallelIndexSet::ParallelIndexSet;
+
+    // communicator
+    Dune::AllSet<EPISAttribute> allAttribute;
+    Dune::Interface allinterface;
+    allinterface.build(*epis.remoteIndices(),allAttribute,allAttribute); // all to all communication
+    DuneWithRank::VariableSizeCommunicator<> varcommunicator(allinterface);
+    DuneWithRank::BufferedCommunicator communicator;
+    communicator.build<ScalarVector>(allinterface);
+
+    // now lets determine an improved partition of unity ....
+    // first find entries which have nonlocal edges; these are on the boundary
+    ScalarVector distance(M.N());
+    OverlapTools::CountNonlocalEdgesDataHandle<ParallelIndexSet,Matrix,ScalarVector> nonlocaledgesdh(M,*epis.parallelIndexSet(),distance);
+    varcommunicator.forward(nonlocaledgesdh);
+
+    std::vector<int> interior_bnd_dofs;
+    interior_bnd_dofs.resize(0);
+
+    // now compute distance of each vertex to the boundary up to distance 2*overlapsize
+    for (typename ScalarVector::size_type i=0; i<distance.N(); i++){
+      if (distance[i]!=0.0) {
+        distance[i] = 0.0; // this is a boundary dof
+        interior_bnd_dofs.push_back(i);
+
+        // std::cout << i << std::endl;
+        // std::cout << interior_bnd_dofs[0] << std::endl;
+      } else {
+        distance[i] = 2*(overlapsize-PoU_restriction)+1.0;
+        // distance[i] = 2*overlapsize-PoU_restriction+1.0;
+      }
+    }
+
+    for (int round=0; round<PoU_restriction; round++){ // Frist diffuse 0 on neighbour boundaries
+      for (typename ScalarVector::size_type i=0; i<distance.N(); i++)
+        {
+          auto cIt = M[i].begin();
+          auto cEndIt = M[i].end();
+          for (; cIt!=cEndIt; ++cIt)
+            distance[i] = std::min(distance[i],distance[cIt.index()]);
+        }
+        // std::cout << round << " restriction --> " << 1333 << " : " << distance[1333] << std::endl;
+    }
+    for (int round=PoU_restriction; round<2*overlapsize-PoU_restriction; round++){ // Then make the Part of Unity
+    // for (int round=PoU_restriction; round<2*overlapsize; round++){ // Then make the Part of Unity
+      for (typename ScalarVector::size_type i=0; i<distance.N(); i++)
+        {
+          auto cIt = M[i].begin();
+          auto cEndIt = M[i].end();
+          for (; cIt!=cEndIt; ++cIt)
+            distance[i] = std::min(distance[i],distance[cIt.index()]+1.0);
+        }
+        // std::cout << round << " --> " << 1333 << " : " << distance[1333] << std::endl;
+    }
+
+    // now we may compute the partition of unity as in the stability proof of additive Schwarz
+    ScalarVector sumdistance(distance);
+    for (typename ScalarVector::size_type i=0; i<sumdistance.N(); i++)
+      //sumdistance[i] += 1.0; // add 1 as actually the first vertex is already inside
+      sumdistance[i] += .0; // add 1 as actually the first vertex is already inside
+    communicator.forward<OverlapTools::AddGatherScatter<ScalarVector>>(sumdistance,sumdistance);
+    auto pu = std::shared_ptr<Vector>(new Vector(M.N()));
+    for (typename Vector::size_type i=0; i<pu->N(); i++){
+      (*pu)[i] = (distance[i]+.0)/sumdistance[i];
+    }
+
+    // std::cout << "pu->size() : " << pu->size() << std::endl;
+
+    // auto interior_bnd_dofs_output = std::shared_ptr<std::vector<int>>(interior_bnd_dofs);
+
+    return std::make_tuple(pu, interior_bnd_dofs);
+  }
+
   template<typename ExtendedParallelIndexSet, typename Matrix>
   std::shared_ptr<Dune::BlockVector<Dune::FieldVector<typename Matrix::field_type,1>>>
   makeOwner (const ExtendedParallelIndexSet& epis, const Matrix& M, int overlapsize)
@@ -1349,6 +1428,14 @@ namespace Dune {
     using CollectiveCommunication = typename GridView::CollectiveCommunication;
     using EPIS = Dune::ExtendedParallelIndexSet<CollectiveCommunication,GlobalId,Matrix>;
     return Dune::makePartitionOfUnity<EPIS, Matrix, Vector>(adapter.getEpis(), A, adapter.getEpis().overlapSize());
+  }
+
+  template<typename GridView, typename Matrix, typename Vector>
+  std::tuple<std::shared_ptr<Vector>, std::vector<int>> makePartitionOfUnityRestricted(NonoverlappingOverlapAdapter<GridView, Vector, Matrix>& adapter, const Matrix& A, int extra=0) {
+    using GlobalId = typename GridView::Grid::GlobalIdSet::IdType;
+    using CollectiveCommunication = typename GridView::CollectiveCommunication;
+    using EPIS = Dune::ExtendedParallelIndexSet<CollectiveCommunication,GlobalId,Matrix>;
+    return Dune::makePartitionOfUnityRestricted<EPIS, Matrix, Vector>(adapter.getEpis(), A, adapter.getEpis().overlapSize(), extra);
   }
 }
 

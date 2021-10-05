@@ -168,6 +168,16 @@ namespace Dune {
             AF_exterior_.mv(basis_vector, Atimesv);
             for (rank_type basis_index = 0; basis_index < local_basis_sizes_[my_rank_]; basis_index++) {
               field_type entry = *subdomainbasis_->get_basis_vector(basis_index)*Atimesv;
+              // if(my_rank_==3){
+                // if (basis_index_remote==60 || basis_index==60){
+                //   // std::cout << "Atimesv : " << std::endl;
+                //   // std::cout << Atimesv << std::endl;
+                //   std::cout << std::endl;
+                //   std::cout << "[ " << basis_index_remote << ", " << basis_index << "] : " << entry << std::endl;
+                // }
+
+              // }
+              //   std::cout << "[ " << basis_index_remote << ", " << basis_index << "] : " << entry << std::endl;
               local_rows[basis_index][neighbor_ranks_.size()].push_back(entry);
             }
           }

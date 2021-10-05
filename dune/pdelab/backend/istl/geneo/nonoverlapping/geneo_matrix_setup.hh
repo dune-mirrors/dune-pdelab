@@ -88,9 +88,10 @@ namespace Dune {
      * @return A tuple containing the GenEO matrices extended by virtual overlap and the corresponding partition of unity
      */
     template<class GO, class Matrix, class Vector>
-    std::tuple<std::shared_ptr<Matrix>, std::shared_ptr<Matrix>, std::shared_ptr<Vector>> setupGenEOMatrices(const GO& go, NonoverlappingOverlapAdapter<typename GO::Traits::TrialGridFunctionSpace::Traits::GridView, Vector, Matrix>& adapter, const typename GO::Jacobian& A, bool need_enforced_dirichlet_on_PoU=1) {
+    std::tuple<std::shared_ptr<Matrix>, std::shared_ptr<Matrix>, std::shared_ptr<Vector>, std::vector<int>> setupGenEOMatrices(const GO& go, NonoverlappingOverlapAdapter<typename GO::Traits::TrialGridFunctionSpace::Traits::GridView, Vector, Matrix>& adapter, const typename GO::Jacobian& A, bool need_enforced_dirichlet_on_PoU=1, int PoU_restriction=0) {
 
       using Dune::PDELab::Backend::native;
+      Dune::Timer timer_detailed(true);
 
       using GFS = typename GO::Traits::TrialGridFunctionSpace;
       using GV = typename GFS::Traits::GridView;
@@ -100,7 +101,14 @@ namespace Dune {
 
       std::shared_ptr<Matrix> A_extended = adapter.extendMatrix(native(A));
 
-      std::shared_ptr<Vector> part_unity = Dune::makePartitionOfUnity<GV, Matrix, Vector>(adapter, *A_extended);
+      std::shared_ptr<Vector> part_unity = Dune::makePartitionOfUnity<GV, Matrix, Vector>(adapter, *A_extended); // The one used for A_extended setup
+
+
+      auto PoU_and_IntBndDofs = Dune::makePartitionOfUnityRestricted<GV, Matrix, Vector>(adapter, *A_extended, PoU_restriction); // The one used later one, potentially restricted on boundaries to have an oversampled subdomain
+      // std::shared_ptr<Vector> part_unity_R = part_unity;
+      std::shared_ptr<Vector> part_unity_R = std::get<0>(PoU_and_IntBndDofs);
+      std::vector<int> IntBndDofs = std::get<1>(PoU_and_IntBndDofs);
+
 
       using Attribute = Dune::EPISAttribute;
       Dune::AllSet<Attribute> allAttribute;
@@ -149,6 +157,11 @@ namespace Dune {
         return stackobject_to_shared_ptr(native(newmat));
       });
 
+
+
+      // double time_A_extended_and_A_ovlp = timer_detailed.elapsed(); timer_detailed.reset();
+      // std::cout << "A_extended_and_A_ovlp creation: " << time_A_extended_and_A_ovlp << std::endl;
+
       if (need_enforced_dirichlet_on_PoU==true){
         // Enforce problem's Dirichlet condition on PoU
         const int block_size = Vector::block_type::dimension;
@@ -175,7 +188,7 @@ namespace Dune {
       using ESExcluder = Dune::PDELab::EntitySetExcluder<Vector, GV>;
       gfs.entitySet().setExcluder(std::make_shared<ESExcluder>());
 
-      return std::make_tuple(extended_matrices.first, extended_matrices.second, part_unity);
+      return std::make_tuple(extended_matrices.first, extended_matrices.second, part_unity_R, IntBndDofs);
     }
   }
 }
