@@ -31,6 +31,9 @@
 
 #include <dune/pdelab/backend/interface.hh>
 
+#include <dune/istl/solvers.hh>
+
+
 #ifdef Status
 #undef Status        // prevent preprocessor from damaging the ARPACK++
                      // code when "X11/Xlib.h" is included (the latter
@@ -42,6 +45,10 @@
 #include "argnsym.h"  // provides ARSymGenEig
 #include "arsnsym.h" // this provides the one we need
 #include "arssym.h" // this provides the one we need
+
+
+#include <dune/istl/cholmod.hh>
+#include <dune/istl/overlappingschwarz.hh>
 
 namespace ArpackMLGeneo
 {
@@ -241,6 +248,12 @@ namespace ArpackMLGeneo
     APP_BCRSMatMul_GeneralizedShiftInvertMode (const BCRSMatrix& A, const BCRSMatrix& B)
       : A_(A), B_(B),
         A_solver(A_),
+
+        // ope(A_),
+        // criterion(1, 5000),
+        // amg(ope, criterion, smootherArgs),
+        // A_solver(ope, amg, 1E-6,5000, 2),
+
         a_(A_.M() * mBlock), n_(A_.N() * nBlock)
     {
       // assert that BCRSMatrix type has blocklevel 2
@@ -262,18 +275,46 @@ namespace ArpackMLGeneo
     //! Perform matrix-vector product w = A^{-1}*v for shift invert mode
     inline void multMv (Real* v, Real* w)
     {
+
+      // Dune::Timer timer_detailed(true);
       // get vector v as an object of appropriate type
       arrayToDomainBlockVector(v,domainBlockVector);
 
       Dune::InverseOperatorResult result;
+
+      // int coarsenTarget = 10000;
+      // int ml = 10;
+      // // Criterion criterion(15,coarsenTarget);
+      // criterion.setDefaultValuesIsotropic(2);
+      // criterion.setAlpha(.67);
+      // criterion.setBeta(1.0e-4);
+      // criterion.setSkipIsolated(false);
+      // // specify pre/post smoother steps
+      // criterion.setNoPreSmoothSteps(1);
+      // criterion.setNoPostSmoothSteps(1);
+
+      // smootherArgs.iterations = 10;
+
+      // criterion.setMaxLevel(100);
+      // criterion.setDebugLevel(0);
+
+      // A_solver(ope, amg, 1E-6,500, 2);
+
+      // // Dune::SeqILU<BCRSMatrix,DomainBlockVector,RangeBlockVector> A_prec(A_,1e-2);
+      // // Dune::GeneralizedPCGSolver<DomainBlockVector> A_solver(ope, amg, 1E-6,500,0);
+
       A_solver.apply(rangeBlockVector, domainBlockVector, result);
 
       // get vector w from object of appropriate type
       rangeBlockVectorToArray(rangeBlockVector,w);
+
+      // double time = timer_detailed.elapsed(); timer_detailed.reset();
+      // std::cout << "OP* takes : " << time << " s"<< std::endl;
     };
 
     inline void multMvB (Real* v, Real* w)
     {
+      // Dune::Timer timer_detailed(true);
       // get vector v as an object of appropriate type
       arrayToDomainBlockVector(v,domainBlockVector);
 
@@ -282,6 +323,9 @@ namespace ArpackMLGeneo
 
       // get vector w from object of appropriate type
       rangeBlockVectorToArray(rangeBlockVector,w);
+
+      // double time = timer_detailed.elapsed(); timer_detailed.reset();
+      // std::cout << "B* takes : " << time << " s"<< std::endl;
     };
 
 
@@ -366,7 +410,23 @@ namespace ArpackMLGeneo
     const BCRSMatrix& A_;
     const BCRSMatrix& B_;
 
+    // typedef Dune::MatrixAdapter<BCRSMatrix,DomainBlockVector,RangeBlockVector> Operator;
+    // typedef Dune::Amg::CoarsenCriterion<Dune::Amg::UnSymmetricCriterion<BCRSMatrix,Dune::Amg::FirstDiagonal> > Criterion;
+    // // typedef Dune::SeqJac<BCRSMatrix,DomainBlockVector,RangeBlockVector> Smoother;
+    // // typedef Dune::SeqOverlappingSchwarz<BCRSMatrix,DomainBlockVector, Dune::MultiplicativeSchwarzMode> Smoother;
+    // typedef Dune::SeqOverlappingSchwarz<BCRSMatrix,DomainBlockVector, Dune::SymmetricMultiplicativeSchwarzMode> Smoother;
+    // typedef typename Dune::Amg::SmootherTraits<Smoother>::Arguments SmootherArgs;
+    // typedef Dune::Amg::AMG<Operator,DomainBlockVector,Smoother, Dune::Amg::SequentialInformation> AMG;
+
+    // Operator ope;
+    // SmootherArgs smootherArgs;
+    // Criterion criterion;
+    // AMG amg;
+    // Dune::CGSolver<DomainBlockVector> A_solver;
+
     Dune::UMFPack<BCRSMatrix> A_solver;
+    // Dune::Cholmod<DomainBlockVector> A_solver;
+    // Dune::SuperLU<BCRSMatrix> A_solver;
 
     // Number of rows and columns in the matrix
     const int a_, n_;
@@ -504,7 +564,6 @@ namespace ArpackMLGeneo
       // obtain number of Arnoldi update iterations actually taken
       nIterations_ = dprob.GetIter();
     }
-
 
     //! Solve GEVP in shift invert mode
     inline void computeGenNonSymShiftInvertMinMagnitude (const BCRSMatrix& b_, const Real& epsilon,
