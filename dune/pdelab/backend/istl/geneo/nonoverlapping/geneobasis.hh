@@ -65,9 +65,13 @@ namespace Dune {
           }
         }
 
+        int verbosity = 0;
+        if (adapter.gridView().comm().rank() == 22 || adapter.gridView().comm().rank() == 0)
+          verbosity=4;
+
         // Setup Arpack for solving generalized eigenproblem
         std::cout << "ARPACK setup...";
-        ArpackGeneo::ArPackPlusPlus_Algorithms<Matrix, Vector> arpack(*A_extended);
+        ArpackGeneo::ArPackPlusPlus_Algorithms<Matrix, Vector> arpack(*A_extended, 1000, verbosity);
         std::cout << " done" << std::endl;
         double eps = 0.0;
 

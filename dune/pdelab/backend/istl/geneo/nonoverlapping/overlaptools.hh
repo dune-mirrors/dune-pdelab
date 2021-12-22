@@ -1132,7 +1132,7 @@ namespace Dune {
     std::vector<int> interior_bnd_dofs;
     interior_bnd_dofs.resize(0);
 
-    // now compute distance of each vertex to the boundary up to distance 2*overlapsize
+    /*now compute distance of each vertex to the boundary up to distance 2*overlapsize*/
     for (typename ScalarVector::size_type i=0; i<distance.N(); i++){
       if (distance[i]!=0.0) {
         distance[i] = 0.0; // this is a boundary dof
@@ -1142,11 +1142,10 @@ namespace Dune {
         // std::cout << interior_bnd_dofs[0] << std::endl;
       } else {
         distance[i] = 2*(overlapsize-PoU_restriction)+1.0;
-        // distance[i] = 2*overlapsize-PoU_restriction+1.0;
       }
     }
 
-    for (int round=0; round<PoU_restriction; round++){ // Frist diffuse 0 on neighbour boundaries
+    for (int round=0; round<PoU_restriction; round++){ // First diffuse 0 on neighbour boundaries
       for (typename ScalarVector::size_type i=0; i<distance.N(); i++)
         {
           auto cIt = M[i].begin();
@@ -1154,10 +1153,8 @@ namespace Dune {
           for (; cIt!=cEndIt; ++cIt)
             distance[i] = std::min(distance[i],distance[cIt.index()]);
         }
-        // std::cout << round << " restriction --> " << 1333 << " : " << distance[1333] << std::endl;
     }
     for (int round=PoU_restriction; round<2*overlapsize-PoU_restriction; round++){ // Then make the Part of Unity
-    // for (int round=PoU_restriction; round<2*overlapsize; round++){ // Then make the Part of Unity
       for (typename ScalarVector::size_type i=0; i<distance.N(); i++)
         {
           auto cIt = M[i].begin();
@@ -1165,13 +1162,12 @@ namespace Dune {
           for (; cIt!=cEndIt; ++cIt)
             distance[i] = std::min(distance[i],distance[cIt.index()]+1.0);
         }
-        // std::cout << round << " --> " << 1333 << " : " << distance[1333] << std::endl;
     }
 
     // now we may compute the partition of unity as in the stability proof of additive Schwarz
     ScalarVector sumdistance(distance);
     for (typename ScalarVector::size_type i=0; i<sumdistance.N(); i++)
-      //sumdistance[i] += 1.0; // add 1 as actually the first vertex is already inside
+      // sumdistance[i] += 1.0; // add 1 as actually the first vertex is already inside
       sumdistance[i] += .0; // add 1 as actually the first vertex is already inside
     communicator.forward<OverlapTools::AddGatherScatter<ScalarVector>>(sumdistance,sumdistance);
     auto pu = std::shared_ptr<Vector>(new Vector(M.N()));
@@ -1180,8 +1176,6 @@ namespace Dune {
     }
 
     // std::cout << "pu->size() : " << pu->size() << std::endl;
-
-    // auto interior_bnd_dofs_output = std::shared_ptr<std::vector<int>>(interior_bnd_dofs);
 
     return std::make_tuple(pu, interior_bnd_dofs);
   }

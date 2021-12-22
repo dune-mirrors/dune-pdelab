@@ -105,8 +105,8 @@ namespace Dune {
 
 
       auto PoU_and_IntBndDofs = Dune::makePartitionOfUnityRestricted<GV, Matrix, Vector>(adapter, *A_extended, PoU_restriction); // The one used later one, potentially restricted on boundaries to have an oversampled subdomain
-      // std::shared_ptr<Vector> part_unity_R = part_unity;
-      std::shared_ptr<Vector> part_unity_R = std::get<0>(PoU_and_IntBndDofs);
+      std::shared_ptr<Vector> part_unity_R = part_unity;
+      // std::shared_ptr<Vector> part_unity_R = std::get<0>(PoU_and_IntBndDofs);
       std::vector<int> IntBndDofs = std::get<1>(PoU_and_IntBndDofs);
 
 
