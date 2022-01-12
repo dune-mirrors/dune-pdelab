@@ -147,6 +147,9 @@ namespace Dune {
 
         MultiVectorBundle<GridView, X, M> bundle(adapter_);
 
+        // double time_init_bundle = timer_setup.elapsed(); timer_setup.reset();
+        // std::cout << my_rank_ << " : time_init_bundle : " << time_init_bundle << std::endl;
+
         // Assemble local section of coarse matrix
         for (rank_type basis_index_remote = 0; basis_index_remote < max_local_basis_size; basis_index_remote++) {
 
@@ -161,6 +164,11 @@ namespace Dune {
           if (verbosity_ > 2)
             bundle.print();
 
+          // if (my_rank_ == 0 && verbosity_ > 0){
+          //   double time_communicate = timer_setup.elapsed(); timer_setup.reset();
+          //   std::cout << my_rank_ << " / EV " << basis_index_remote << " : time_communicate : " << time_communicate << std::endl;
+          // }
+
           // Compute local products of basis functions with discretization matrix
           if (basis_index_remote < local_basis_sizes_[my_rank_]) {
             auto basis_vector = *subdomainbasis_->get_basis_vector(basis_index_remote);
@@ -168,19 +176,16 @@ namespace Dune {
             AF_exterior_.mv(basis_vector, Atimesv);
             for (rank_type basis_index = 0; basis_index < local_basis_sizes_[my_rank_]; basis_index++) {
               field_type entry = *subdomainbasis_->get_basis_vector(basis_index)*Atimesv;
-              // if(my_rank_==3){
-                // if (basis_index_remote==60 || basis_index==60){
-                //   // std::cout << "Atimesv : " << std::endl;
-                //   // std::cout << Atimesv << std::endl;
-                //   std::cout << std::endl;
-                //   std::cout << "[ " << basis_index_remote << ", " << basis_index << "] : " << entry << std::endl;
-                // }
-
-              // }
-              //   std::cout << "[ " << basis_index_remote << ", " << basis_index << "] : " << entry << std::endl;
               local_rows[basis_index][neighbor_ranks_.size()].push_back(entry);
             }
           }
+
+
+          // if (my_rank_ == 0 && verbosity_ > 0){
+          //   double time_subdoXsubdo = timer_setup.elapsed(); timer_setup.reset();
+          //   std::cout << my_rank_ << " / EV " << basis_index_remote << " : time_subdoXsubdo : " << time_subdoXsubdo << std::endl;
+          // }
+
 
           // Compute products of discretization matrix with local and remote vectors
           for (std::size_t neighbor_id = 0; neighbor_id < neighbor_ranks_.size(); neighbor_id++) {
@@ -198,20 +203,21 @@ namespace Dune {
             AF_exterior_.mv(*basis_vector, Atimesv);
 
             for (rank_type basis_index = 0; basis_index < local_basis_sizes_[my_rank_]; basis_index++) {
-              field_type entry=0.0;
-              std::vector<double> contribution((*subdomainbasis_->get_basis_vector(basis_index)).N());
-              for(int vect_iterator=0; vect_iterator<(*subdomainbasis_->get_basis_vector(basis_index)).N(); vect_iterator++){
-                for(int j=0; j<3; j++){
-                  contribution[vect_iterator] = (*subdomainbasis_->get_basis_vector(basis_index))[vect_iterator][j] * Atimesv[vect_iterator][j];
-                  entry+= (*subdomainbasis_->get_basis_vector(basis_index))[vect_iterator][j] * Atimesv[vect_iterator][j];
-                }
-              }
-
+              field_type entry = *subdomainbasis_->get_basis_vector(basis_index)*Atimesv;
               local_rows[basis_index][neighbor_id].push_back(entry);
             }
+
           }
 
+          // if (my_rank_ == 0 && verbosity_ > 0){
+          //   double time_subdoXneighbour = timer_setup.elapsed(); timer_setup.reset();
+          //   std::cout << my_rank_ << " / EV " << basis_index_remote << " : time_subdoXneighbour : " << time_subdoXneighbour << std::endl;
+          // }
+
         }
+
+        // double time_row = timer_setup.elapsed(); timer_setup.reset();
+        // std::cout << my_rank_ << " : time_row : " << time_row << std::endl;
 
         // Construct coarse matrix from local sections
         auto setup_row = coarse_system_->createbegin();
@@ -277,7 +283,8 @@ namespace Dune {
             row_id++;
           }
         }
-
+        // double fill_coarse_space = timer_setup.elapsed(); timer_setup.reset();
+        // std::cout << my_rank_ << " : fill_coarse_space : " << fill_coarse_space << std::endl;
 
         if (my_rank_ == 0 && verbosity_ > 0) std::cout << "Coarse matrix setup finished: M=" << timer_setup.elapsed() << std::endl;
       }
