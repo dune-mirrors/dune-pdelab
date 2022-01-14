@@ -10,3 +10,4 @@ dune_add_test(SOURCES recipe-communication.cc)
 dune_add_test(SOURCES recipe-operator-splitting.cc
               MPI_RANKS 1 2 4
               TIMEOUT 50)
+dune_add_test(SOURCES recipe-simd.cc)

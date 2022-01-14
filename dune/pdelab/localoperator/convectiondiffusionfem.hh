@@ -65,6 +65,7 @@ namespace Dune {
         // Define types
         using RF = typename LFSU::Traits::FiniteElementType::
           Traits::LocalBasisType::Traits::RangeFieldType;
+        using RValueType = typename R::value_type;
         using size_type = typename LFSU::Traits::SizeType;
 
         // dimensions
@@ -83,8 +84,8 @@ namespace Dune {
 
         // Initialize vectors outside for loop
         std::vector<Dune::FieldVector<RF,dim> > gradphi(lfsu.size());
-        Dune::FieldVector<RF,dim> gradu(0.0);
-        Dune::FieldVector<RF,dim> Agradu(0.0);
+        Dune::FieldVector<RValueType,dim> gradu(0.0);
+        Dune::FieldVector<RValueType,dim> Agradu(0.0);
 
         // Transformation matrix
         typename EG::Geometry::JacobianInverseTransposed jac;
@@ -103,7 +104,7 @@ namespace Dune {
             auto& phi = cache.evaluateFunction(ip.position(),lfsu.finiteElement().localBasis());
 
             // evaluate u
-            RF u=0.0;
+            RValueType u=0.0;
             for (size_type i=0; i<lfsu.size(); i++)
               u += x(lfsu,i)*phi[i];
 
@@ -211,6 +212,7 @@ namespace Dune {
         // Define types
         using RF = typename LFSV::Traits::FiniteElementType::
           Traits::LocalBasisType::Traits::RangeFieldType;
+        using RValueType = typename R::value_type;
         using size_type = typename LFSV::Traits::SizeType;
 
         // Reference to the inside cell
@@ -244,7 +246,7 @@ namespace Dune {
             if (bctype==ConvectionDiffusionBoundaryConditions::Neumann)
               {
                 // evaluate flux boundary condition
-                auto j = param.j(intersection,ip.position());
+                RValueType j = param.j(intersection,ip.position());
 
                 // integrate j
                 auto factor = ip.weight()*geo.integrationElement(ip.position());
@@ -255,7 +257,7 @@ namespace Dune {
             if (bctype==ConvectionDiffusionBoundaryConditions::Outflow)
               {
                 // evaluate u
-                RF u=0.0;
+                RValueType u=0.0;
                 for (size_type i=0; i<lfsu_s.size(); i++)
                   u += x_s(lfsu_s,i)*phi[i];
 

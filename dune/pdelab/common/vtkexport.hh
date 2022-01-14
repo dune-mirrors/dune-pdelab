@@ -51,6 +51,13 @@ namespace Dune {
         : t(stackobject_to_shared_ptr(t_)), s(s_), remap(remap_)
       {}
 
+      VTKGridFunctionAdapter(const T& t_, std::string s_,
+                             size_t lane_)
+        : t(stackobject_to_shared_ptr(t_)), s(s_),
+          remap(rangeVector(std::size_t(T::Traits::dimRange))),
+          lane(lane_)
+      {}
+
       //! construct a VTKGridFunctionAdapter
       /**
        * \param t_     Shared pointer to a GridFunction object to wrap.
@@ -84,7 +91,7 @@ namespace Dune {
         for (int i=0; i<n; i++)
           x[i] = xi[i];
         t->evaluate(e,x,y);
-        return y[remap[comp]];
+        return Simd::lane(lane,y[remap[comp]]);
       }
 
       virtual std::string name () const override
@@ -96,6 +103,7 @@ namespace Dune {
       std::shared_ptr<const T> t;
       std::string s;
       std::vector<std::size_t> remap;
+      size_t lane = 0;
     };
 
     //! construct a VTKGridFunctionAdapter

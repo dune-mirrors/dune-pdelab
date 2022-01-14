@@ -27,6 +27,7 @@
  * Parallelism
  * ==============
  * - \subpage recipe-communication
+ * - \subpage recipe-simd 
  *
  * @}
  */

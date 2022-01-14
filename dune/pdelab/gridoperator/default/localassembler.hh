@@ -39,8 +39,8 @@ namespace Dune{
       typedef Dune::PDELab::LocalAssemblerTraits<GO> Traits;
 
       //! The local operators type for real numbers e.g. time
-      typedef typename Traits::Residual::ElementType RangeField;
-      typedef RangeField Real;
+      typedef typename Traits::JacobianField JacobianField;
+      typedef JacobianField Real;
 
       typedef typename Traits::TrialGridFunctionSpace GFSU;
       typedef typename Traits::TestGridFunctionSpace GFSV;
@@ -153,13 +153,13 @@ namespace Dune{
       }
 
       //! Obtain the weight that was set last
-      RangeField weight() const
+      JacobianField weight() const
       {
         return weight_;
       }
 
       //! Notifies the assembler about the current weight of assembling.
-      void setWeight(RangeField weight){
+      void setWeight(JacobianField weight){
         weight_ = weight;
       }
 
@@ -288,7 +288,7 @@ namespace Dune{
       LOP & lop_;
 
       //! The current weight of assembling
-      RangeField weight_;
+      JacobianField weight_;
 
       //! Indicates whether this local operator has to perform pre
       //! processing

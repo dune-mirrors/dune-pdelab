@@ -241,7 +241,7 @@ namespace Dune {
                        Native<V>,
                        Native<W>,
                        1> prec(native(A), preconditioner_steps, 1.0);
-        Solver<Native<V>> solver(opa, prec, reduction, maxiter, verbose);
+        Solver<Native<V>> solver(opa, prec, Simd::min(reduction), maxiter, verbose);
         Dune::InverseOperatorResult stat;
         solver.apply(native(z), native(r), stat);
         res.converged  = stat.converged;

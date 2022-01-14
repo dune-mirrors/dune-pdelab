@@ -75,7 +75,8 @@ namespace Dune {
         for (int j=0; j<n; j++) // loop over columns
         {
           up = 0.0;
-          D delta = epsilon*(1.0+std::abs(u(lfsu,j)));
+          using std::abs;
+          D delta = epsilon*(1.0+abs(u(lfsu,j)));
           u(lfsu,j) += delta;
           asImp().alpha_volume(eg,lfsu,u,lfsv,upview);
           for (int i=0; i<m; i++)
@@ -331,7 +332,8 @@ namespace Dune {
         for (int j=0; j<n_s; j++)
         {
           up_s = 0.0;
-          D delta = epsilon*(1.0+std::abs(u_s(lfsu_s,j)));
+          using std::abs;
+          D delta = epsilon*(1.0+abs(u_s(lfsu_s,j)));
           u_s(lfsu_s,j) += delta;
           asImp().alpha_boundary(ig,lfsu_s,u_s,lfsv_s,upview_s);
           for (int i=0; i<m_s; i++)

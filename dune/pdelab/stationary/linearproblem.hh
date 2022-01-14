@@ -66,7 +66,7 @@ namespace Dune {
       typedef GO GridOperator;
 
     public:
-      typedef StationaryLinearProblemSolverResult<double> Result;
+      typedef StationaryLinearProblemSolverResult<Real> Result;
 
       StationaryLinearProblemSolver(const GO& go, LS& ls, V& x, Real reduction, Real min_defect = 1e-99, int verbose=1)
         : _go(go)
@@ -221,7 +221,7 @@ namespace Dune {
         if constexpr (!linearSolverIsMatrixFree<LS>()){
           if (!reuse_matrix)
           {
-            (*_jacobian) = Real(0.0);
+            (*_jacobian) = (typename M::field_type)(0.0);
             _go.jacobian(*_x,*_jacobian);
           }
         }
@@ -257,7 +257,10 @@ namespace Dune {
         // compute correction
         watch.reset();
         V z(_go.trialGridFunctionSpace(),0.0);
-        auto red = std::max(_reduction,_min_defect/defect);
+        using std::max;
+        auto red = max(_reduction,Simd::cond(defect==0.,
+                                             std::decay_t<decltype(defect)>(0.),
+                                             _min_defect/defect));
         if (_go.trialGridFunctionSpace().gridView().comm().rank()==0 && _verbose>=1)
         {
           std::cout << "=== solving (reduction: " << red << ") ";
@@ -284,8 +287,8 @@ namespace Dune {
         _res.elapsed = _linear_solver_result.elapsed;
         _res.reduction = _linear_solver_result.reduction;
         _res.conv_rate = _linear_solver_result.conv_rate;
-        _res.first_defect = static_cast<double>(defect);
-        _res.defect = static_cast<double>(defect)*_linear_solver_result.reduction;
+        _res.first_defect = defect;
+        _res.defect = defect*_linear_solver_result.reduction;
         _res.linear_solver_iterations = _linear_solver_result.iterations;
 
         // and update

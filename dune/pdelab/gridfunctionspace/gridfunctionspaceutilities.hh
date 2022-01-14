@@ -65,11 +65,12 @@ namespace Dune {
                 typename T::Traits::FiniteElementType
                 >::Basis
               >::dimRange,
-            typename BasisInterfaceSwitch<
-              typename FiniteElementInterfaceSwitch<
-                typename T::Traits::FiniteElementType
-                >::Basis
-              >::Range
+            std::common_type_t<typename BasisInterfaceSwitch<
+                                 typename FiniteElementInterfaceSwitch<
+                                   typename T::Traits::FiniteElementType
+                                   >::Basis
+                                 >::Range,
+                               typename X::value_type>
             >,
           DiscreteGridFunction<T,X>
         >
@@ -86,7 +87,8 @@ namespace Dune {
           typename T::Traits::GridViewType,
           typename BasisSwitch::RangeField,
           BasisSwitch::dimRange,
-          typename BasisSwitch::Range
+          std::common_type_t<typename BasisSwitch::Range,
+                             typename X::value_type>
           >,
         DiscreteGridFunction<T,X>
         > BaseT;
@@ -162,8 +164,8 @@ namespace Dune {
       mutable LFS lfs;
       mutable LFSCache lfs_cache;
       mutable XView x_view;
-      mutable std::vector<typename Traits::RangeFieldType> xl;
-      mutable std::vector<typename Traits::RangeType> yb;
+      mutable std::vector<typename X::value_type> xl;
+      mutable std::vector<typename BasisSwitch::Range> yb;
       std::shared_ptr<const X> px; // FIXME: dummy pointer to make sure we take ownership of X
     };
 
