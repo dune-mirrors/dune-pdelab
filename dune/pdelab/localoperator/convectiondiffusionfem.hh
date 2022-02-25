@@ -58,6 +58,7 @@ namespace Dune {
       {
       }
 
+      mutable std::vector<Dune::FieldVector<typename T::Traits::RangeFieldType,T::Traits::dimDomain> > gradphi;
       // volume integral depending on test and ansatz functions
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
       void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
@@ -71,7 +72,7 @@ namespace Dune {
         const int dim = EG::Entity::dimension;
 
         // Reference to cell
-        const auto& cell = eg.entity();
+        const auto& cell = eg;
 
         // Get geometry
         auto geo = eg.geometry();
@@ -82,7 +83,7 @@ namespace Dune {
         auto tensor = param.A(cell,localcenter);
 
         // Initialize vectors outside for loop
-        std::vector<Dune::FieldVector<RF,dim> > gradphi(lfsu.size());
+        gradphi.resize(lfsu.size());
         Dune::FieldVector<RF,dim> gradu(0.0);
         Dune::FieldVector<RF,dim> Agradu(0.0);
 
@@ -149,7 +150,7 @@ namespace Dune {
         const int dim = EG::Entity::dimension;
 
         // Reference to cell
-        const auto& cell = eg.entity();
+        const auto& cell = eg;
 
         // Get geometry
         auto geo = eg.geometry();
@@ -225,7 +226,7 @@ namespace Dune {
         // evaluate boundary condition type
         auto ref_el = referenceElement(geo_in_inside);
         auto local_face_center = ref_el.position(0,0);
-        auto intersection = ig.intersection();
+        const auto& intersection = ig;
         auto bctype = param.bctype(intersection,local_face_center);
 
         // skip rest if we are on Dirichlet boundary
@@ -295,7 +296,7 @@ namespace Dune {
         // evaluate boundary condition type
         auto ref_el = referenceElement(geo_in_inside);
         auto local_face_center = ref_el.position(0,0);
-        auto intersection = ig.intersection();
+        const auto& intersection = ig;
         auto bctype = param.bctype(intersection,local_face_center);
 
         // skip rest if we are on Dirichlet or Neumann boundary
@@ -391,7 +392,7 @@ namespace Dune {
         using size_type = typename LFSU::Traits::SizeType;
 
         // Reference to cell
-        const auto& cell = eg.entity();
+        const auto& cell = eg;
 
         // Get geometry
         auto geo = eg.geometry();
@@ -579,7 +580,7 @@ namespace Dune {
         // evaluate boundary condition
         auto ref_el_in_inside = referenceElement(geo_in_inside);
         auto face_local = ref_el_in_inside.position(0,0);
-        auto bctype = param.bctype(ig.intersection(),face_local);
+        auto bctype = param.bctype(ig,face_local);
         if (bctype != ConvectionDiffusionBoundaryConditions::Neumann)
           return;
 
@@ -622,7 +623,7 @@ namespace Dune {
               gradu_s.axpy(x_s(lfsu_s,i),tgradphi_s[i]);
 
             // evaluate flux boundary condition
-            auto j = param.j(ig.intersection(),ip.position());
+            auto j = param.j(ig,ip.position());
 
             // integrate
             auto factor = ip.weight() * geo.integrationElement(ip.position());
@@ -712,7 +713,7 @@ namespace Dune {
         using size_type = typename LFSU::Traits::SizeType;
 
         // Reference to the cell
-        const auto& cell = eg.entity();
+        const auto& cell = eg;
 
         // Get geometry
         auto geo = eg.geometry();
@@ -809,7 +810,7 @@ namespace Dune {
       template<typename X, typename Y>
       inline void evaluate (const X& x, Y& y) const
       {
-        y[0] = t.f(eg.entity(),x);
+        y[0] = t.f(eg,x);
       }
 
     private:
@@ -986,7 +987,7 @@ namespace Dune {
         // evaluate boundary condition
         auto ref_el_in_inside = referenceElement(geo_in_inside);
         auto face_local = ref_el_in_inside.position(0,0);
-        auto bctype = param.bctype(ig.intersection(),face_local);
+        auto bctype = param.bctype(ig,face_local);
         if (bctype != ConvectionDiffusionBoundaryConditions::Neumann)
           return;
 
@@ -998,11 +999,11 @@ namespace Dune {
           {
             // evaluate flux boundary condition
             param.setTime(time);
-            auto j_down = param.j(ig.intersection(),ip.position());
+            auto j_down = param.j(ig,ip.position());
             param.setTime(time+0.5*dt);
-            auto j_mid = param.j(ig.intersection(),ip.position());
+            auto j_mid = param.j(ig,ip.position());
             param.setTime(time+dt);
-            auto j_up = param.j(ig.intersection(),ip.position());
+            auto j_up = param.j(ig,ip.position());
 
             // integrate
             auto factor = ip.weight() * geo.integrationElement(ip.position());

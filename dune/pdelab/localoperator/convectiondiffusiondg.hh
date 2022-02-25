@@ -116,7 +116,7 @@ namespace Dune {
             lfsv.finiteElement().localBasis().order());
 
         // Get cell
-        const auto& cell = eg.entity();
+        const auto& cell = eg;
 
         // Get geometry
         auto geo = eg.geometry();
@@ -210,7 +210,7 @@ namespace Dune {
             lfsv.finiteElement().localBasis().order());
 
         // Get cell
-        const auto& cell = eg.entity();
+        const auto& cell = eg;
 
         // Get geometry
         auto geo = eg.geometry();
@@ -760,7 +760,7 @@ namespace Dune {
                 }
             }
 
-            auto bctype = param.bctype(ig.intersection(),ip.position());
+            auto bctype = param.bctype(ig,ip.position());
 
             if (bctype == ConvectionDiffusionBoundaryConditions::None)
               continue;
@@ -779,7 +779,7 @@ namespace Dune {
               {
                 if (not jacobian_apply){
                   // evaluate flux boundary condition
-                  auto j = param.j(ig.intersection(),ip.position());
+                  auto j = param.j(ig,ip.position());
 
                   // integrate
                   for (size_type i=0; i<lfsv_s.size(); i++)
@@ -812,7 +812,7 @@ namespace Dune {
 
                 if (not jacobian_apply){
                   // evaluate flux boundary condition
-                  auto o = param.o(ig.intersection(),ip.position());
+                  auto o = param.o(ig,ip.position());
 
                   // integrate
                   for (size_type i=0; i<lfsv_s.size(); i++)
@@ -976,7 +976,7 @@ namespace Dune {
                 }
             }
 
-            auto bctype = param.bctype(ig.intersection(),ip.position());
+            auto bctype = param.bctype(ig,ip.position());
 
             if (bctype == ConvectionDiffusionBoundaryConditions::None ||
                 bctype == ConvectionDiffusionBoundaryConditions::Neumann)
@@ -1051,7 +1051,7 @@ namespace Dune {
         using size_type = typename LFSV::Traits::SizeType;
 
         // Get cell
-        const auto& cell = eg.entity();
+        const auto& cell = eg;
 
         // get geometries
         auto geo = eg.geometry();
