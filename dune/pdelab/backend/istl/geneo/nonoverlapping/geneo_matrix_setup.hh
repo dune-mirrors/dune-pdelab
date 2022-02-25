@@ -296,6 +296,7 @@ namespace Dune {
       using ESExcluder = Dune::PDELab::EntitySetExcluder<Vector, GV>;
       gfs.entitySet().setExcluder(std::make_shared<ESExcluder>());
 
+      // return std::make_tuple(extended_matrices.first, part_unity, IntBndDofs);
       return std::make_tuple(extended_matrices.first, part_unity_R, IntBndDofs);
     }
   }

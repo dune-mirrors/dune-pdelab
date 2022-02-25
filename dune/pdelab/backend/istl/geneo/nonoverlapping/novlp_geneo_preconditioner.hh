@@ -70,7 +70,7 @@ namespace Dune {
 
         auto subdomainbasis = std::make_shared<Dune::PDELab::NonoverlappingGenEOBasis<GO, Matrix, Vector>>(adapter, A_extended, A_overlap_extended, part_unity, eigenvalue_threshold, nev, nev_arpack, shift);
 
-        MPI_Barrier(gv.comm());
+        // MPI_Barrier(gv.comm());
 
         auto coarse_space = std::make_shared<Dune::PDELab::NonoverlappingSubdomainProjectedCoarseSpace<GV, Matrix, Vector>>(adapter, gv, *A_extended, subdomainbasis, verbose);
 

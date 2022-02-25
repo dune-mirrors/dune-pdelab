@@ -835,6 +835,124 @@ namespace ArpackMLGeneo
       }
     }
 
+    //! Solve sym GEVP in shift invert mode with adaptively increasing the number of EVs
+    inline void computeGenSymShiftInvertMinMagnitudeAdaptivePreventPlateau (const BCRSMatrix& b_, const Real& epsilon,
+                  std::vector<BlockVector>& x, std::vector<Real>& lambda, // the output
+                  Real sigma,
+                  const Real& threshold, // compute all evs below that threshold
+                  int initial_nev // #evs to compute in first call; then increase by 50% to at most x.size()
+                  ) const
+    {
+      // print verbosity information
+      if (verbosity_level_ > 0)
+        std::cout << title_ << "Computing an approximation of the "
+                  << "least dominant eigenvalue of a matrix which "
+                  << "is assumed to be symmetric." << std::endl;
+
+      // make shift matrix to be inverted
+      BCRSMatrix ashiftb(a_);
+      ashiftb.axpy(-sigma,b_);
+
+      // use type ArPackPlusPlus_BCRSMatrixWrapperGen to store matrix information
+      typedef APP_BCRSMatMul_GeneralizedShiftInvertMode<BCRSMatrix> WrappedMatrix;
+      WrappedMatrix A(ashiftb,b_);
+
+      // get number of rows and columns in A
+      const int nrows = A.nrows();
+      const int ncols = A.ncols();
+
+      // assert that A is square
+      if (nrows != ncols)
+        DUNE_THROW(Dune::ISTLError,"Matrix is not square (" << nrows << "x" << ncols << ").");
+
+      // assert that initial_nev <= x.size()
+      if (initial_nev > x.size())
+        DUNE_THROW(Dune::ISTLError,"initial_nev too large");
+
+      // define what we need: eigenvalues with smallest magnitude
+      char which[] = "LM";
+
+      // solve progressively large EV problems
+      bool finished=false;
+      int iteration = 1;
+      int nev = initial_nev; // Number of eigenvalues to compute
+
+      // solve GEVP in loop
+      while (!finished)
+      {
+        // allocate memory for variables, set parameters
+        const int ncv = 0;                     // Number of Arnoldi vectors generated at each iteration (0 == auto)
+        const Real tol = epsilon;              // Stopping tolerance (relative accuracy of Ritz values) (0 == machine precision)
+        const int maxit = nIterationsMax_*nev; // Maximum number of Arnoldi update iterations allowed   (0 == 100*nev)
+        auto ev = std::vector<Real>(nev);      // Computed generalized eigenvalues
+        auto ev_imag = std::vector<Real>(nev); // Computed generalized eigenvalues
+        const bool ivec = true;                // Flag deciding if eigenvectors shall be determined
+
+        // Solve problem as a standard EV problem with own shift_invert
+        // solve GEVP with default initial guess
+        std::cout << "solving GEVP with nev=" << nev << std::endl;
+        ARSymGenEig<Real,WrappedMatrix,WrappedMatrix>
+          dprob('S',nrows, nev, &A, &WrappedMatrix::multMv, &A, &WrappedMatrix::multMvB, sigma, which, ncv, tol, maxit);
+
+        // set ARPACK verbosity mode if requested
+        if (verbosity_level_ > 3) dprob.Trace();
+
+        // find eigenvalues and eigenvectors of A
+        // The broken interface of ARPACK++ actually wants a reference to a pointer...
+        auto ev_data = ev.data();
+        auto ev_imag_data = ev_imag.data();
+        dprob.Eigenvalues(ev_data,ev_imag_data,ivec);
+
+        // std::cout << "raw eigenvalues from APP:" << std::endl;
+        // for (int i=0; i<nev; i++)
+        // 	std::cout << i << ": " << ev[i] << std::endl;
+
+        // Get sorting permutation for un-shifted eigenvalues
+        std::vector<int> index(nev, 0);
+        std::iota(index.begin(),index.end(),0);
+
+        std::sort(index.begin(), index.end(),
+            [&](const int& a, const int& b) {
+              return ev[a] < ev[b];
+            }
+            );
+
+        // Unshift eigenpairs and store them in the result
+        for (int i = 0; i < nev; i++) {
+          lambda[i] = ev[index[i]];
+          Real* x_raw = dprob.RawEigenvector(index[i]);
+          WrappedMatrix::arrayToDomainBlockVector(x_raw,x[i]);
+        }
+
+        // obtain number of Arnoldi update iterations actually taken
+        nIterations_ = dprob.GetIter();
+
+
+        // we have done an iteration in the adaptive cycle
+        iteration++;
+
+
+        bool plateau = ((lambda[nev-1]-lambda[nev-5])/lambda[nev-1] < 1e-2);
+        if (plateau==true){std::cout << "we reached a plateau" << std::endl;}
+
+        // check if we are satisfied
+        if (lambda[nev-1]>=threshold || nev>=x.size() || plateau)
+          {
+            // we are happy or cannot increase
+            finished = true;
+            if (nev<x.size())
+        {
+          lambda.resize(nev);
+          x.resize(nev);
+        }
+            return;
+          }
+
+        // ok, not satisfied; increase nev and provide an initial guess
+        nev = std::min((int)x.size(),(int)(nev*1.5));
+      }
+    }
+
     /**
      * \brief Return the number of iterations in last application of
      *        an algorithm.
