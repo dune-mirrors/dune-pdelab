@@ -1,6 +1,6 @@
 
-#ifndef DUNE_PDELAB_BACKEND_ISTL_GENEO_NEWSUBDOMAINPROJECTEDCOARSESPACE_HH
-#define DUNE_PDELAB_BACKEND_ISTL_GENEO_NEWSUBDOMAINPROJECTEDCOARSESPACE_HH
+#ifndef DUNE_PDELAB_BACKEND_ISTL_GENEO_NEWSUBDOMAINPROJECTEDCOARSESPACE_HELD_BY_RANK_0_HH
+#define DUNE_PDELAB_BACKEND_ISTL_GENEO_NEWSUBDOMAINPROJECTEDCOARSESPACE_HELD_BY_RANK_0_HH
 
 
 #include <dune/pdelab/boilerplate/pdelab.hh>
@@ -17,11 +17,11 @@ namespace Dune {
 
 
     template<typename GridView, typename Vector, typename Matrix>
-    class MultiVectorBundle {
+    class MultiVectorBundleHeldByRank0 {
     public:
       typedef typename Vector::value_type value_type;
 
-      MultiVectorBundle(NonoverlappingOverlapAdapter<GridView, Vector, Matrix>& adapter)
+      MultiVectorBundleHeldByRank0(NonoverlappingOverlapAdapter<GridView, Vector, Matrix>& adapter)
       : neighboringRanks_(adapter.findNeighboringRanks()),
         neighbor_basis(0)
       {
@@ -52,7 +52,7 @@ namespace Dune {
     };
 
     template<typename V>
-    struct MultiGatherScatter
+    struct MultiGatherScatterHeldByRank0
     {
       static typename V::value_type gather(const V& a, int i)
       {
@@ -73,7 +73,7 @@ namespace Dune {
     * extended by zeros, resulting in a sparse system.
     */
     template<class GridView, class M, class X>
-    class NonoverlappingSubdomainProjectedCoarseSpace : public CoarseSpace<X>
+    class NonoverlappingSubdomainProjectedCoarseSpaceHeldByRank0 : public CoarseSpace<X>
     {
 
       typedef int rank_type;
@@ -88,7 +88,7 @@ namespace Dune {
       * \param subdomainbasis Per-subdomain coarse basis.
       * \param verbosity Verbosity.
       */
-      NonoverlappingSubdomainProjectedCoarseSpace (NonoverlappingOverlapAdapter<GridView, X, M>& adapter, const GridView& gridView, const M& AF_exterior_, std::shared_ptr<SubdomainBasis<X> > subdomainbasis, int verbosity = 1)
+      NonoverlappingSubdomainProjectedCoarseSpaceHeldByRank0 (NonoverlappingOverlapAdapter<GridView, X, M>& adapter, const GridView& gridView, const M& AF_exterior_, std::shared_ptr<SubdomainBasis<X> > subdomainbasis, int verbosity = 1)
        : adapter_(adapter),
          gridView_(gridView),
          AF_exterior_(AF_exterior_),
@@ -144,7 +144,7 @@ namespace Dune {
         communicator->build<X>(*allinterface);
 
 
-        MultiVectorBundle<GridView, X, M> bundle(adapter_);
+        MultiVectorBundleHeldByRank0<GridView, X, M> bundle(adapter_);
 
         // double time_init_bundle = timer_setup.elapsed(); timer_setup.reset();
         // std::cout << my_rank_ << " : time_init_bundle : " << time_init_bundle << std::endl;
@@ -159,7 +159,7 @@ namespace Dune {
           } else {
             bundle.localVector_ = std::make_shared<X>(adapter_.getExtendedSize());
           }
-          communicator->forward<MultiGatherScatter<MultiVectorBundle<GridView, X, M>>>(bundle,bundle); // make function known in other subdomains
+          communicator->forward<MultiGatherScatterHeldByRank0<MultiVectorBundleHeldByRank0<GridView, X, M>>>(bundle,bundle); // make function known in other subdomains
           if (verbosity_ > 2)
             bundle.print();
 
@@ -208,15 +208,7 @@ namespace Dune {
 
           }
 
-          // if (my_rank_ == 0 && verbosity_ > 0){
-          //   double time_subdoXneighbour = timer_setup.elapsed(); timer_setup.reset();
-          //   std::cout << my_rank_ << " / EV " << basis_index_remote << " : time_subdoXneighbour : " << time_subdoXneighbour << std::endl;
-          // }
-
         }
-
-        // double time_row = timer_setup.elapsed(); timer_setup.reset();
-        // std::cout << my_rank_ << " : time_row : " << time_row << std::endl;
 
         // Construct coarse matrix from local sections
         auto setup_row = coarse_system_->createbegin();
@@ -267,16 +259,26 @@ namespace Dune {
                 }
               }
             }
-            gridView_.comm().broadcast(entries, couplings, rank);
 
-            // Build matrix row based on pattern
-            for (rank_type i = 0; i < couplings; i++)
-              setup_row.insert(entries_pos[i]);
-            ++setup_row;
+            for(auto entry : entries){
+              if(abs(entry)>1e-15 && abs(entry)<1e+100){
+                // std::cout << gridView_.comm().rank() << " send " << entry << " to 0." << std::endl;
+                gridView_.comm().send(entry, 0, 0);
+              }
+            }
+                
 
-            // Set matrix entries
-            for (rank_type i = 0; i < couplings; i++) {
-              (*coarse_system_)[row_id][entries_pos[i]] = entries[i];
+            if (gridView_.comm().rank()==0){
+              // Build matrix row based on pattern
+              for (rank_type i = 0; i < couplings; i++){
+                // std::cout << entries[i] << std::endl;
+                setup_row.insert(entries_pos[i]);}
+              ++setup_row;
+
+              // Set matrix entries
+              for (rank_type i = 0; i < couplings; i++) {
+                (*coarse_system_)[row_id][entries_pos[i]] = entries[i];
+              }
             }
 
             row_id++;
