@@ -62,7 +62,7 @@ namespace Dune {
        * @param suffix  MultiIndex with a partial path to a container
        * @return Traits::SizeType  The size required for such a path.
        */
-      typename Traits::SizeType size(typename Traits::ContainerIndex suffix) const
+      typename Traits::SizeType containerSize(typename Traits::ContainerIndex suffix) const
       {
         // notice that this algorithm is the same as for GridViewOrdering
         // the only difference is that here we can borrow some offsets from the
@@ -113,7 +113,7 @@ namespace Dune {
           }
         }
         // then, the local ordering knows the size for a given entity.
-        return this->localOrdering().size(suffix, entity_index);
+        return this->localOrdering().containerSize(suffix, entity_index);
       }
 
 

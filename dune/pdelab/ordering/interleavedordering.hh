@@ -135,7 +135,7 @@ namespace Dune {
 
         using BaseT::size;
 
-        typename Traits::SizeType size(typename Traits::ContainerIndex suffix) const
+        typename Traits::SizeType containerSize(typename Traits::ContainerIndex suffix) const
         {
           if (suffix.size() == 0)
             return this->_block_count;
@@ -180,13 +180,13 @@ namespace Dune {
           // and delegate the rest of the suffix to the child ordering
           assert(node().degree() > child_index);
           if constexpr (Node::isPower)
-            return node().child(child_index).size(suffix);
+            return node().child(child_index).containerSize(suffix);
           else {
             typename Traits::SizeType _size;
             // unfold all (tuple) children and find the child index that we want
             Hybrid::forEach(Dune::range(node().degree()), [&](auto i){
               if (i == child_index)
-                _size = node().child(i).size(suffix);
+                _size = node().child(i).containerSize(suffix);
             });
             return _size;
           }

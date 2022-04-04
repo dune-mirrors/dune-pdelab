@@ -152,7 +152,7 @@ namespace Dune {
        * @param suffix  MultiIndex with a partial path to a container
        * @return Traits::SizeType  The size required for such a path.
        */
-      typename Traits::SizeType size(typename Traits::ContainerIndex suffix) const {
+      typename Traits::SizeType containerSize(typename Traits::ContainerIndex suffix) const {
         if (suffix.size() == Traits::ContainerIndex::max_depth)
           return 0; // all indices in suffix were consumed, no more sizes to provide
 
@@ -163,11 +163,11 @@ namespace Dune {
           auto child = suffix.back();
           assert(this->degree() > child);
           suffix.pop_back();
-          return this->child(child).size(suffix);
+          return this->child(child).containerSize(suffix);
         } else {
           auto it = std::upper_bound(this->_child_block_offsets.begin(), this->_child_block_offsets.end(), suffix.back());
           std::size_t child = *std::prev(it);
-          return this->child(child).size(suffix);
+          return this->child(child).containerSize(suffix);
         }
       }
 
@@ -273,7 +273,7 @@ namespace Dune {
        * @param suffix  MultiIndex with a partial path to a container
        * @return Traits::SizeType  The size required for such a path.
        */
-      typename Traits::SizeType size(typename Traits::ContainerIndex suffix) const {
+      typename Traits::SizeType containerSize(typename Traits::ContainerIndex suffix) const {
         if (suffix.size() == Traits::ContainerIndex::max_depth)
           return 0; // all indices in suffix were consumed, no more sizes to provide
 
@@ -295,7 +295,7 @@ namespace Dune {
 
         Hybrid::forEach(indices, [&](auto i){
           if (i == _child)
-            _size = this->template child<i>().size(suffix);
+            _size = this->template child<i>().containerSize(suffix);
         });
         return _size;
       }
