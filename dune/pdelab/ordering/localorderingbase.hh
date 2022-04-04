@@ -308,14 +308,19 @@ namespace Dune {
             // here we need to find the child that describes the back_index (solve child in map_lfs_indices)
             const size_type gt_index = Traits::DOFIndexAccessor::GeometryIndex::geometryType(index);
             const size_type entity_index = Traits::DOFIndexAccessor::GeometryIndex::entityIndex(index);
-            auto dof_begin = node._fixed_size ? node._gt_dof_offsets.begin() : node._entity_dof_offsets.begin();
-            auto dof_end = node._fixed_size ? node._gt_dof_offsets.end() : node._entity_dof_offsets.end();
-            auto dof_it = std::prev(std::upper_bound(dof_begin, dof_end, back_index));
-            size_type dof_dist = std::distance(dof_begin, dof_it);
+            using It = typename std::vector<size_type>::const_iterator;
+            It dof_begin;
+            // both _gt_dof_offsets and _entity_dof_offsets are chuncked by children
+            // that means that finding the upper bound in the chunck solves the child index
             if (node._fixed_size)
-              _child = dof_dist - gt_index * node._child_count + 1;
+              dof_begin = node._gt_dof_offsets.begin() + 1 + gt_index * node._child_count;
             else
-              _child = dof_dist - (node._gt_entity_offsets[gt_index] + entity_index) * node._child_count + 1;
+              dof_begin = node._entity_dof_offsets.begin() + entity_index * node._child_count;
+            auto dof_end = dof_begin + node._child_count;
+            auto dof_it = std::upper_bound(dof_begin, dof_end, back_index);
+            _child = std::distance(dof_begin, dof_it);
+            if (_child > 0)
+              suffix.back() -= *std::prev(dof_it);
           }
 
           assert(node.degree() > _child);
