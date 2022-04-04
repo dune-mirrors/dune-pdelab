@@ -157,7 +157,6 @@ namespace Dune {
                 lo.extract_per_entity_sizes_from_cell(element);
               }
 
-            // FIXME: handling of blocked containers!
             lo.finalize_non_fixed_size_update();
           }
 
@@ -184,7 +183,13 @@ namespace Dune {
           }
         else
           {
-            _block_count = _size = lo._entity_dof_offsets.back();
+            _block_count = 0;
+            if (_container_blocked) {
+              for (std::size_t i = 1; i < lo._entity_dof_offsets.size(); ++i)
+                _block_count += lo._entity_dof_offsets[i] != lo._entity_dof_offsets[i-1];
+            } else {
+              _block_count = _size = lo._entity_dof_offsets.back();
+            }
             _codim_fixed_size.reset();
           }
 
