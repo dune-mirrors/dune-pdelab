@@ -99,8 +99,6 @@ namespace Dune {
       };
     }
 
-
-
     template<typename DI, typename CI, typename Child, std::size_t k>
     class PowerLexicographicOrdering
       : public TypeTree::PowerNode<Child, k>

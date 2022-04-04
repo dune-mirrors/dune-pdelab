@@ -56,7 +56,7 @@ void check_ordering(const GFS& gfs)
           auto block_index = size_suffix.front();
           // calculate the size for a container that would hold such block
           size_suffix.pop_front();
-          auto size = ordering.size(size_suffix);
+          auto size = ordering.containerSize(size_suffix);
           // the index should always fit into the size
           if (not (size > block_index))
             DUNE_THROW(Dune::RangeError, "Size `" << size << "` for CI suffix '"

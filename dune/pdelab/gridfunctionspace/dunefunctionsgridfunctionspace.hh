@@ -187,7 +187,7 @@ namespace Dune {
             update();
           }
 
-          size_type size(ContainerIndex suffix) const
+          size_type containerSize(ContainerIndex suffix) const
           {
             return _gfs.basis().size(suffix);
           }
@@ -387,9 +387,9 @@ namespace Dune {
             : TypeTree::CompositeNode<LeafOrdering>(LeafOrdering(gfs))
           {}
 
-          size_type size(ContainerIndex suffix) const
+          size_type containerSize(ContainerIndex suffix) const
           {
-            return this->child(Indices::_0).size(suffix);
+            return this->child(Indices::_0).containerSize(suffix);
           }
 
           size_type size() const
