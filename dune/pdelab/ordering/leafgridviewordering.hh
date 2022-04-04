@@ -184,11 +184,12 @@ namespace Dune {
         else
           {
             _block_count = 0;
+            _size = lo._entity_dof_offsets.back();
             if (_container_blocked) {
               for (std::size_t i = 1; i < lo._entity_dof_offsets.size(); ++i)
                 _block_count += lo._entity_dof_offsets[i] != lo._entity_dof_offsets[i-1];
             } else {
-              _block_count = _size = lo._entity_dof_offsets.back();
+              _block_count = _size;
             }
             _codim_fixed_size.reset();
           }
