@@ -68,7 +68,7 @@ namespace Dune {
         return false;
       }
 
-      typename Traits::SizeType size(typename Traits::ContainerIndex suffix) const
+      typename Traits::SizeType containerSize(typename Traits::ContainerIndex suffix) const
       {
         assert(suffix.size() == 0);
         return size();

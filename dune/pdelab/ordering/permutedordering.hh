@@ -157,12 +157,12 @@ namespace Dune {
 
       using BaseT::size;
 
-      typename Traits::SizeType size(typename Traits::ContainerIndex suffix) const {
+      typename Traits::SizeType containerSize(typename Traits::ContainerIndex suffix) const {
         if (suffix.size() == 0)
           return ordering().size(suffix);
 
         suffix.back() = _tag.permutation()[suffix.back()];
-        return ordering().size(suffix);
+        return ordering().containerSize(suffix);
       }
 
       virtual void map_index_dynamic(typename Traits::DOFIndexView di, typename Traits::ContainerIndex& ci) const override

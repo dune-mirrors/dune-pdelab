@@ -64,7 +64,7 @@ namespace Dune {
       typename Traits::SizeType
       size(const typename Traits::ContainerIndex& suffix,
            const typename Traits::DOFIndex::EntityIndex &index) const {
-        return this->node_size(*this,suffix,index);
+        return this->nodeContainerSize(*this,suffix,index);
       }
     };
 
@@ -189,7 +189,7 @@ namespace Dune {
       typename Traits::SizeType
       size(const typename Traits::ContainerIndex &suffix,
            const typename Traits::DOFIndex::EntityIndex &index) const {
-        return this->node_size(*this,suffix,index);
+        return this->nodeContainerSize(*this,suffix,index);
       }
 
     };

@@ -511,7 +511,7 @@ namespace Dune {
        * @param suffix  MultiIndex with a partial path to a container
        * @return Traits::SizeType  The size required for such a path.
        */
-      typename Traits::SizeType size(typename Traits::ContainerIndex suffix) const
+      typename Traits::SizeType containerSize(typename Traits::ContainerIndex suffix) const
       {
         using size_type = typename Traits::SizeType;
         if (suffix.size() == Traits::ContainerIndex::max_depth)
@@ -546,7 +546,7 @@ namespace Dune {
         }
 
         // then, the local ordering knows the size for a given entity.
-        return localOrdering().size(suffix, entity_index);
+        return localOrdering().containerSize(suffix, entity_index);
       }
 
       LocalOrdering& localOrdering()

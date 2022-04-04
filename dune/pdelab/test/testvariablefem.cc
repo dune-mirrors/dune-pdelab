@@ -54,6 +54,8 @@ int test_variable_fem (const GV& gv, const Backend & backend, const OrderingTag 
               << "expected " << expected << " DOFs\n"
               << "gfs has " << gfs.ordering().size() << " DOFs" << std::endl;
 
+    std::cout << "gfs " << gfs.ordering().containerSize({}) << " blocks" << std::endl;
+
     if (BCxBS != expected)
         return 1;
     return 0;
@@ -93,7 +95,7 @@ int main(int argc, char** argv)
 
         try
         {
-            std::cout << "Q2/Empty, Blocking::fixed(9), DefaultLeafOrderingTag";
+            std::cout << "Q2/Empty, Blocking::fixed(9), DefaultLeafOrderingTag\n";
             using Backend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
             // using OrderingTag = Dune::PDELab::DefaultLeafOrderingTag;
             using OrderingTag = Dune::PDELab::DefaultLeafOrderingTag;

@@ -284,7 +284,7 @@ namespace Dune {
        */
       template<class Node>
       typename Traits::SizeType
-      node_size(const Node& node, typename Traits::ContainerIndex suffix,
+      nodeContainerSize(const Node& node, typename Traits::ContainerIndex suffix,
            const typename Traits::DOFIndex::EntityIndex &index) const {
         using size_type = typename Traits::size_type;
 
@@ -320,7 +320,7 @@ namespace Dune {
 
           assert(node.degree() > _child);
           if constexpr (Node::isPower) {
-            return node.child(_child).size(suffix, index);
+            return node.child(_child).containerSize(suffix, index);
           } else {
             typename Traits::SizeType _size;
             // create a dynamic or static index range
@@ -328,7 +328,7 @@ namespace Dune {
             // get size for required child
             Hybrid::forEach(indices, [&](auto i){
               if (i == _child)
-                _size = node.child(i).size(suffix, index);
+                _size = node.child(i).containerSize(suffix, index);
             });
 
             return _size;

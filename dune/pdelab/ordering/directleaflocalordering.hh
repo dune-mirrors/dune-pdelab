@@ -87,7 +87,7 @@ namespace Dune {
        * @return Traits::SizeType  The size required for such a path.
        */
       typename Traits::SizeType
-      size(const typename Traits::ContainerIndex& suffix,
+      containerSize(const typename Traits::ContainerIndex& suffix,
            const typename Traits::DOFIndex::EntityIndex &index) const {
         if (suffix.size() == 0) {
           return size(index);

@@ -371,7 +371,7 @@ namespace Dune {
       template <class Ordering>
       SizeProviderAdapter(const std::shared_ptr<const Ordering> &ordering)
           : _size_provider([=](const ContainerIndex_ &partial_multiindex) {
-              return ordering->size(partial_multiindex);
+              return ordering->containerSize(partial_multiindex);
             }) {
         static_assert(Ordering::Traits::ContainerIndexOrder == OriginOrder);
       }
