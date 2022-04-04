@@ -17,6 +17,7 @@
 
 #include <dune/functions/common/signature.hh>
 
+#include <dune/pdelab/ordering/chunkedblockordering.hh>
 #include "../function/callableadapter.hh"
 #include "../gridfunctionspace/gridfunctionspace.hh"
 #include "../backend/istl.hh"
@@ -24,7 +25,8 @@
 #include "../gridfunctionspace/interpolate.hh"
 
 template<class Backend, class GV, typename OrderingTag, typename GetFEM, typename F, typename R>
-int test_variable_fem (const GV& gv, const Backend & backend, const OrderingTag & orderingTag, GetFEM && getFEM, const F && f, const R && r)
+int test_variable_fem (const GV& gv, const Backend & backend, const OrderingTag & orderingTag, GetFEM && getFEM, const F && f, const R && r,
+        int expected)
 {
     // create finite element map with creator FEM
     using Wrapper = typename Dune::Functions::SignatureTraits<GetFEM>::Range;
@@ -45,16 +47,16 @@ int test_variable_fem (const GV& gv, const Backend & backend, const OrderingTag 
     auto _f = Dune::PDELab::makeGridFunctionFromCallable(gv,f);
     Dune::PDELab::interpolate(_f,gfs,x);
 
+    // paranoia check of size
     const auto & v = Dune::PDELab::Backend::native(x);
     int BCxBS = v.size() * v[0].size();
-    int expected = 4*8*9;
     std::cout << "vector " << Dune::className(v) << "\n"
               << "   with " << v.size() << " blocks of size " << v[0].size() << "\n"
               << "   => " << BCxBS << " entries\n"
               << "expected " << expected << " DOFs\n"
-              << "gfs has " << gfs.ordering().size() << " DOFs" << std::endl;
-
-    std::cout << "gfs " << gfs.ordering().containerSize({}) << " blocks" << std::endl;
+              << "gfs has " << gfs.ordering().size() << " DOFs in "
+              << gfs.ordering().containerSize({}) << " blocks" << std::endl;
+    assert(gfs.ordering().containerSize({}) == v.size());
 
     if (BCxBS != expected)
         return 1;
@@ -87,6 +89,7 @@ int main(int argc, char** argv)
         using Dune::GeometryTypes::quadrilateral;
         // using dG = Dune::P0LocalFiniteElement<double,double,2>;
         using dG = Dune::QkDGLagrangeLocalFiniteElement<double,double,2,2>;
+        using dG1 = Dune::QkDGLagrangeLocalFiniteElement<double,double,1,2>;
         using Q1 = Dune::LagrangeCubeLocalFiniteElement<double,double,2,1>;
         using BasisTraits = typename dG::Traits::LocalBasisType::Traits;
         using Empty = Dune::PDELab::EmptyLocalFiniteElement<BasisTraits>;
@@ -95,7 +98,33 @@ int main(int argc, char** argv)
 
         try
         {
-            std::cout << "Q2/Empty, Blocking::fixed(9), DefaultLeafOrderingTag\n";
+            std::cout << "=== Q1, Blocking::fixed(4), DefaultLeafOrderingTag\n";
+            using Backend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,4>;
+            // using OrderingTag = Dune::PDELab::DefaultLeafOrderingTag;
+            using OrderingTag = Dune::PDELab::DefaultLeafOrderingTag;
+            result +=
+                test_variable_fem<>(grid.leafGridView(),
+                    Backend(),
+                    OrderingTag(),
+                    [](const Element & e) -> FiniteElementType
+                    {
+                        return FiniteElementType(dG1()); // quadrilateral
+                    },
+                    [](const Coord & x) { return x[0]; },
+                    [](const Coord & x) { return (x[0] < 0.5) ? 0.0 : x[0]; },
+                    8*8*4 // expected DOF count
+                    // [](const Coord & x) { return x[0]; }
+                    );
+        }
+        catch (const std::exception & e)
+        {
+            std::cout << "ERROR: " << e.what() << std::endl;
+            result++;
+        }
+
+        try
+        {
+            std::cout << "=== Q2/Empty, Blocking::fixed(9), DefaultLeafOrderingTag\n";
             using Backend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
             // using OrderingTag = Dune::PDELab::DefaultLeafOrderingTag;
             using OrderingTag = Dune::PDELab::DefaultLeafOrderingTag;
@@ -112,7 +141,39 @@ int main(int argc, char** argv)
                             return FiniteElementType(dG()); // quadrilateral
                     },
                     [](const Coord & x) { return x[0]; },
-                    [](const Coord & x) { return (x[0] < 0.5) ? 0.0 : x[0]; }
+                    [](const Coord & x) { return (x[0] < 0.5) ? 0.0 : x[0]; },
+                    4*8*9 // expected DOF count
+                    // [](const Coord & x) { return x[0]; }
+                    );
+        }
+        catch (const std::exception & e)
+        {
+            std::cout << "ERROR: " << e.what() << std::endl;
+            result++;
+        }
+
+        try
+        {
+            std::cout << "=== Q2DG/Q1Conforming, Blocking::fixed(9), Chunked(DefaultLeafOrderingTag)\n";
+            using Backend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
+            // using OrderingTag = Dune::PDELab::DefaultLeafOrderingTag;
+            using OrderingTag = Dune::PDELab::ordering::Chunked<Dune::PDELab::DefaultLeafOrderingTag>;
+            result +=
+                test_variable_fem<>(grid.leafGridView(),
+                    Backend(),
+                    OrderingTag(9), // chunks of size 9
+                    [](const Element & e) -> FiniteElementType
+                    {
+                        if (e.geometry().center()[0] < 0.5)
+                            return FiniteElementType(Q1());
+                        else
+                            return FiniteElementType(dG()); // quadrilateral
+                    },
+                    [](const Coord & x) { return x[0]; },
+                    [](const Coord & x) { return (x[0] < 0.5) ? 0.0 : x[0]; },
+                    // left: 5*9*1
+                    // right: 4*8*9
+                    5*9*1 + 4*8*9 // expected DOF count
                     // [](const Coord & x) { return x[0]; }
                     );
         }
