@@ -225,7 +225,7 @@ namespace Dune {
 
       using BaseT::size;
 
-      typename Traits::SizeType size(typename Traits::ContainerIndex suffix) const
+      typename Traits::SizeType containerSize(typename Traits::ContainerIndex suffix) const
       {
         if (suffix.size() == 0)
           return this->_block_count;
@@ -237,7 +237,7 @@ namespace Dune {
         auto inner_index = suffix.back();
 
         suffix.back() = _tag.blockSize() * block_index + inner_index;
-        return ordering().size(suffix);
+        return ordering().containerSize(suffix);
       }
 
     private:

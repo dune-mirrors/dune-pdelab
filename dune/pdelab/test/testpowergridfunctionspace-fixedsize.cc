@@ -217,7 +217,7 @@ int main(int argc, char **argv) {
       using SizeSuffix = typename PGFS::Ordering::Traits::ContainerIndex;
       PGFS pgfs(*gfs0, *gfs1, PVBE());
       pgfs.ordering();
-      if (pgfs.ordering().size(SizeSuffix{}) != 3)
+      if (pgfs.ordering().containerSize(SizeSuffix{}) != 3)
         DUNE_THROW(Dune::RangeError,
           "Non-Chunked ordering should have 3 blocks. One for every used entity.");
     }

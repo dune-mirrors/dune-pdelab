@@ -159,7 +159,7 @@ namespace Dune {
 
       typename Traits::SizeType containerSize(typename Traits::ContainerIndex suffix) const {
         if (suffix.size() == 0)
-          return ordering().size(suffix);
+          return ordering().containerSize(suffix);
 
         suffix.back() = _tag.permutation()[suffix.back()];
         return ordering().containerSize(suffix);
