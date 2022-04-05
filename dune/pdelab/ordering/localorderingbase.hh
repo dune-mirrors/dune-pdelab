@@ -313,7 +313,7 @@ namespace Dune {
             // both _gt_dof_offsets and _entity_dof_offsets are chuncked by children
             // that means that finding the upper bound in the chunck solves the child index
             if (node._fixed_size)
-              dof_begin = node._gt_dof_offsets.begin() + 1 + gt_index * node._child_count;
+              dof_begin = node._gt_dof_offsets.begin() + gt_index * node._child_count;
             else
               dof_begin = node._entity_dof_offsets.begin() + entity_index * node._child_count;
             auto dof_end = dof_begin + node._child_count;

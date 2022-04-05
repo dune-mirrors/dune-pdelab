@@ -66,8 +66,8 @@ int test_variable_fem (const GV& gv, const Backend & backend, const OrderingTag 
 }
 
 
-template<class GV, class LeafBackend, class PowerBackend, typename OrderingTag, typename GetFEM, typename F, typename R>
-int test_power_variable_fem (const GV& gv, const LeafBackend & leafbackend, const PowerBackend& powerbackend, const OrderingTag & orderingTag, GetFEM && getFEM, const F && f, const R && r)
+template<class GV, class LeafBackend, class PowerBackend, typename OrderingTag, typename GetFEM>
+int test_power_variable_fem (const GV& gv, const LeafBackend & leafbackend, const PowerBackend& powerbackend, const OrderingTag & orderingTag, GetFEM && getFEM, int expected)
 {
     // create finite element map with creator FEM
     using Wrapper = typename Dune::Functions::SignatureTraits<GetFEM>::Range;
@@ -91,10 +91,9 @@ int test_power_variable_fem (const GV& gv, const LeafBackend & leafbackend, cons
     Vec x(pgfs);
 
     const auto & v = Dune::PDELab::Backend::native(x);
-    int BCxBS = v.size() * v[0].size();
-    int expected = 4*8*9*2;
+    int BCxBS = v.size() * v[0].size() * v[0][0].size();
     std::cout << "  vector " << Dune::className(v) << "\n"
-            << "     with " << v.size() << " blocks of size " << v[0].size() << "\n"
+            << "     with blocks of sizes " << v.size() << "x"  << v[0].size() << "x"  << v[0][0].size() << "\n"
             << "     => " << BCxBS << " entries\n"
             << "  expected " << expected << " DOFs\n";
 
@@ -148,7 +147,6 @@ int main(int argc, char** argv)
                     [](const Coord & x) { return x[0]; },
                     [](const Coord & x) { return (x[0] < 0.5) ? 0.0 : x[0]; },
                     8*8*4 // expected DOF count
-                    // [](const Coord & x) { return x[0]; }
                     );
         }
         catch (const std::exception & e)
@@ -170,14 +168,12 @@ int main(int argc, char** argv)
                     {
                         if (e.geometry().center()[0] < 0.5)
                             return FiniteElementType(Empty(quadrilateral));
-                        // return FiniteElementType(Q1());
                         else
                             return FiniteElementType(dG()); // quadrilateral
                     },
                     [](const Coord & x) { return x[0]; },
                     [](const Coord & x) { return (x[0] < 0.5) ? 0.0 : x[0]; },
                     4*8*9 // expected DOF count
-                    // [](const Coord & x) { return x[0]; }
                     );
         }
         catch (const std::exception & e)
@@ -199,13 +195,12 @@ int main(int argc, char** argv)
                     {
                         if (e.geometry().center()[0] < 0.5)
                             return FiniteElementType(Empty(quadrilateral));
-                        // return FiniteElementType(Q1());
                         else
                             return FiniteElementType(dG()); // quadrilateral
                     },
                     [](const Coord & x) { return x[0]; },
-                    [](const Coord & x) { return (x[0] < 0.5) ? 0.0 : x[0]; }
-                    // [](const Coord & x) { return x[0]; }
+                    [](const Coord & x) { return (x[0] < 0.5) ? 0.0 : x[0]; },
+                    4*8*9
                     );
         }
         catch (const std::exception & e)
@@ -215,35 +210,32 @@ int main(int argc, char** argv)
         }
 
 
-        try
-        {
-            std::cout << "Q2x2/Empty, Blocking::fixed(9)/bcrs, DefaultLeafOrderingTag/EntityBlockedOrderingTag\n";
-            using LeafBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
-            using PowerBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::bcrs>;
-            using PowerOrderingTag = Dune::PDELab::EntityBlockedOrderingTag;
-            result +=
-                test_power_variable_fem<>(grid.leafGridView(),
-                    LeafBackend(),
-                    PowerBackend(),
-                    PowerOrderingTag(),
-                    [](const Element & e) -> FiniteElementType
-                    {
-                        if (e.geometry().center()[0] < 0.5)
-                            return FiniteElementType(Empty(quadrilateral));
-                        // return FiniteElementType(Q1());
-                        else
-                            return FiniteElementType(dG()); // quadrilateral
-                    },
-                    [](const Coord & x) { return x[0]; },
-                    [](const Coord & x) { return (x[0] < 0.5) ? 0.0 : x[0]; }
-                    // [](const Coord & x) { return x[0]; }
-                    );
-        }
-        catch (const std::exception & e)
-        {
-            std::cout << "ERROR: " << e.what() << std::endl;
-            result++;
-        }
+        // try
+        // {
+        //     std::cout << "Q2x2/Empty, Blocking::fixed(9)/bcrs, DefaultLeafOrderingTag/EntityBlockedOrderingTag\n";
+        //     using LeafBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
+        //     using PowerBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::bcrs>;
+        //     using PowerOrderingTag = Dune::PDELab::EntityBlockedOrderingTag;
+        //     result +=
+        //         test_power_variable_fem<>(grid.leafGridView(),
+        //             LeafBackend(),
+        //             PowerBackend(),
+        //             PowerOrderingTag(),
+        //             [](const Element & e) -> FiniteElementType
+        //             {
+        //                 if (e.geometry().center()[0] < 0.5)
+        //                     return FiniteElementType(Empty(quadrilateral));
+        //                 else
+        //                     return FiniteElementType(dG()); // quadrilateral
+        //             },
+        //             4*8*9*2
+        //             );
+        // }
+        // catch (const std::exception & e)
+        // {
+        //     std::cout << "ERROR: " << e.what() << std::endl;
+        //     result++;
+        // }
 
 
         try
@@ -261,13 +253,10 @@ int main(int argc, char** argv)
                     {
                         if (e.geometry().center()[0] < 0.5)
                             return FiniteElementType(Empty(quadrilateral));
-                        // return FiniteElementType(Q1());
                         else
                             return FiniteElementType(dG()); // quadrilateral
                     },
-                    [](const Coord & x) { return x[0]; },
-                    [](const Coord & x) { return (x[0] < 0.5) ? 0.0 : x[0]; }
-                    // [](const Coord & x) { return x[0]; }
+                    4*8*9*2
                     );
         }
         catch (const std::exception & e)
@@ -276,6 +265,30 @@ int main(int argc, char** argv)
             result++;
         }
 
+
+        // try
+        // {
+        //     std::cout << "Q2x2, Blocking::fixed(9)/bcrs, DefaultLeafOrderingTag/EntityBlockedOrderingTag\n";
+        //     using LeafBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
+        //     using PowerBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::bcrs>;
+        //     using PowerOrderingTag = Dune::PDELab::EntityBlockedOrderingTag;
+        //     result +=
+        //         test_power_variable_fem<>(grid.leafGridView(),
+        //             LeafBackend(),
+        //             PowerBackend(),
+        //             PowerOrderingTag(),
+        //             [](const Element & e) -> FiniteElementType
+        //             {
+        //                 return FiniteElementType(dG()); // quadrilateral
+        //             },
+        //             8*8*9*2
+        //             );
+        // }
+        // catch (const std::exception & e)
+        // {
+        //     std::cout << "ERROR: " << e.what() << std::endl;
+        //     result++;
+        // }
 
         try
         {
@@ -292,13 +305,10 @@ int main(int argc, char** argv)
                     {
                         if (e.geometry().center()[0] < 0.5)
                             return FiniteElementType(Empty(quadrilateral));
-                        // return FiniteElementType(Q1());
                         else
                             return FiniteElementType(dG()); // quadrilateral
                     },
-                    [](const Coord & x) { return x[0]; },
-                    [](const Coord & x) { return (x[0] < 0.5) ? 0.0 : x[0]; }
-                    // [](const Coord & x) { return x[0]; }
+                    4*8*9*2
                     );
         }
         catch (const std::exception & e)
@@ -307,6 +317,35 @@ int main(int argc, char** argv)
             result++;
         }
 
+        try
+        {
+            std::cout << "=== Q2DG/Q1Conforming, Blocking::fixed(9), Chunked(DefaultLeafOrderingTag)\n";
+            using Backend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
+            // using OrderingTag = Dune::PDELab::DefaultLeafOrderingTag;
+            using OrderingTag = Dune::PDELab::ordering::Chunked<Dune::PDELab::DefaultLeafOrderingTag>;
+            result +=
+                test_variable_fem<>(grid.leafGridView(),
+                    Backend(),
+                    OrderingTag(9), // chunks of size 9
+                    [](const Element & e) -> FiniteElementType
+                    {
+                        if (e.geometry().center()[0] < 0.5)
+                            return FiniteElementType(Q1());
+                        else
+                            return FiniteElementType(dG()); // quadrilateral
+                    },
+                    [](const Coord & x) { return x[0]; },
+                    [](const Coord & x) { return (x[0] < 0.5) ? 0.0 : x[0]; },
+                    // left: 5*9*1
+                    // right: 4*8*9
+                    5*9*1 + 4*8*9 // expected DOF count
+                    );
+        }
+        catch (const std::exception & e)
+        {
+            std::cout << "ERROR: " << e.what() << std::endl;
+            result++;
+        }
     }
 
     if (result > 0)
