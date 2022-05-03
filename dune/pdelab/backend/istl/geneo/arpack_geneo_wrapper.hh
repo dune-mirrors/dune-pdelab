@@ -666,6 +666,8 @@ namespace ArpackMLGeneo
       BCRSMatrix ashiftb(a_);
       ashiftb.axpy(-sigma,b_);
 
+      std::cout << "solving GEVP with nev=" << nev << std::endl;
+
       // use type ArPackPlusPlus_BCRSMatrixWrapperGen to store matrix information
       // and to perform the product (A-sigma B)^-1 v (LU decomposition is not used)
       typedef APP_BCRSMatMul_GeneralizedShiftInvertMode<BCRSMatrix> WrappedMatrix;
@@ -949,7 +951,7 @@ namespace ArpackMLGeneo
           }
 
         // ok, not satisfied; increase nev and provide an initial guess
-        nev = std::min((int)x.size(),(int)(nev*1.5));
+        nev = std::min((int)x.size(),(int)(nev*2));
       }
     }
 

@@ -72,6 +72,7 @@ namespace Dune {
 
         // MPI_Barrier(gv.comm());
 
+        // auto coarse_space = std::make_shared<Dune::PDELab::NonoverlappingSubdomainProjectedCoarseSpaceHeldByRank0<GV, Matrix, Vector>>(adapter, gv, *A_extended, subdomainbasis, verbose);
         auto coarse_space = std::make_shared<Dune::PDELab::NonoverlappingSubdomainProjectedCoarseSpace<GV, Matrix, Vector>>(adapter, gv, *A_extended, subdomainbasis, verbose);
 
         prec = std::make_shared<Dune::PDELab::ISTL::NonoverlappingTwoLevelOverlappingAdditiveSchwarz<GV, Matrix, Vector>>(adapter, A_extended, *part_unity, coarse_space, true, verbose);

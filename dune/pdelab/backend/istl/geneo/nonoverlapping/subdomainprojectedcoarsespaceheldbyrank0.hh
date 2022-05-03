@@ -126,7 +126,8 @@ namespace Dune {
 
         if (my_rank_ == 0 && verbosity_ > 0) std::cout << "Global basis size B=" << global_basis_size_ << std::endl;
 
-        coarse_system_ = std::make_shared<COARSE_M>(global_basis_size_, global_basis_size_, COARSE_M::row_wise);
+        if (my_rank_ == 0)
+          coarse_system_ = std::make_shared<COARSE_M>(global_basis_size_, global_basis_size_, COARSE_M::row_wise);
 
         // Set up container for storing rows of coarse matrix associated with current rank
         // Hierarchy: Own basis functions -> Current other basis function from each neighbor -> Actual entries
@@ -211,7 +212,10 @@ namespace Dune {
         }
 
         // Construct coarse matrix from local sections
-        auto setup_row = coarse_system_->createbegin();
+        std::shared_ptr<typename COARSE_M::CreateIterator> setup_row = nullptr;
+        if (my_rank_ == 0)
+          setup_row = std::make_shared<typename COARSE_M::CreateIterator>(coarse_system_->createbegin());
+        //auto setup_row = coarse_system_->createbegin();
         rank_type row_id = 0;
         for (rank_type rank = 0; rank < ranks_; rank++) {
           for (rank_type basis_index = 0; basis_index < local_basis_sizes_[rank]; basis_index++) {
@@ -245,7 +249,8 @@ namespace Dune {
             gridView_.comm().broadcast(entries_pos, couplings, rank);
 
             // Communicate actual entries
-            field_type entries[couplings];
+            //field_type entries[couplings];
+            std::vector<field_type> entries(couplings);
             if (rank == my_rank_) {
               rank_type cnt = 0;
               for (rank_type basis_index2 = 0; basis_index2 < local_basis_sizes_[my_rank_]; basis_index2++) {
@@ -259,21 +264,40 @@ namespace Dune {
                 }
               }
             }
+            //gridView_.comm().broadcast(entries, couplings, rank);
 
-            for(auto entry : entries){
-              if(abs(entry)>1e-15 && abs(entry)<1e+100){
-                // std::cout << gridView_.comm().rank() << " send " << entry << " to 0." << std::endl;
-                gridView_.comm().send(entry, 0, 0);
+            //if (false) { // comment
+            if (rank != 0) { // No need to communicate if we are already on rank 0
+              if (rank == my_rank_) {
+                // send
+                /*for(auto& entry : entries){
+                  gridView_.comm().send(entry, 0, 0);
+                }*/
+                /*for (int cnt = 0; cnt < couplings; cnt++) {
+                  gridView_.comm().send(entries[cnt], 0, 0);
+                }*/
+                gridView_.comm().send(entries, 0, 0);
+              } else if (my_rank_ == 0) {
+                // recv
+                /*for(auto& entry : entries){
+                  gridView_.comm().recv(entry, rank, 0);
+                }*/
+                /*for (int cnt = 0; cnt < couplings; cnt++) {
+                  field_type recv_val = -1;
+                  gridView_.comm().recv(recv_val, rank, 0);
+                  entries[cnt] = recv_val;
+                }*/
+                gridView_.comm().recv(entries, rank, 0);
               }
             }
-                
+            //}
 
-            if (gridView_.comm().rank()==0){
+
+            if (my_rank_ == 0){
               // Build matrix row based on pattern
-              for (rank_type i = 0; i < couplings; i++){
-                // std::cout << entries[i] << std::endl;
-                setup_row.insert(entries_pos[i]);}
-              ++setup_row;
+              for (rank_type i = 0; i < couplings; i++)
+                setup_row->insert(entries_pos[i]);
+              ++(*setup_row);
 
               // Set matrix entries
               for (rank_type i = 0; i < couplings; i++) {
@@ -370,7 +394,7 @@ namespace Dune {
       rank_type my_basis_array_offset_; // Start of local basis functions in a consecutive global ordering
       rank_type global_basis_size_; // Dimension of entire coarse space
 
-      std::shared_ptr<COARSE_M> coarse_system_; // Coarse space matrix
+      std::shared_ptr<COARSE_M> coarse_system_ = nullptr; // Coarse space matrix
     };
   }
 }
