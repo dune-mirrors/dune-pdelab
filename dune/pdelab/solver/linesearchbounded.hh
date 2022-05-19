@@ -36,7 +36,8 @@ namespace Impl
   template<typename Domain>
   struct SystemSizeExtractor
   {
-    std::size_t value = std::max(std::size_t(1),Domain::GridFunctionSpace::CHILDREN);
+    // degree() returns std::integral_constant<size_t,value>{}.
+    std::size_t value = std::max(std::size_t(1),Domain::GridFunctionSpace::degree().value);
   };
 
   class LineSearchError : public NewtonError {};
