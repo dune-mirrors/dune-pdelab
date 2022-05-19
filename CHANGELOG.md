@@ -1,9 +1,9 @@
 PDELab
 ======
 
-This is the 2.7-git version of PDELab, a PDE discretization toolkit built
-on top of the [DUNE][] framework. It is intended to be used with the 2.7
-release of the Dune core modules. License information can be found in the file
+This is the 2.9-git version of PDELab, a PDE discretization toolkit built
+on top of the [DUNE][] framework. It is intended to be used with the master
+branch of the Dune core modules. License information can be found in the file
 [LICENSE.md][].
 
 If you need help, please ask on our [mailing list][]. Bugs can also be submitted
@@ -12,14 +12,32 @@ to the [PDELab bugtracker][] instead.
 Changes
 =======
 
-PDELab git master (will be PDELab 2.7)
+PDELab git master (will be PDELab 2.9)
 --------------------------------------
+
+
+PDELab 2.8
+----------
+
+-   Fix preformance bug introduced in `dune-localfunctions` due to usage of
+    FiniteElementInterfaceSwitch::setStore. Now, the finite element is stored
+    in a shared pointer iff the finite element map returns an rvalue object.
+
+-   Explicit one step method now requires to set a reduction for the linear solver !553
+
+-   Fix preformance bug introduced in `dune-localfunctions` due to usage of
+    FiniteElementInterfaceSwitch::setStore. Now, the finite element is stored
+    in a shared pointer iff the finite element map returns an rvalue object.
+
 -   Added Raviart Thomas finite element map of order 0 for 3D simplices.
 
 -   Fix bug where `VectorGridFunctionSpace` would not initialize base data when using `orderingStorage`
     instead of `ordering`.
 
--   Orderings are now able to give a `size` for every partial container indice. This was something that
+-   Fixed an indexation bug where entity blocking of non-fixed size orderings was assuming that
+    every grid entity contained at least one degree of freedom.
+
+-   Orderings are now able to give a `size` for every partial container index. This was something that
     `blockCount()` could not give on local orderings. This basically unifies the interface for global and
     local orderings and allows for more complicated blockings on local orderings. Resizing of containers is
     managed internally on the backends, thus no changes are required for normal use cases.
@@ -37,6 +55,9 @@ PDELab git master (will be PDELab 2.7)
     To activate them one has to set the `doSkipEntity`/`doSkipIntersection` flags and implement the
     `skip_entity`/`skip_intersection` methods in the local operator. See local operator interface for
     detailed information.
+
+PDELab 2.7
+----------
 
 -   Change the local operator interface for nonlinear jacobian apply methods. The vector representing the
     current solution (x) and the vector that the jacobian is applied on (z) can now have different type. Note:
