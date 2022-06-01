@@ -468,9 +468,6 @@ namespace Dune {
                        const EntitySet &entity_Set)
           : NodeT(local_ordering),
             BaseT(*this, container_blocked, gfs_data, this), _es(entity_Set) {
-        // make sure to switch off container blocking handling in the local ordering,
-        // we already handle it in the GridViewOrdering
-        localOrdering().disable_container_blocking();
       }
 
 #ifndef DOXYGEN
