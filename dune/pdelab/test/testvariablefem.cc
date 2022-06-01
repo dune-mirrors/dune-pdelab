@@ -83,7 +83,13 @@ int test_power_variable_fem (const GV& gv, const LeafBackend & leafbackend, cons
     using PGFS = Dune::PDELab::PowerGridFunctionSpace<GFS, 2, PowerBackend, OrderingTag>;
     PGFS pgfs(gfs, gfs, powerbackend, orderingTag);
 
-    std::cout << "  gfs has " << pgfs.ordering().containerSize({}) << " blocks" << std::endl;
+    using MI = typename PGFS::Ordering::Traits::ContainerIndex;
+    MI path;
+    std::cout << "  gfs() has " << pgfs.ordering().containerSize(path) << " blocks" << std::endl;
+    path.push_back(0);
+    std::cout << "  gfs(0) has " << pgfs.ordering().containerSize(path) << " blocks" << std::endl;
+    path.push_back(0);
+    std::cout << "  gfs(0,0) has " << pgfs.ordering().containerSize(path) << " blocks" << std::endl;
     std::cout << "  gfs has " << pgfs.ordering().size() << " DOFs" << std::endl;
 
     // coefficient vector
@@ -102,6 +108,68 @@ int test_power_variable_fem (const GV& gv, const LeafBackend & leafbackend, cons
     return 0;
 }
 
+template<class GV, class LBackend, class PBackend, class PPBackend, class POrderingTag, class PPOrderingTag, class GetFEM>
+int test_power_power_variable_fem (const GV& gv,
+    const LBackend & lbackend,
+    const PBackend& pbackend,
+    const POrderingTag& potag,
+    const PPBackend& ppbackend,
+    const PPOrderingTag& ppotag,
+    GetFEM && getFEM,
+    int expected)
+{
+    // create finite element map with creator FEM
+    using Wrapper = typename Dune::Functions::SignatureTraits<GetFEM>::Range;
+    using Element = typename GV::template Codim<0>::Entity;
+    using FEM = Dune::PDELab::VariableLocalFiniteElementMap<typename Wrapper::LocalBasisTraits, Element>;
+    FEM fem(getFEM);
+
+    // create functionspace
+    using CON = Dune::PDELab::NoConstraints;
+    using GFS = Dune::PDELab::GridFunctionSpace<GV,FEM,CON,LBackend>;
+
+    GFS gfs(gv,fem, lbackend);
+    using PGFS = Dune::PDELab::PowerGridFunctionSpace<GFS, 2, PBackend, POrderingTag>;
+    PGFS pgfs(gfs, gfs, pbackend, potag);
+
+    using PPGFS = Dune::PDELab::PowerGridFunctionSpace<PGFS, 2, PPBackend, PPOrderingTag>;
+    PPGFS ppgfs(pgfs, pgfs, ppbackend, ppotag);
+
+    std::cout << "  gfs has " << ppgfs.ordering().containerSize({}) << " blocks" << std::endl;
+    std::cout << "  gfs has " << ppgfs.ordering().size() << " DOFs" << std::endl;
+
+    // coefficient vector
+    using Vec = Dune::PDELab::Backend::Vector<PPGFS,double>;
+    Vec x(ppgfs);
+
+    const auto & v = Dune::PDELab::Backend::native(x);
+    using V = std::decay_t<decltype(v)>;
+
+    if constexpr (Dune::blockLevel<V>() == 2) {
+        int BCxBS = v.size() * v[0].size();
+        std::cout << "  vector " << Dune::className(v) << "\n"
+                << "     with blocks of sizes " << v.size() << "x"  << v[0].size() << "\n"
+                << "     => " << BCxBS << " entries\n"
+                << "  expected " << expected << " DOFs\n";
+
+        if (BCxBS != expected)
+            return 1;
+    } else if constexpr (Dune::blockLevel<V>() == 3) {
+        int BCxBSxBS = v.size() * v[0].size() * v[0][0].size();
+        std::cout << "  vector " << Dune::className(v) << "\n"
+                << "     with blocks of sizes " << v.size() << "x"  << v[0].size() << "x"  << v[0][0].size() << "\n"
+                << "     => " << BCxBSxBS << " entries\n"
+                << "  expected " << expected << " DOFs\n";
+
+        if (BCxBSxBS != expected)
+            return 1;
+    } else {
+        DUNE_THROW(Dune::NotImplemented, "");
+    }
+    return 0;
+}
+
+
 int main(int argc, char** argv)
 {
   try{
@@ -119,7 +187,7 @@ int main(int argc, char** argv)
         std::array<int,2> N{8,8};
         Dune::YaspGrid<2> grid(L,N);
 
-        static const int d = 2;
+        // static const int d = 2;
         using Dune::GeometryTypes::quadrilateral;
         // using dG = Dune::P0LocalFiniteElement<double,double,2>;
         using dG = Dune::QkDGLagrangeLocalFiniteElement<double,double,2,2>;
@@ -134,7 +202,6 @@ int main(int argc, char** argv)
         {
             std::cout << "=== Q1, Blocking::fixed(4), DefaultLeafOrderingTag\n";
             using Backend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,4>;
-            // using OrderingTag = Dune::PDELab::DefaultLeafOrderingTag;
             using OrderingTag = Dune::PDELab::DefaultLeafOrderingTag;
             result +=
                 test_variable_fem<>(grid.leafGridView(),
@@ -184,7 +251,7 @@ int main(int argc, char** argv)
 
         try
         {
-            std::cout << "Q2/Empty, Blocking::fixed, Chuncked(9)\n";
+            std::cout << "=== Q2/Empty, Blocking::fixed(9), Chunked(9)\n";
             using Backend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
             using OrderingTag = Dune::PDELab::ordering::Chunked<Dune::PDELab::DefaultLeafOrderingTag>;
             result +=
@@ -209,39 +276,10 @@ int main(int argc, char** argv)
             result++;
         }
 
-
-        // try
-        // {
-        //     std::cout << "Q2x2/Empty, Blocking::fixed(9)/bcrs, DefaultLeafOrderingTag/EntityBlockedOrderingTag\n";
-        //     using LeafBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
-        //     using PowerBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::bcrs>;
-        //     using PowerOrderingTag = Dune::PDELab::EntityBlockedOrderingTag;
-        //     result +=
-        //         test_power_variable_fem<>(grid.leafGridView(),
-        //             LeafBackend(),
-        //             PowerBackend(),
-        //             PowerOrderingTag(),
-        //             [](const Element & e) -> FiniteElementType
-        //             {
-        //                 if (e.geometry().center()[0] < 0.5)
-        //                     return FiniteElementType(Empty(quadrilateral));
-        //                 else
-        //                     return FiniteElementType(dG()); // quadrilateral
-        //             },
-        //             4*8*9*2
-        //             );
-        // }
-        // catch (const std::exception & e)
-        // {
-        //     std::cout << "ERROR: " << e.what() << std::endl;
-        //     result++;
-        // }
-
-
         try
         {
-            std::cout << "Q2x2/Empty, Blocking::none/bcrs, DefaultLeafOrderingTag/EntityBlockedOrderingTag\n";
-            using LeafBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::none>;
+            std::cout << "=== Q2x2/Empty, Blocking::fixed(9)/bcrs, DefaultLeafOrderingTag/EntityBlockedOrderingTag\n";
+            using LeafBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
             using PowerBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::bcrs>;
             using PowerOrderingTag = Dune::PDELab::EntityBlockedOrderingTag;
             result +=
@@ -256,7 +294,8 @@ int main(int argc, char** argv)
                         else
                             return FiniteElementType(dG()); // quadrilateral
                     },
-                    4*8*9*2
+                    /* 4*8*9*2 <- WRONG: since entity blocking happens in the outer node, every entity counts as having two blocks regartheless if one is empty */
+                     8*8*9*2
                     );
         }
         catch (const std::exception & e)
@@ -265,34 +304,33 @@ int main(int argc, char** argv)
             result++;
         }
 
-
-        // try
-        // {
-        //     std::cout << "Q2x2, Blocking::fixed(9)/bcrs, DefaultLeafOrderingTag/EntityBlockedOrderingTag\n";
-        //     using LeafBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
-        //     using PowerBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::bcrs>;
-        //     using PowerOrderingTag = Dune::PDELab::EntityBlockedOrderingTag;
-        //     result +=
-        //         test_power_variable_fem<>(grid.leafGridView(),
-        //             LeafBackend(),
-        //             PowerBackend(),
-        //             PowerOrderingTag(),
-        //             [](const Element & e) -> FiniteElementType
-        //             {
-        //                 return FiniteElementType(dG()); // quadrilateral
-        //             },
-        //             8*8*9*2
-        //             );
-        // }
-        // catch (const std::exception & e)
-        // {
-        //     std::cout << "ERROR: " << e.what() << std::endl;
-        //     result++;
-        // }
+        try
+        {
+            std::cout << "Q2x2, Blocking::fixed(9)/bcrs, DefaultLeafOrderingTag/EntityBlockedOrderingTag\n";
+            using LeafBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
+            using PowerBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::bcrs>;
+            using PowerOrderingTag = Dune::PDELab::EntityBlockedOrderingTag;
+            result +=
+                test_power_variable_fem<>(grid.leafGridView(),
+                    LeafBackend(),
+                    PowerBackend(),
+                    PowerOrderingTag(),
+                    [](const Element & e) -> FiniteElementType
+                    {
+                        return FiniteElementType(dG()); // quadrilateral
+                    },
+                    8*8*9*2
+                    );
+        }
+        catch (const std::exception & e)
+        {
+            std::cout << "ERROR: " << e.what() << std::endl;
+            result++;
+        }
 
         try
         {
-            std::cout << "Q2x2/Empty, Blocking::none/bcrs, DefaultLeafOrderingTag/LexicographicOrderingTag\n";
+            std::cout << "=== Q2x2/Empty, Blocking::none/bcrs, DefaultLeafOrderingTag/LexicographicOrderingTag\n";
             using LeafBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::none>;
             using PowerBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::bcrs>;
             using PowerOrderingTag = Dune::PDELab::LexicographicOrderingTag;
@@ -321,7 +359,6 @@ int main(int argc, char** argv)
         {
             std::cout << "=== Q2DG/Q1Conforming, Blocking::fixed(9), Chunked(DefaultLeafOrderingTag)\n";
             using Backend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
-            // using OrderingTag = Dune::PDELab::DefaultLeafOrderingTag;
             using OrderingTag = Dune::PDELab::ordering::Chunked<Dune::PDELab::DefaultLeafOrderingTag>;
             result +=
                 test_variable_fem<>(grid.leafGridView(),
@@ -346,13 +383,74 @@ int main(int argc, char** argv)
             std::cout << "ERROR: " << e.what() << std::endl;
             result++;
         }
+
+        try
+        {
+            std::cout << "=== Q2x2/Empty, Blocking::fixed(9)/none/none, DefaultLeafOrderingTag/EntityBlockedOrderingTag/EntityBlockedOrderingTag\n";
+            using LeafBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
+            using PBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::none>;
+            using POrderingTag = Dune::PDELab::EntityBlockedOrderingTag;
+            using PPBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::none>;
+            using PPOrderingTag = Dune::PDELab::EntityBlockedOrderingTag;
+            result +=
+                test_power_power_variable_fem<>(grid.leafGridView(),
+                    LeafBackend(),
+                    PBackend(),
+                    POrderingTag(),
+                    PPBackend(),
+                    PPOrderingTag(),
+                    [](const Element & e) -> FiniteElementType
+                    {
+                        if (e.geometry().center()[0] < 0.5)
+                            return FiniteElementType(Empty(quadrilateral));
+                        else
+                            return FiniteElementType(dG()); // quadrilateral
+                    },
+                    4*8*9*2*2
+                    );
+        }
+        catch (const std::exception & e)
+        {
+            std::cout << "ERROR: " << e.what() << std::endl;
+            result++;
+        }
+
+        try
+        {
+            std::cout << "=== Q2x2/Empty, Blocking::fixed(9)/none/bcrs, DefaultLeafOrderingTag/EntityBlockedOrderingTag/Chunked(EntityBlockedOrderingTag)\n";
+            using LeafBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::fixed,9>;
+            using PBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::none>;
+            using POrderingTag = Dune::PDELab::EntityBlockedOrderingTag;
+            using PPBackend = Dune::PDELab::ISTL::VectorBackend<Dune::PDELab::ISTL::Blocking::bcrs>;
+            using PPOrderingTag = Dune::PDELab::ordering::Chunked<Dune::PDELab::EntityBlockedOrderingTag>;
+            result +=
+                test_power_power_variable_fem<>(grid.leafGridView(),
+                    LeafBackend(),
+                    PBackend(),
+                    POrderingTag(),
+                    PPBackend(),
+                    PPOrderingTag(4*8*2),
+                    [](const Element & e) -> FiniteElementType
+                    {
+                        if (e.geometry().center()[0] < 0.5)
+                            return FiniteElementType(Empty(quadrilateral));
+                        else
+                            return FiniteElementType(dG()); // quadrilateral
+                    },
+                    4*8*9*2*2
+                    );
+        }
+        catch (const std::exception & e)
+        {
+            std::cout << "ERROR: " << e.what() << std::endl;
+            result++;
+        }
     }
 
     if (result > 0)
-        std::cout << result << " variants failed" << std::endl;
+        std::cout << result << " variant(s) failed" << std::endl;
 
-	// test passed? ==0: success, >0: error
-	return result;
+    return result; // test passed? ==0: success, >0: error
   }
   catch (Dune::Exception &e){
     std::cerr << "Dune reported error: " << e << std::endl;

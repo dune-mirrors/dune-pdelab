@@ -234,8 +234,11 @@ namespace Dune {
         );
       }
 
+      // number of blocks associated to a given entity
       typename Traits::SizeType size(const typename Traits::SizeType geometry_type_index, const typename Traits::SizeType entity_index) const
       {
+        if (_container_blocked)
+          return _child_count;
         if (_fixed_size)
           return _child_count > 0
             ? _gt_dof_offsets[geometry_type_index * _child_count + _child_count - 1]
@@ -308,19 +311,20 @@ namespace Dune {
             // here we need to find the child that describes the back_index (solve child in map_lfs_indices)
             const size_type gt_index = Traits::DOFIndexAccessor::GeometryIndex::geometryType(index);
             const size_type entity_index = Traits::DOFIndexAccessor::GeometryIndex::entityIndex(index);
-            using It = typename std::vector<size_type>::const_iterator;
-            It dof_begin;
             // both _gt_dof_offsets and _entity_dof_offsets are chuncked by children
             // that means that finding the upper bound in the chunck solves the child index
-            if (node._fixed_size)
-              dof_begin = node._gt_dof_offsets.begin() + gt_index * node._child_count;
+            auto dof_begin = begin(fixedSize() ? _gt_dof_offsets : _entity_dof_offsets);
+            if (fixedSize())
+              dof_begin += gt_index * node.degree();
             else
-              dof_begin = node._entity_dof_offsets.begin() + entity_index * node._child_count;
-            auto dof_end = dof_begin + node._child_count;
+              dof_begin += (_gt_entity_offsets[gt_index] + entity_index) * node.degree();
+            auto dof_end = dof_begin + node.degree();
             auto dof_it = std::upper_bound(dof_begin, dof_end, back_index);
+            if (dof_it != dof_begin) {
+              std::advance(dof_it, -1);
+              suffix.back() -= *dof_it;
+            }
             _child = std::distance(dof_begin, dof_it);
-            if (_child > 0)
-              suffix.back() -= *std::prev(dof_it);
           }
 
           assert(node.degree() > _child);
