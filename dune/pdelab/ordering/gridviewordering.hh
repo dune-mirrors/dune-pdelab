@@ -412,8 +412,11 @@ namespace Dune {
                     for (size_type entity_index = 0; entity_index < entity_count; ++entity_index)
                       {
                         size_type carry = 0;
-                        for (size_type child_index = 0; child_index < TypeTree::degree(node); ++child_index)
-                          node._entity_dof_offsets[index++] = (carry += node.childOrdering(child_index).size(geometry_type_index,entity_index));
+                        for (size_type child_index = 0; child_index < TypeTree::degree(node); ++child_index) {
+                          auto size = node.childOrdering(child_index).size(geometry_type_index,entity_index);
+                          carry += node.containerBlocked() ? (size != 0) : size;
+                          node._entity_dof_offsets[index++] = carry;
+                        }
                       }
                   }
 
@@ -511,37 +514,43 @@ namespace Dune {
       typename Traits::SizeType containerSize(typename Traits::ContainerIndex suffix) const
       {
         using size_type = typename Traits::SizeType;
-        if (suffix.size() == Traits::ContainerIndex::max_depth)
-          return 0; // all indices in suffix were consumed, no more sizes to provide
         if (suffix.size() == 0) // suffix wants the size of this depth
           return _block_count; // blocked or not, this gives the number of blocks/dofs in next node hierarchy
 
         // we first have to figure out the entity index
         typename Traits::DOFIndex::EntityIndex entity_index;
+        size_type ei, gi;
 
         // the next index to find out its size
         auto back_index = suffix.back();
         // we just need to make the inverse computation of the mapIndex funtion to find the entity index
-        if (_container_blocked)
-          suffix.pop_back();
-
         auto dof_begin = _fixed_size ? _gt_dof_offsets.begin() : _entity_dof_offsets.begin();
         auto dof_end = _fixed_size ? _gt_dof_offsets.end() : _entity_dof_offsets.end();
         auto dof_it = std::prev(std::upper_bound(dof_begin, dof_end, back_index));
         size_type dof_dist = std::distance(dof_begin, dof_it);
         if (_fixed_size) {
-          // On fixed size, entity index is not used down the tree. Set max to trigger segfault if this does not hold.
-          Traits::DOFIndexAccessor::GeometryIndex::store(entity_index,dof_dist,~size_type{0});
+          gi = dof_dist;
+          // assert(back_index >= *dof_it);
+          ei = back_index - *dof_it;
+          ei /= localOrdering().size(gi, ~size_type{0});
+          Traits::DOFIndexAccessor::GeometryIndex::store(entity_index,gi,ei);
         } else {
           auto gt_begin = _gt_entity_offsets.begin();
           auto gt_end = _gt_entity_offsets.end();
           auto gt_it = std::prev(std::upper_bound(gt_begin, gt_end, dof_dist));
-          size_type gt = std::distance(gt_begin, gt_it);
+          gi = std::distance(gt_begin, gt_it);
           assert(dof_dist >= *gt_it);
-          size_type ei = dof_dist - *gt_it;
-          Traits::DOFIndexAccessor::GeometryIndex::store(entity_index,gt,ei);
+          ei = dof_dist - *gt_it;
+          Traits::DOFIndexAccessor::GeometryIndex::store(entity_index,gi,ei);
         }
 
+        // remove offset introduced by the entity_index
+        if (_container_blocked)
+          suffix.pop_back();
+        else if (_fixed_size)
+          suffix.back() -= _gt_dof_offsets[gi] + ei * localOrdering().size(gi, ei);
+        else
+          suffix.back() -= _entity_dof_offsets[_gt_entity_offsets[gi] + ei];
         // then, the local ordering knows the size for a given entity.
         return localOrdering().containerSize(suffix, entity_index);
       }
@@ -749,13 +758,17 @@ namespace Dune {
 
             for (const auto& gt : _es.indexSet().types())
               {
+                if (not localOrdering().contains(gt))
+                  continue;
                 const size_type gt_index = GlobalGeometryTypeIndex::index(gt);
                 size_type gt_size = localOrdering().size(gt_index,0);
                 const size_type gt_entity_count = _es.indexSet().size(gt);
-                _size += gt_size * gt_entity_count;
                 if (_container_blocked)
                   gt_size = gt_size > 0;
                 _gt_dof_offsets[gt_index + 1] = gt_size * gt_entity_count;
+                TypeTree::forEachLeafNode(localOrdering(), [&](auto& node, auto path){
+                  _size += gt_entity_count * node.size(gt_index,0);
+                });
               }
 
             std::partial_sum(_gt_dof_offsets.begin(),_gt_dof_offsets.end(),_gt_dof_offsets.begin());
@@ -779,9 +792,7 @@ namespace Dune {
             std::partial_sum(_gt_entity_offsets.begin(),_gt_entity_offsets.end(),_gt_entity_offsets.begin());
             _entity_dof_offsets.assign(_gt_entity_offsets.back()+1,0);
             _block_count = 0;
-
-            size_type carry_size = 0;
-            size_type carry_block = 0;
+            _size = 0;
             size_type index = 0;
             for (size_type gt_index = 0; gt_index < GlobalGeometryTypeIndex::size(dim); ++gt_index)
               {
@@ -790,15 +801,23 @@ namespace Dune {
                 const size_type entity_count = _gt_entity_offsets[gt_index + 1] - _gt_entity_offsets[gt_index];
                 for (size_type entity_index = 0; entity_index < entity_count; ++entity_index)
                   {
-                    const size_type size = localOrdering().size(gt_index,entity_index);
-                    carry_size += size;
-                    carry_block += (_container_blocked ? (size > 0) : size);
-                    _entity_dof_offsets[++index] = carry_block;
-                    _block_count += (size > 0);
+                    // count total dofs for this entity
+                    size_type dof_count = 0;
+                    TypeTree::forEachLeafNode(localOrdering(), [&](auto node, auto path) {
+                      dof_count += node.size(gt_index,entity_index);
+                    });
+                    // only count blocks if there are any dofs (avoids intermediate blocks with empty children)
+                    if (dof_count != 0) {
+                      Hybrid::forEach(Dune::range(localOrdering().degree()), [&](auto i) {
+                        auto size = localOrdering().child(i).size(gt_index,entity_index);
+                        _block_count += _container_blocked ? (size != 0) : size;
+                      });
+                    }
+                    // commit block offest and dof count
+                    _entity_dof_offsets[++index] = _block_count;
+                    _size += dof_count;
                   }
               }
-            _size = carry_size;
-            _block_count = _block_count;
 
             _codim_fixed_size.reset();
           }
