@@ -85,13 +85,17 @@ namespace Dune {
       template<typename TC>
       static typename result<TC>::type transform(const GFS& gfs, const Transformation& t, const std::array<std::shared_ptr<TC>,TypeTree::StaticDegree<GFS>::value>& children)
       {
-        return typename result<TC>::type(children,gfs.backend().blocked(gfs));
+        const auto& child = gfs.child(0);
+        bool blocked = child.backend().blocked(child);
+        return typename result<TC>::type(children,blocked);
       }
 
       template<typename TC>
       static typename result<TC>::storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t, const std::array<std::shared_ptr<TC>,TypeTree::StaticDegree<GFS>::value>& children)
       {
-        return std::make_shared<typename result<TC>::type>(children,gfs->backend().blocked(*gfs));
+        const auto& child = gfs->child(0);
+        bool blocked = child.backend().blocked(child);
+        return std::make_shared<typename result<TC>::type>(children,blocked);
       }
 
     };
@@ -211,13 +215,21 @@ namespace Dune {
       template<typename... TC>
       static typename result<TC...>::type transform(const GFS& gfs, const Transformation& t, std::shared_ptr<TC>... children)
       {
-        return typename result<TC...>::type(gfs.backend().blocked(gfs),children...);
+        using namespace Dune::Indices;
+        const auto& child = gfs.child(_0);
+        //! @todo assert that all the children have the same blocking
+        bool blocked = child.backend().blocked(child);
+        return typename result<TC...>::type(blocked,children...);
       }
 
       template<typename... TC>
       static typename result<TC...>::storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t, std::shared_ptr<TC>... children)
       {
-        return std::make_shared<typename result<TC...>::type>(gfs->backend().blocked(*gfs),children...);
+        using namespace Dune::Indices;
+        const auto& child = gfs->child(_0);
+        //! @todo assert that all the children have the same blocking
+        bool blocked = child.backend().blocked(child);
+        return std::make_shared<typename result<TC...>::type>(blocked,children...);
       }
 
     };

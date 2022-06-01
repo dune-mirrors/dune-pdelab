@@ -419,11 +419,6 @@ namespace Dune {
         return *_children[i];
       }
 
-      void disable_container_blocking()
-      {
-        _container_blocked = false;
-      }
-
       //! Initial setup of the flag indicating whether a fixed size ordering is possible.
       /**
        * For a non-leaf ordering, a fixed size ordering is possible if all children can
