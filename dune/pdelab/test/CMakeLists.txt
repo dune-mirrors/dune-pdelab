@@ -1,6 +1,10 @@
 add_subdirectory(fem)
 add_subdirectory(matrixfree)
 
+dune_add_test(SOURCES testcachedcomm.cc
+              MPI_RANKS 1 2 4
+              TIMEOUT 300)
+
 dune_add_test(SOURCES testcombinedoperator.cc)
 
 dune_add_test(SOURCES testchecklopinterface.cc)
