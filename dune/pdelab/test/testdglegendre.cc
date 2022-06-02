@@ -124,7 +124,7 @@ private:
 
 // Solve problem
 template <typename Grid, typename FS, typename Problem, typename GM, Dune::SolverCategory::Category solvertype, int degree>
-void solveProblem(const Grid& grid, FS& fs, typename FS::DOF x, Problem& problem, std::string basename)
+void solveProblem(const Grid& grid, FS& fs, typename FS::DOF& x, Problem& problem, std::string basename)
 {
 
   // initialize DOF vector it with boundary condition
@@ -194,9 +194,6 @@ int main(int argc, char **argv)
   typedef typename FS::DOF X;
   X x(fs.getGFS(),0.0);
 
-  // solve problem
-  solveProblem<Grid,FS,Problem,GM,solvertype,degree>(grid,fs,x,problem,"new");
-
   // make a finite element space and DOF vector
   typedef Dune::PDELab::DGQkSpace<GM,NumberType,degree,elemtype,solvertype> FS2;
   FS2 fs2(grid->leafGridView());
@@ -204,7 +201,11 @@ int main(int argc, char **argv)
   X2 x2(fs2.getGFS(),0.0);
 
   // solve problem
+  std::cout << "old space impl\n";
   solveProblem<Grid,FS2,Problem,GM,solvertype,degree>(grid,fs2,x2,problem,"old");
+  // solve problem
+  std::cout << "new space impl\n";
+  solveProblem<Grid,FS,Problem,GM,solvertype,degree>(grid,fs,x,problem,"new");
 
   // calculate l2 error squared between the two functions
   FS::DGF xdgf(fs.getGFS(),x);
