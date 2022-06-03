@@ -65,9 +65,6 @@ namespace Dune
       typedef Dune::Communication< MPICommunicatorType > CommunicationType;
 
     protected:
-      const InterfaceType interface_;
-      const CommunicationDirection dir_;
-
       LinkStorageType linkStorage_;
 
       IndexVectorMapType  recvIndexMap_;
@@ -77,14 +74,14 @@ namespace Dune
       std::unique_ptr< CommunicationType > comm_;
 
       // exchange time
-      double exchangeTime_;
+      mutable double exchangeTime_;
       // setup time
-      double buildTime_;
+      mutable double buildTime_;
 
       //! know grid sequence number
       int sequence_;
 
-      int nonBlockingObjects_ ;
+      mutable int nonBlockingObjects_ ;
 
     protected:
       template< class Communication, class LinkStorage,
@@ -117,12 +114,9 @@ namespace Dune
         }
 
       public:
-        template <class GV>
-        NonBlockingCommunication( const GV& gridView,
-                                  CommunicationPatternType& dependencyCache )
+        NonBlockingCommunication( const CommunicationPatternType& dependencyCache )
           : dependencyCache_( dependencyCache ),
             exchangeTime_( 0.0 ),
-            mySize_( gridView.comm().size() ),
             tag_( getMessageTag() )
         {
           // notify dependency cache of open communication
@@ -133,7 +127,6 @@ namespace Dune
         NonBlockingCommunication( const NonBlockingCommunication& other )
           : dependencyCache_( other.dependencyCache_ ),
             exchangeTime_( 0.0 ),
-            mySize_( other.mySize_ ),
             tag_( other.tag_ )
         {
           // notify dependency cache of open communication
@@ -149,9 +142,6 @@ namespace Dune
         template < class Data >
         void send( const Data& data )
         {
-          // on serial runs: do nothing
-          if( mySize_ <= 1 ) return;
-
           sendFutures_.clear();
           recvFutures_.clear();
 
@@ -177,16 +167,13 @@ namespace Dune
         template < class Data, class Operation >
         double receive( Data& data, const Operation& operation )
         {
-          // on serial runs: do nothing
-          if( mySize_ <= 1 ) return 0.0;
-
           // take time
           Dune::Timer recvTimer ;
 
           typedef typename Data::value_type value_type;
-          typedef typename value_type :: DofType DofType;
+          typedef typename value_type::field_type DofType;
 
-          static const int blockSize = value_type::blockSize;
+          static const int blockSize = value_type::dimension; // data[0].size();
           const size_t dataSize = static_cast< std::size_t >( blockSize * sizeof( DofType ) );
 
           const auto& comm = dependencyCache_.comm();
@@ -243,7 +230,7 @@ namespace Dune
         }
 
       protected:
-        CommunicationPatternType& dependencyCache_;
+        const CommunicationPatternType& dependencyCache_;
         typedef MPIPack BufferType;
         typedef MPIFuture< BufferType > FutureType;
 
@@ -251,7 +238,6 @@ namespace Dune
         std::map< int, FutureType > sendFutures_;
 
         double exchangeTime_ ;
-        const int mySize_;
         const int tag_;
       };
 
@@ -270,10 +256,8 @@ namespace Dune
       /////////////////////////////////////////////////////////////////
 
       //! constructor taking communicator object
-      CommunicationPattern( const InterfaceType interface, const CommunicationDirection dir )
-      : interface_( interface ),
-        dir_( dir ),
-        linkStorage_(),
+      CommunicationPattern()
+      : linkStorage_(),
         recvIndexMap_(),
         sendIndexMap_(),
         comm_(),
@@ -295,20 +279,13 @@ namespace Dune
 
       const std::set< int >& linkStorage() const { return linkStorage_; }
 
+      operator bool() const
+      {
+        return linkStorage_.size() > 0;
+      }
+
       // no copying
       CommunicationPattern( const CommunicationPattern & ) = delete;
-
-      //! return communication interface
-      InterfaceType communicationInterface() const
-      {
-        return interface_;
-      }
-
-      //! return communication direction
-      CommunicationDirection communicationDirection() const
-      {
-        return dir_;
-      }
 
       //! return time needed for last build
       double buildTime() const
@@ -323,13 +300,13 @@ namespace Dune
       }
 
       // notify for open non-blocking communications
-      void attachComm()
+      void attachComm() const
       {
         ++nonBlockingObjects_;
       }
 
       // notify for finished non-blocking communication
-      void detachComm()
+      void detachComm() const
       {
         --nonBlockingObjects_;
         assert( nonBlockingObjects_ >= 0 );
@@ -350,7 +327,7 @@ namespace Dune
     protected:
       // build linkage and index maps
       template < class GridView >
-      inline void buildMaps( const GridView& gv, const BlockMapper& blockMapper );
+      inline void buildMaps( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface );
 
       // check consistency of maps
       inline void checkConsistency();
@@ -365,6 +342,7 @@ namespace Dune
       template <class GridView>
       inline void rebuild( const GridView& gridView,
                            const BlockMapperType& blockMapper,
+                           const InterfaceType interface,
                            const bool force = true )
       {
         const auto& comm = gridView.comm();
@@ -385,7 +363,7 @@ namespace Dune
           Dune::Timer buildTime;
 
           // rebuild maps holding exchange dof information
-          buildMaps( gridView, blockMapper );
+          buildMaps( gridView, blockMapper, interface );
 
           // store time needed
           buildTime_ = buildTime.elapsed();
@@ -393,8 +371,8 @@ namespace Dune
       }
 
       //! exchange data of discrete function
-      template< class Space, class Data, class Operation >
-      inline void exchange( const Space& space, Data &data, const Operation& operation );
+      template< class Data, class Operation >
+      inline void exchange( Data &data, const Operation& operation ) const;
 
       //! return reference to communication object
       inline CommunicationType &comm()
@@ -424,11 +402,11 @@ namespace Dune
 
         //typedef typename Data :: DofType DofType;
         typedef typename Data::value_type value_type;
-        typedef typename value_type :: DofType DofType;
+        typedef typename value_type :: field_type DofType;
 
         {
           //static const int blockSize = Data::blockSize;
-          static const int blockSize = value_type::blockSize;
+          static const int blockSize = value_type::dimension;
           buffer.enlarge( size * blockSize * sizeof( DofType ) );
           for( int i = 0; i < size; ++i )
           {
@@ -457,11 +435,10 @@ namespace Dune
         const int size = indexMap.size();
 
         typedef typename Data::value_type value_type;
-        typedef typename value_type :: DofType DofType;
+        typedef typename value_type :: field_type DofType;
 
         {
-          //static const int blockSize = value_type::dimension;
-          static const int blockSize = value_type::blockSize;
+          static const int blockSize = value_type::dimension;
           assert( static_cast< std::size_t >( size * blockSize * sizeof( DofType ) ) <= static_cast< std::size_t >( (buffer.size()-buffer.tell()) ) );
           for( int i = 0; i < size; ++i )
           {
@@ -715,10 +692,10 @@ namespace Dune
 
     template< class BlockMapper >
     template< class GridView >
-    inline void CommunicationPattern< BlockMapper > :: buildMaps( const GridView& gv, const BlockMapper& blockMapper )
+    inline void CommunicationPattern< BlockMapper > :: buildMaps( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface )
     {
       typedef typename GridView::CollectiveCommunication CommunicationType;
-      if( interface_ == InteriorBorder_All_Interface )
+      if( interface == InteriorBorder_All_Interface )
       {
         PatternBuilder< CommunicationType, LinkStorageType, IndexVectorMapType,
                      InteriorBorder_All_Interface >
@@ -727,7 +704,7 @@ namespace Dune
                   linkStorage_, sendIndexMap_, recvIndexMap_ );
         buildMaps( gv, handle );
       }
-      else if( interface_ == InteriorBorder_InteriorBorder_Interface )
+      else if( interface == InteriorBorder_InteriorBorder_Interface )
       {
         PatternBuilder< CommunicationType, LinkStorageType, IndexVectorMapType,
                      InteriorBorder_InteriorBorder_Interface >
@@ -736,7 +713,7 @@ namespace Dune
                   linkStorage_, sendIndexMap_, recvIndexMap_ );
         buildMaps( gv, handle );
       }
-      else if( interface_ == All_All_Interface )
+      else if( interface == All_All_Interface )
       {
         PatternBuilder< CommunicationType, LinkStorageType, IndexVectorMapType, All_All_Interface >
           handle( gv.comm(),
@@ -776,15 +753,12 @@ namespace Dune
     }
 
     template< class BlockMapper >
-    template< class GridView, class Vector, class Operation >
+    template< class Vector, class Operation >
     inline void CommunicationPattern< BlockMapper >
-    :: exchange( const GridView& gv, Vector &vector, const Operation& operation )
+    :: exchange( Vector &vector, const Operation& operation ) const
     {
-      // on serial runs: do nothing
-      if( gv.comm().size() <= 1 ) return;
-
       // create non-blocking communication object
-      NonBlockingCommunicationType nbc( gv, *this );
+      NonBlockingCommunicationType nbc( *this );
 
       // perform send operation
       nbc.send( vector );

@@ -126,7 +126,6 @@ private:
 template <typename Grid, typename FS, typename Problem, typename GM, Dune::SolverCategory::Category solvertype, int degree>
 void solveProblem(const Grid& grid, FS& fs, typename FS::DOF& x, Problem& problem, std::string basename)
 {
-
   // initialize DOF vector it with boundary condition
   typedef Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<Problem> BCType;
   BCType bctype(grid->leafGridView(),problem);
@@ -162,7 +161,6 @@ void solveProblem(const Grid& grid, FS& fs, typename FS::DOF& x, Problem& proble
   vtkwriter.write(basename,Dune::VTK::appendedraw);
 }
 
-
 int main(int argc, char **argv)
 {
   // initialize MPI, finalize is done automatically on exit
@@ -189,14 +187,36 @@ int main(int argc, char **argv)
   Problem problem;
 
   // make a finite element space and DOF vector
+  using GridView = typename GM::LeafGridView;
+  GridView gridView = grid->leafGridView();
   typedef Dune::PDELab::DGQkSpace<GM,NumberType,degree,elemtype,solvertype> FS;
   FS fs(grid->leafGridView());
   typedef typename FS::DOF X;
   X x(fs.getGFS(),0.0);
+  X x2(fs.getGFS(),0.0);
 
   // solve problem
   std::cout << "Running (parallel) solve with grid communication\n";
+  Dune::PDELab::ISTL::ParallelHelper<typename FS::GFS>::useCaches = false;
   solveProblem<Grid,FS,Problem,GM,solvertype,degree>(grid,fs,x,problem,"dg-grid-comm");
+
+  std::cout << "Running (parallel) solve with cached communication\n";
+  Dune::PDELab::ISTL::ParallelHelper<typename FS::GFS>::useCaches = true;
+  solveProblem<Grid,FS,Problem,GM,solvertype,degree>(grid,fs,x2,problem,"dg-cached-comm");
+
+  // calculate l2 error squared between the two functions
+  FS::DGF xdgf(fs.getGFS(),x);
+  FS::DGF xdgf2(fs.getGFS(),x2);
+  typedef Dune::PDELab::DifferenceSquaredAdapter<FS::DGF,FS::DGF> DifferenceSquared;
+  DifferenceSquared differencesquared(xdgf,xdgf2);
+  typename DifferenceSquared::Traits::RangeType l2errorsquared(0.0);
+  Dune::PDELab::integrateGridFunction(differencesquared,l2errorsquared,10);
+
+  std::cout << std::endl << "l2 error squared: " << l2errorsquared << std::endl;
+
+  if (l2errorsquared>1e-14){
+    return 1;
+  }
 
   // done
   return 0;

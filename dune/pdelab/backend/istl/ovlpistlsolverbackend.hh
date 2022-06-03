@@ -168,9 +168,17 @@ namespace Dune {
         range_type dd(d);
         set_constrained_dofs(cc,0.0,dd);
         prec.apply(Backend::native(v),Backend::native(dd));
-        Dune::PDELab::AddDataHandle<GFS,domain_type> adddh(gfs,v);
         if (gfs.gridView().comm().size()>1)
-          gfs.gridView().communicate(adddh,Dune::All_All_Interface,Dune::ForwardCommunication);
+        {
+          if (helper.allToAllCommunication()) {
+            auto add = [](const double& a, double& b) { b += a; };
+            helper.allToAllCommunication().exchange( Backend::native(v), add );
+          }
+          else {
+            Dune::PDELab::AddDataHandle<GFS,domain_type> adddh(gfs,v);
+            gfs.gridView().communicate(adddh,Dune::All_All_Interface,Dune::ForwardCommunication);
+          }
+        }
       }
 
       SolverCategory::Category category() const override
@@ -356,11 +364,16 @@ namespace Dune {
         Y b(d); // need copy, since solver overwrites right hand side
         solver.apply(native(v),native(b),stat);
         if (gfs.gridView().comm().size()>1)
-          {
-            helper.maskForeignDOFs(native(v));
-            AddDataHandle<GFS,X> adddh(gfs,v);
-            gfs.gridView().communicate(adddh,Dune::InteriorBorder_All_Interface,Dune::ForwardCommunication);
+        {
+          if (helper.allToAllCommunication()) {
+            auto add = [](const double& a, double& b) { b += a; };
+            helper.allToAllCommunication().exchange( v, add );
           }
+          else {
+            Dune::PDELab::AddDataHandle<GFS,domain_type> adddh(gfs,v);
+            gfs.gridView().communicate(adddh,Dune::All_All_Interface,Dune::ForwardCommunication);
+          }
+        }
       }
 
       SolverCategory::Category category() const override

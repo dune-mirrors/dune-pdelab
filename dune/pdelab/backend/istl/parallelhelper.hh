@@ -32,6 +32,8 @@
 #include <dune/pdelab/backend/istl/utility.hh>
 #include <dune/pdelab/gridfunctionspace/tags.hh>
 
+#include <dune/pdelab/common/cachedcommmanager.hh>
+
 namespace Dune {
   namespace PDELab {
     namespace ISTL {
@@ -40,6 +42,38 @@ namespace Dune {
       //! \ingroup PDELab
       //! \{
 
+      // Helper class to map DOFs per (sub-)entity
+      template<typename GFS>
+      struct EntityDOFMapper
+      {
+        using IndexSet = typename GFS::Traits::GridView::IndexSet;
+
+        const GFS& gfs_;
+        const IndexSet& indexSet_;
+        const int localSize_;
+
+        typedef typename IndexSet::IndexType GlobalKeyType;
+
+        EntityDOFMapper( const GFS& gfs ) :
+          gfs_(gfs), indexSet_(gfs_.gridView().indexSet()), localSize_(4) /* hard coded for our initial example */
+        {}
+
+        bool contains( const int codim ) const { return codim == 0; }
+
+        template <class Entity>
+        unsigned int numEntityDofs(const Entity& entity) const {
+          assert(Entity::codimension == 0);
+          return localSize_;
+        }
+
+        // we use blocked vectors and only store the cell indices
+        template <class Entity, class Vector> // Vector = std::vector< GlobalKeyType >
+        void obtainEntityDofs( const Entity& entity, Vector& vector ) const
+        {
+          assert( vector.size() == numEntityDofs( entity ) ); // numEntityDofs
+          vector[ 0 ] = indexSet_.index( entity );
+        }
+      };
 
       //========================================================
       // A parallel helper class providing a nonoverlapping
@@ -61,7 +95,13 @@ namespace Dune {
         //! ContainerIndex of the underlying GridFunctionSpace.
         typedef typename GFS::Ordering::Traits::ContainerIndex ContainerIndex;
 
+        // ...
+        using DOFMapper = EntityDOFMapper<GFS>;
+        using CachedComm = Dune::CommunicationPattern< DOFMapper >;
+
       public:
+
+        inline static bool useCaches = true;
 
         ParallelHelper (const GFS& gfs, int verbose = 1)
           : _gfs(gfs)
@@ -88,6 +128,13 @@ namespace Dune {
               _all_all_interface = All_All_Interface;
             }
 
+          if (useCaches)
+          {
+            DOFMapper dofmapper(gfs);
+            _all_all_comm.rebuild(_gfs.gridView(), dofmapper, All_All_Interface);
+            _interiorBorder_all_comm.rebuild(_gfs.gridView(), dofmapper, InteriorBorder_All_Interface);
+          }
+
           if (_gfs.gridView().comm().size()>1)
             {
 
@@ -113,6 +160,16 @@ namespace Dune {
 
           for (RankIndex rank : rank_set)
             _neighbor_ranks.push_back(rank);
+        }
+
+        const CachedComm& allToAllCommunication() const
+        {
+          return _all_all_comm;
+        }
+
+        const CachedComm& interiorBorderToAllCommunication() const
+        {
+          return _interiorBorder_all_comm;
         }
 
         //! Returns a sorted list of the ranks of all neighboring processes
@@ -298,6 +355,10 @@ namespace Dune {
 
         //! The actual communication interface used when algorithm requires All_All_Interface.
         InterfaceType _all_all_interface;
+
+        //! cached communicators
+        CachedComm _all_all_comm;
+        CachedComm _interiorBorder_all_comm;
       };
 
 #if HAVE_MPI
