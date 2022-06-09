@@ -14,7 +14,6 @@
 //- dune-common includes
 #include <dune/common/math.hh>
 #include <dune/common/timer.hh>
-#include <dune/common/visibility.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/parallel/mpicommunication.hh>
 #include <dune/common/parallel/mpipack.hh>
@@ -25,10 +24,148 @@
 #include <dune/grid/common/datahandleif.hh>
 #include <dune/grid/utility/entitycommhelper.hh>
 
-// include alugrid headers to have to communicator class from ALUGrid
-#if HAVE_DUNE_ALUGRID
-#include <dune/alugrid/3d/alu3dinclude.hh>
+/*
+  Issues Grid-Comm Interface
+
+  * grid knows source rank, but doesn't tell the user
+  * difficult to collect data in subentities without knowing the entity
+  *
+
+ */
+
+namespace Dune
+{
+
+    namespace MPIComm
+    {
+
+        template<typename IndexType>
+        struct Link
+        {
+            using Indices = std::vector< IndexType >;
+            int rank;
+            Indices recvIndices;
+            Indices sendIndices;
+        };
+
+        template<typename IndexType>
+        using CommunicationPattern = std::set<Link<IndexType>>;
+
+        class CachedNeighborCommunication
+        {
+        };
+
+#if 0
+        /** \brief CommunicationPattern is a convenience class to build up a map
+         * of all dofs of entities to be exchanged during a communication procedure.
+         * This speeds up the communication procedure, because no grid traversal is
+         * necessary anymore to exchange data. This class is singleton for different
+         * discrete function spaces, depending on the BlockMapper.
+         */
+        template<typename ContainerIndex>
+        class CommunicationPattern
+        {
+        public:
+            using IndexList = std::vector< ContainerIndex >;
+
+            // type of IndexMapVector (associating a rank with the corresponding communication info)
+            using IndexListMap = std::map<int, IndexList>;
+
+            // type of set of links
+            typedef std::set< int > LinkStorageType;
+
+            typedef Dune::MPIHelper::MPICommunicator MPICommunicatorType;
+            typedef Dune::Communication< MPICommunicatorType > CommunicationType;
+
+        protected:
+            LinkStorageType linkStorage_;
+
+            IndexVectorMapType  recvIndexMap_;
+            IndexVectorMapType  sendIndexMap_;
+
+            // ALUGrid communicator Class
+            std::unique_ptr< CommunicationType > comm_;
+
+        public:
+
+            //! constructor taking communicator object
+            CommunicationPattern()
+                : linkStorage_(),
+                  recvIndexMap_(),
+                  sendIndexMap_(),
+                  comm_()
+            {
+            }
+
+            template <class Communication>
+            void init( const Communication& comm )
+            {
+                if( ! comm_ )
+                {
+                    comm_.reset( new CommunicationType( comm ) );
+                }
+            }
+
+            const std::set< int >& linkStorage() const { return linkStorage_; }
+
+            operator bool() const
+            {
+                return linkStorage_.size() > 0;
+            }
+
+            // no copying
+            CommunicationPattern( const CommunicationPattern & ) = delete;
+
+            size_t recvBufferSize( const int rank ) const
+            {
+                auto it = recvIndexMap_.find( rank );
+                const auto &indexMap = it->second;
+                return indexMap.size();
+            }
+
+        public:
+
+            void setCommunicationPattern (...)
+            {
+            }
+
+        };
 #endif
+
+    } // end namespace MPIComm
+} // end namespace Dune
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
 
 namespace Dune
 {
@@ -287,18 +424,6 @@ namespace Dune
       // no copying
       CommunicationPattern( const CommunicationPattern & ) = delete;
 
-      //! return time needed for last build
-      double buildTime() const
-      {
-        return buildTime_;
-      }
-
-      //! return time needed for last exchange
-      double exchangeTime() const
-      {
-        return exchangeTime_;
-      }
-
       // notify for open non-blocking communications
       void attachComm() const
       {
@@ -324,18 +449,12 @@ namespace Dune
         return indexMap.size();
       }
 
-    protected:
-      // build linkage and index maps
-      template < class GridView >
-      inline void buildMaps( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface );
-
-      // check consistency of maps
-      inline void checkConsistency();
-
-      template< class GridView, class Comm, class LS, class IMV, InterfaceType CI >
-      inline void buildMaps( const GridView& gv, PatternBuilder< Comm, LS, IMV, CI > &handle );
-
     public:
+
+        void setCommunicationPattern (Dune::MPIComm::CommunicationPattern<GlobalKeyType> /* TODO */)
+        {
+        }
+
       /** \brief Rebuild underlying exchange dof mapping.
        *  \note: Different spaces may have the same exchange dof mapping!
        */
@@ -389,7 +508,18 @@ namespace Dune
       }
 
     protected:
-      // write data of DataImp& vector to object stream
+      // build linkage and index maps
+      template < class GridView >
+      inline void buildMaps( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface );
+
+      // check consistency of maps
+      inline void checkConsistency();
+
+      template< class GridView, class Comm, class LS, class IMV, InterfaceType CI >
+      inline void buildMaps( const GridView& gv, PatternBuilder< Comm, LS, IMV, CI > &handle );
+
+    protected:
+      // serialize data of DataImp& vector to object stream
       // --writeBuffer
       template< class Buffer, class Data >
       inline void writeBuffer( const int dest,
@@ -417,7 +547,7 @@ namespace Dune
         }
       }
 
-      // read data from object stream to DataImp& data vector
+      // deserialize data from object stream to DataImp& data vector
       // --readBuffer
       template< class Buffer, class Data, class Operation >
       inline void readBuffer( const int source,
