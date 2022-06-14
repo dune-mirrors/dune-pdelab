@@ -97,7 +97,7 @@ namespace Dune {
 
         // ...
         using DOFMapper = EntityDOFMapper<GFS>;
-        using CachedComm = Dune::CommunicationPattern< DOFMapper >;
+        using CachedComm = Dune::CommunicationPattern< typename DOFMapper::GlobalKeyType >;
 
       public:
 

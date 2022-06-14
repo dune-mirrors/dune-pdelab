@@ -63,43 +63,33 @@ namespace Dune
         @{
      **/
 
-    /** \brief CommunicationPattern is a convenience class to build up a map
+    /** \brief Handle "halo"-exchange between neighboring processes
+     *
+     *
+     * CommunicationPattern is a convenience class to build up a map
      * of all dofs of entities to be exchanged during a communication procedure.
      * This speeds up the communication procedure, because no grid traversal is
      * necessary anymore to exchange data. This class is singleton for different
      * discrete function spaces, depending on the BlockMapper.
      */
-    template< class BlockMapper >
+    template< class IndexType >
     class CommunicationPattern
     {
     public:
       //! type of block mapper of discrete function space (may be the same for
       //! different space (i.e. various DG spaces)
-      typedef BlockMapper BlockMapperType;
-      typedef typename BlockMapperType :: GlobalKeyType GlobalKeyType;
+        // typedef BlockMapper BlockMapperType;
+      using GlobalKeyType = IndexType; // typedef typename BlockMapperType :: GlobalKeyType
 
     protected:
-      typedef std::vector< GlobalKeyType > IndexMapType;
-
-      // type of IndexMapVector
-      typedef std::map< int, std::vector< GlobalKeyType > >  IndexVectorMapType;
-
-      // type of set of links
-      typedef std :: set< int > LinkStorageType;
-
       typedef Dune::MPIHelper::MPICommunicator MPICommunicatorType;
       typedef Dune::Communication< MPICommunicatorType > CommunicationType;
 
     protected:
 
-      MPIComm::CommunicationPattern<GlobalKeyType> pattern_;
+      MPIComm::CommunicationPattern<Index> pattern_;
 
-      LinkStorageType linkStorage_;
-
-      IndexVectorMapType  recvIndexMap_;
-      IndexVectorMapType  sendIndexMap_;
-
-      // ALUGrid communicator Class
+      // communicator
       std::unique_ptr< CommunicationType > comm_;
 
       // exchange time
@@ -113,7 +103,8 @@ namespace Dune
       mutable int nonBlockingObjects_ ;
 
     protected:
-      template< class Communication, InterfaceType CommInterface > class PatternBuilder;
+      template< class Communication, class BlockMapper, InterfaceType CommInterface >
+      class PatternBuilder;
 
       /////////////////////////////////////////////////////////////////
       //  begin NonBlockingCommunication
@@ -121,7 +112,7 @@ namespace Dune
 
       class NonBlockingCommunication
       {
-        typedef CommunicationPattern < BlockMapper > CommunicationPatternType;
+        typedef CommunicationPattern < IndexType > CommunicationPatternType;
 
         // create an unique tag for the communication
         DUNE_EXPORT static int getMessageTag()
@@ -351,7 +342,7 @@ namespace Dune
       /** \brief Rebuild underlying exchange dof mapping.
        *  \note: Different spaces may have the same exchange dof mapping!
        */
-      template <class GridView>
+      template <class GridView, class BlockMapperType>
       inline void rebuild( const GridView& gridView,
                            const BlockMapperType& blockMapper,
                            const InterfaceType interface,
@@ -419,14 +410,14 @@ namespace Dune
 
     protected:
       // build linkage and index maps
-      template < class GridView >
+      template < class GridView, class BlockMapper >
       inline void buildMaps( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface );
 
       // check consistency of maps
       inline void checkConsistency();
 
-      template< class GridView, class Comm, InterfaceType CI >
-      inline void buildMaps( const GridView& gv, PatternBuilder< Comm, CI > &handle );
+      template< class GridView, class Comm, class BlockMapper, InterfaceType CI >
+      inline void buildMaps( const GridView& gv, PatternBuilder< Comm, BlockMapper, CI > &handle );
 
     protected:
       // serialize data of DataImp& vector to object stream
@@ -509,12 +500,12 @@ namespace Dune
      *    void mapEntityDofs( entity, std::vector< GlobalKey >& indices ) which fills a vector with global keys (vector indices) of the dofs
      *
      */
-    template< class BlockMapper >
-    template< class Communication, InterfaceType CommInterface >
-    class CommunicationPattern< BlockMapper > :: PatternBuilder
+    template< class IndexType >
+    template< class Communication, class BlockMapper, InterfaceType CommInterface >
+    class CommunicationPattern< IndexType > :: PatternBuilder
     : public CommDataHandleIF
-      < PatternBuilder< Communication, CommInterface >,
-        typename BlockMapperType::GlobalKeyType /* we currently assume that the rank can be sent in the same format as the indices */ >
+    < PatternBuilder< Communication, BlockMapper, CommInterface >,
+      IndexType /* we currently assume that the rank can be sent in the same format as the indices */ >
     {
     public:
       typedef Communication  CommunicationType;
@@ -720,6 +711,7 @@ namespace Dune
           }
         }
       }
+
       //! return local dof size to be communicated
       template< class Entity >
       size_t size( const Entity &entity ) const
@@ -735,27 +727,27 @@ namespace Dune
 
 
 
-    template< class BlockMapper >
-    template< class GridView >
-    inline void CommunicationPattern< BlockMapper > :: buildMaps( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface )
+    template< class IndexType >
+    template< class GridView, class BlockMapper >
+    inline void CommunicationPattern< IndexType > :: buildMaps( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface )
     {
         // TODO replace by switchCases(const Cases& cases, const Value& value, Branches&& branches)
       typedef typename GridView::CollectiveCommunication CommunicationType;
       if( interface == InteriorBorder_All_Interface )
       {
-        PatternBuilder< CommunicationType, InteriorBorder_All_Interface >
+        PatternBuilder< CommunicationType, BlockMapper, InteriorBorder_All_Interface >
           handle( gv.comm(), blockMapper, pattern_);
         buildMaps( gv, handle );
       }
       else if( interface == InteriorBorder_InteriorBorder_Interface )
       {
-        PatternBuilder< CommunicationType, InteriorBorder_InteriorBorder_Interface >
+        PatternBuilder< CommunicationType, BlockMapper, InteriorBorder_InteriorBorder_Interface >
           handle( gv.comm(), blockMapper, pattern_);
         buildMaps( gv, handle );
       }
       else if( interface == All_All_Interface )
       {
-        PatternBuilder< CommunicationType, All_All_Interface >
+        PatternBuilder< CommunicationType, BlockMapper, All_All_Interface >
           handle( gv.comm(), blockMapper, pattern_);
         buildMaps( gv, handle );
       }
@@ -768,10 +760,10 @@ namespace Dune
     }
 
 
-    template< class BlockMapper >
-    template< class GridView, class Comm, InterfaceType CI >
-    inline void CommunicationPattern< BlockMapper >
-    :: buildMaps( const GridView& gv, PatternBuilder< Comm, CI > &handle )
+    template< class IndexType >
+    template< class GridView, class Comm, class BlockMapper, InterfaceType CI >
+    inline void CommunicationPattern< IndexType >
+    :: buildMaps( const GridView& gv, PatternBuilder< Comm, BlockMapper, CI > &handle )
     {
       pattern_.clear();
 
@@ -779,26 +771,27 @@ namespace Dune
       gv.communicate( handle, All_All_Interface , ForwardCommunication );
     }
 
-    template< class BlockMapper >
-    inline void CommunicationPattern< BlockMapper > :: checkConsistency()
+    template< class IndexType >
+    inline void CommunicationPattern< IndexType > :: checkConsistency()
     {
     }
 
-    template< class BlockMapper >
+    template< class IndexType >
     template< class Vector, class Operation >
-    inline void CommunicationPattern< BlockMapper >
+    inline void CommunicationPattern< IndexType >
     :: exchange( Vector &vector, const Operation& operation ) const
     {
       // create non-blocking communication object
-      NonBlockingCommunicationType nbc( *this );
+      NonBlockingCommunicationType nbc(*this);
 
       // perform send operation
-      nbc.send( vector );
+      nbc.send(vector);
 
       // store time for send and receive of data
-      exchangeTime_ = nbc.receive( vector, operation);
+      exchangeTime_ = nbc.receive(vector, operation);
     }
     //@}
 
 } // namespace Dune
+
 #endif // #ifndef DUNE_FEM_CACHED_COMMUNICATION_MANAGER_HHbuildMap
