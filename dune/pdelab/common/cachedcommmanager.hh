@@ -79,7 +79,7 @@ namespace Dune
       //! type of block mapper of discrete function space (may be the same for
       //! different space (i.e. various DG spaces)
         // typedef BlockMapper BlockMapperType;
-      using GlobalKeyType = IndexType; // typedef typename BlockMapperType :: GlobalKeyType
+      using Index = IndexType; // typedef typename BlockMapperType :: GlobalKeyType
 
     protected:
       typedef Dune::MPIHelper::MPICommunicator MPICommunicatorType;
@@ -335,7 +335,7 @@ namespace Dune
 
     public:
 
-      void setCommunicationPattern (Dune::MPIComm::CommunicationPattern<GlobalKeyType> /* TODO */)
+      void setCommunicationPattern (Dune::MPIComm::CommunicationPattern<Index> /* TODO */)
       {
       }
 
@@ -511,17 +511,17 @@ namespace Dune
       typedef Communication  CommunicationType;
       typedef BlockMapper    BlockMapperType;
 
-      typedef typename BlockMapperType::GlobalKeyType GlobalKeyType;
+      typedef typename BlockMapperType::GlobalKeyType Index;
 
-      typedef GlobalKeyType DataType;
+      typedef Index DataType;
       using Pattern = MPIComm::CommunicationPattern<DataType>;
 
     protected:
       const CommunicationType& comm_;
       const BlockMapperType &blockMapper_;
 
-      const GlobalKeyType myRank_;
-      const GlobalKeyType mySize_;
+      const Index myRank_;
+      const Index mySize_;
 
       Pattern &pattern_;
       // LinkStorageType &linkStorage_;
@@ -626,7 +626,7 @@ namespace Dune
 
           const unsigned int numDofs = blockMapper_.numEntityDofs( entity );
 
-          std::vector< GlobalKeyType > indices( numDofs );
+          std::vector< Index > indices( numDofs );
 
           // copy all global keys
           blockMapper_.obtainEntityDofs( entity, indices );
@@ -645,7 +645,7 @@ namespace Dune
         if( dataSize > 0 )
         {
           // read rank of other side
-          GlobalKeyType rank;
+          Index rank;
           buffer.read( rank );
           assert( (rank >= 0) && (rank < mySize_) );
 
@@ -655,10 +655,10 @@ namespace Dune
 
           // insert rank of link into set of links
           // linkStorage_.insert( rank );
-          pattern_[rank].rank = rank; // Dune::MPIComm::Link<GlobalKeyType>(rank); // TODO Index typ
+          pattern_[rank].rank = rank; // Dune::MPIComm::Link<Index>(rank); // TODO Index typ
 
           // read indices from stream
-          std::vector< GlobalKeyType > indices( dataSize - 1 );
+          std::vector< Index > indices( dataSize - 1 );
           for(size_t i=0; i<dataSize-1; ++i)
             buffer.read( indices[i] );
 
