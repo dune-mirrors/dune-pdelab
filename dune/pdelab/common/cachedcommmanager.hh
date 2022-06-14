@@ -77,7 +77,7 @@ namespace Dune
      * discrete function spaces, depending on the BlockMapper.
      */
     template< class IndexType >
-    class CommunicationPattern
+    class ExchangeCommunication
     {
     public:
       //! type of block mapper of discrete function space (may be the same for
@@ -108,7 +108,7 @@ namespace Dune
 
       class NonBlockingCommunication
       {
-        typedef CommunicationPattern < IndexType > CommunicationPatternType;
+        typedef ExchangeCommunication < IndexType > ExchangeCommunicationType;
 
         // create an unique tag for the communication
         DUNE_EXPORT static int getMessageTag()
@@ -128,7 +128,7 @@ namespace Dune
         }
 
       public:
-        NonBlockingCommunication( const CommunicationPatternType& dependencyCache )
+        NonBlockingCommunication( const ExchangeCommunicationType& dependencyCache )
           : dependencyCache_( dependencyCache ),
             exchangeTime_( 0.0 ),
             tag_( getMessageTag() )
@@ -247,7 +247,7 @@ namespace Dune
         }
 
       protected:
-        const CommunicationPatternType& dependencyCache_;
+        const ExchangeCommunicationType& dependencyCache_;
         typedef MPIPack BufferType;
         typedef MPIFuture< BufferType > FutureType;
 
@@ -273,7 +273,7 @@ namespace Dune
       /////////////////////////////////////////////////////////////////
 
       //! constructor taking communicator object
-      CommunicationPattern()
+      ExchangeCommunication()
       : pattern_(),
         comm_(),
         exchangeTime_( 0.0 ),
@@ -300,7 +300,7 @@ namespace Dune
       }
 
       // no copying
-      CommunicationPattern( const CommunicationPattern & ) = delete;
+      ExchangeCommunication( const ExchangeCommunication & ) = delete;
 
       // notify for open non-blocking communications
       void attachComm() const
@@ -397,7 +397,7 @@ namespace Dune
                               const Operation& operation ) const
       {
         static_assert( ! std::is_pointer< Operation > :: value,
-                       "CommunicationPattern::readBuffer: Operation needs to be a reference!");
+                       "ExchangeCommunication::readBuffer: Operation needs to be a reference!");
 
         // get index map of rank belonging to source
         // auto it = recvIndexMap_.find( source );
@@ -698,7 +698,7 @@ namespace Dune
 
     template< class IndexType >
     template< class Vector, class Operation >
-    inline void CommunicationPattern< IndexType >
+    inline void ExchangeCommunication< IndexType >
     :: exchange( Vector &vector, const Operation& operation ) const
     {
       // create non-blocking communication object
