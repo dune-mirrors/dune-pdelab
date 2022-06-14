@@ -76,7 +76,7 @@ namespace Dune
      * necessary anymore to exchange data. This class is singleton for different
      * discrete function spaces, depending on the BlockMapper.
      */
-    template< class IndexType >
+    template<typename IndexType>
     class ExchangeCommunication
     {
     public:
@@ -449,8 +449,7 @@ namespace Dune
 
       typedef typename BlockMapperType::GlobalKeyType Index;
 
-      typedef Index DataType;
-      using Pattern = MPIComm::CommunicationPattern<DataType>;
+      using Pattern = MPIComm::CommunicationPattern<Index>;
 
     protected:
       const CommunicationType& comm_;
