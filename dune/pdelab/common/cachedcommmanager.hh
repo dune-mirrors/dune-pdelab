@@ -36,32 +36,36 @@
 namespace Dune
 {
 
-    namespace MPIComm
+  namespace MPIComm
+  {
+
+    template<typename IndexType>
+    struct Link
     {
+      using Indices = std::vector< IndexType >;
+      int rank;
+      Indices recvIndices;
+      Indices sendIndices;
 
-        template<typename IndexType>
-        struct Link
-        {
-            using Indices = std::vector< IndexType >;
-            int rank;
-            Indices recvIndices;
-            Indices sendIndices;
+      Link () : rank(-1) {
+        assert(sendIndices.size() == 0);
+      }
+      Link (int r) : rank(r) {}
+    };
 
-            Link () : rank(-1) {
-                assert(sendIndices.size() == 0);
-            }
-            Link (int r) : rank(r) {}
-        };
+    // todo (1): add rank, sort by rank in Link
+    // todo (2): make this a lightweight object
+    template<typename IndexType>
+    using CommunicationPattern = std::map<int, Link<IndexType>>; // rank -> Link
 
-        // todo, add rank, sort by rank in Link
-        template<typename IndexType>
-        using CommunicationPattern = std::map<int, Link<IndexType>>; // rank -> Link
+  } // end namespace MPIComm
 
-    } // end namespace MPIComm
+  /** @addtogroup Communication Communication
+      @{
+  **/
 
-    /** @addtogroup Communication Communication
-        @{
-     **/
+  template< class Communication, class BlockMapper, InterfaceType CommInterface >
+  class PatternBuilder;
 
     /** \brief Handle "halo"-exchange between neighboring processes
      *
@@ -94,18 +98,10 @@ namespace Dune
 
       // exchange time
       mutable double exchangeTime_;
-      // setup time
-      mutable double buildTime_;
-
-      //! know grid sequence number
-      int sequence_;
 
       mutable int nonBlockingObjects_ ;
 
     protected:
-      template< class Communication, class BlockMapper, InterfaceType CommInterface >
-      class PatternBuilder;
-
       /////////////////////////////////////////////////////////////////
       //  begin NonBlockingCommunication
       /////////////////////////////////////////////////////////////////
@@ -281,8 +277,6 @@ namespace Dune
       : pattern_(),
         comm_(),
         exchangeTime_( 0.0 ),
-        buildTime_( 0.0 ),
-        sequence_( -1 ),
         nonBlockingObjects_( 0 )
       {
       }
@@ -335,59 +329,9 @@ namespace Dune
 
     public:
 
-      void setCommunicationPattern (Dune::MPIComm::CommunicationPattern<Index> /* TODO */)
+      void setCommunicationPattern (const Dune::MPIComm::CommunicationPattern<Index> & pattern)
       {
-      }
-
-      /** \brief Rebuild underlying exchange dof mapping.
-       *  \note: Different spaces may have the same exchange dof mapping!
-       */
-      template <class GridView, class BlockMapperType>
-      inline void rebuild( const GridView& gridView,
-                           const BlockMapperType& blockMapper,
-                           const InterfaceType interface,
-                           const bool force = true )
-      {
-        const auto& comm = gridView.comm();
-
-        // only in parallel we have to do something
-        if( comm.size() <= 1 ) return;
-
-        // make sure all non-blocking communications have been finished by now
-        assert( noOpenCommunications() );
-
-        // check whether grid has changed.
-        if( force )
-        {
-          // create communicator
-          init( comm );
-
-          // take timer needed for rebuild
-          Dune::Timer buildTime;
-
-          // rebuild maps holding exchange dof information
-          buildMaps( gridView, blockMapper, interface );
-
-          // store time needed
-          buildTime_ = buildTime.elapsed();
-        }
-
-        // for (int r = 0; r < gridView.comm().size(); r++)
-        // {
-        //     if (r == gridView.comm().rank())
-        //         for (auto && link : pattern_)
-        //         {
-        //             int rank = link.first;
-        //             const auto & Old = sendIndexMap_[rank];
-        //             const auto & New = link.second.sendIndices;
-        //             assert(Old.size() == New.size());
-        //             for (int i=0; i<Old.size(); i++)
-        //                 std::cout << gridView.comm().rank() << "/" << rank << " ::::::: "
-        //                           << Old[i] << " <-> " << New[i]
-        //                           << std::endl;
-        //         }
-        //     gridView.comm().barrier();
-        // }
+        pattern_ = pattern;
       }
 
       //! exchange data of discrete function
@@ -412,12 +356,6 @@ namespace Dune
       // build linkage and index maps
       template < class GridView, class BlockMapper >
       inline void buildMaps( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface );
-
-      // check consistency of maps
-      inline void checkConsistency();
-
-      template< class GridView, class Comm, class BlockMapper, InterfaceType CI >
-      inline void buildMaps( const GridView& gv, PatternBuilder< Comm, BlockMapper, CI > &handle );
 
     protected:
       // serialize data of DataImp& vector to object stream
@@ -500,12 +438,10 @@ namespace Dune
      *    void mapEntityDofs( entity, std::vector< GlobalKey >& indices ) which fills a vector with global keys (vector indices) of the dofs
      *
      */
-    template< class IndexType >
     template< class Communication, class BlockMapper, InterfaceType CommInterface >
-    class CommunicationPattern< IndexType > :: PatternBuilder
-    : public CommDataHandleIF
-    < PatternBuilder< Communication, BlockMapper, CommInterface >,
-      IndexType /* we currently assume that the rank can be sent in the same format as the indices */ >
+    class PatternBuilder :
+    public CommDataHandleIF< PatternBuilder< Communication, BlockMapper, CommInterface >,
+                             typename BlockMapper::GlobalKeyType /* we currently assume that the rank can be sent in the same format as the indices */ >
     {
     public:
       typedef Communication  CommunicationType;
@@ -727,53 +663,37 @@ namespace Dune
 
 
 
-    template< class IndexType >
     template< class GridView, class BlockMapper >
-    inline void CommunicationPattern< IndexType > :: buildMaps( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface )
+    Dune::MPIComm::CommunicationPattern<typename BlockMapper::GlobalKeyType>
+    buildCommunicationPatternFromMapper( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface )
     {
-        // TODO replace by switchCases(const Cases& cases, const Value& value, Branches&& branches)
+      Dune::MPIComm::CommunicationPattern<typename BlockMapper::GlobalKeyType> pattern;
+      // TODO replace by switchCases(const Cases& cases, const Value& value, Branches&& branches)
       typedef typename GridView::CollectiveCommunication CommunicationType;
       if( interface == InteriorBorder_All_Interface )
       {
         PatternBuilder< CommunicationType, BlockMapper, InteriorBorder_All_Interface >
-          handle( gv.comm(), blockMapper, pattern_);
-        buildMaps( gv, handle );
+          handle( gv.comm(), blockMapper, pattern);
+        // make one all to all communication to build up communication pattern
+        gv.communicate( handle, All_All_Interface , ForwardCommunication );
       }
       else if( interface == InteriorBorder_InteriorBorder_Interface )
       {
         PatternBuilder< CommunicationType, BlockMapper, InteriorBorder_InteriorBorder_Interface >
-          handle( gv.comm(), blockMapper, pattern_);
-        buildMaps( gv, handle );
+          handle( gv.comm(), blockMapper, pattern);
+        // make one all to all communication to build up communication pattern
+        gv.communicate( handle, All_All_Interface , ForwardCommunication );
       }
       else if( interface == All_All_Interface )
       {
         PatternBuilder< CommunicationType, BlockMapper, All_All_Interface >
-          handle( gv.comm(), blockMapper, pattern_);
-        buildMaps( gv, handle );
+          handle( gv.comm(), blockMapper, pattern);
+        // make one all to all communication to build up communication pattern
+        gv.communicate( handle, All_All_Interface , ForwardCommunication );
       }
       else
         DUNE_THROW( NotImplemented, "CommunicationPattern for the given interface has not been implemented, yet." );
-#ifndef NDEBUG
-      // checks that sizes of index maps are equal on sending and receiving proc
-      checkConsistency();
-#endif
-    }
-
-
-    template< class IndexType >
-    template< class GridView, class Comm, class BlockMapper, InterfaceType CI >
-    inline void CommunicationPattern< IndexType >
-    :: buildMaps( const GridView& gv, PatternBuilder< Comm, BlockMapper, CI > &handle )
-    {
-      pattern_.clear();
-
-      // make one all to all communication to build up communication pattern
-      gv.communicate( handle, All_All_Interface , ForwardCommunication );
-    }
-
-    template< class IndexType >
-    inline void CommunicationPattern< IndexType > :: checkConsistency()
-    {
+      return pattern;
     }
 
     template< class IndexType >

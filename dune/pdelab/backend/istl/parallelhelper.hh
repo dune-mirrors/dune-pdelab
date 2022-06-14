@@ -131,8 +131,14 @@ namespace Dune {
           if (useCaches)
           {
             DOFMapper dofmapper(gfs);
-            _all_all_comm.rebuild(_gfs.gridView(), dofmapper, All_All_Interface);
-            _interiorBorder_all_comm.rebuild(_gfs.gridView(), dofmapper, InteriorBorder_All_Interface);
+            auto all_all_pattern =
+              buildCommunicationPatternFromMapper(_gfs.gridView(), dofmapper, All_All_Interface);
+            _all_all_comm.init(_gfs.gridView().comm());
+            _all_all_comm.setCommunicationPattern(all_all_pattern);
+            auto interiorBorder_all_pattern =
+              buildCommunicationPatternFromMapper(_gfs.gridView(), dofmapper, InteriorBorder_All_Interface);
+            _interiorBorder_all_comm.init(_gfs.gridView().comm());
+            _interiorBorder_all_comm.setCommunicationPattern(interiorBorder_all_pattern);
           }
 
           if (_gfs.gridView().comm().size()>1)
