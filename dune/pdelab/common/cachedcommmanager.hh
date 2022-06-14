@@ -46,129 +46,18 @@ namespace Dune
             int rank;
             Indices recvIndices;
             Indices sendIndices;
+
+            Link () : rank(-1) {
+                assert(sendIndices.size() == 0);
+            }
+            Link (int r) : rank(r) {}
         };
 
+        // todo, add rank, sort by rank in Link
         template<typename IndexType>
-        using CommunicationPattern = std::set<Link<IndexType>>;
-
-        class CachedNeighborCommunication
-        {
-        };
-
-#if 0
-        /** \brief CommunicationPattern is a convenience class to build up a map
-         * of all dofs of entities to be exchanged during a communication procedure.
-         * This speeds up the communication procedure, because no grid traversal is
-         * necessary anymore to exchange data. This class is singleton for different
-         * discrete function spaces, depending on the BlockMapper.
-         */
-        template<typename ContainerIndex>
-        class CommunicationPattern
-        {
-        public:
-            using IndexList = std::vector< ContainerIndex >;
-
-            // type of IndexMapVector (associating a rank with the corresponding communication info)
-            using IndexListMap = std::map<int, IndexList>;
-
-            // type of set of links
-            typedef std::set< int > LinkStorageType;
-
-            typedef Dune::MPIHelper::MPICommunicator MPICommunicatorType;
-            typedef Dune::Communication< MPICommunicatorType > CommunicationType;
-
-        protected:
-            LinkStorageType linkStorage_;
-
-            IndexVectorMapType  recvIndexMap_;
-            IndexVectorMapType  sendIndexMap_;
-
-            // ALUGrid communicator Class
-            std::unique_ptr< CommunicationType > comm_;
-
-        public:
-
-            //! constructor taking communicator object
-            CommunicationPattern()
-                : linkStorage_(),
-                  recvIndexMap_(),
-                  sendIndexMap_(),
-                  comm_()
-            {
-            }
-
-            template <class Communication>
-            void init( const Communication& comm )
-            {
-                if( ! comm_ )
-                {
-                    comm_.reset( new CommunicationType( comm ) );
-                }
-            }
-
-            const std::set< int >& linkStorage() const { return linkStorage_; }
-
-            operator bool() const
-            {
-                return linkStorage_.size() > 0;
-            }
-
-            // no copying
-            CommunicationPattern( const CommunicationPattern & ) = delete;
-
-            size_t recvBufferSize( const int rank ) const
-            {
-                auto it = recvIndexMap_.find( rank );
-                const auto &indexMap = it->second;
-                return indexMap.size();
-            }
-
-        public:
-
-            void setCommunicationPattern (...)
-            {
-            }
-
-        };
-#endif
+        using CommunicationPattern = std::map<int, Link<IndexType>>; // rank -> Link
 
     } // end namespace MPIComm
-} // end namespace Dune
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
-
-namespace Dune
-{
 
     /** @addtogroup Communication Communication
         @{
@@ -202,6 +91,9 @@ namespace Dune
       typedef Dune::Communication< MPICommunicatorType > CommunicationType;
 
     protected:
+
+      MPIComm::CommunicationPattern<GlobalKeyType> pattern_;
+
       LinkStorageType linkStorage_;
 
       IndexVectorMapType  recvIndexMap_;
@@ -221,9 +113,7 @@ namespace Dune
       mutable int nonBlockingObjects_ ;
 
     protected:
-      template< class Communication, class LinkStorage,
-                class IndexMapVector, InterfaceType CommInterface >
-      class PatternBuilder;
+      template< class Communication, InterfaceType CommInterface > class PatternBuilder;
 
       /////////////////////////////////////////////////////////////////
       //  begin NonBlockingCommunication
@@ -287,9 +177,11 @@ namespace Dune
 
           const auto& comm = dependencyCache_.comm();
 
-          auto& linkStorage = dependencyCache_.linkStorage();
-          for( const auto& dest : linkStorage )
+          auto& pattern = dependencyCache_.pattern();
+          // for( const auto& dest : linkStorage )
+          for( auto& link : pattern )
           {
+            int dest = link.first;
             BufferType buffer( comm );
             pack( dest, buffer, data);
             sendFutures_.insert( std::make_pair( dest, comm.isend(std::move(buffer), dest, tag_) ) );
@@ -314,8 +206,9 @@ namespace Dune
           const size_t dataSize = static_cast< std::size_t >( blockSize * sizeof( DofType ) );
 
           const auto& comm = dependencyCache_.comm();
-          for( const auto& source : dependencyCache_.linkStorage() )
+          for( const auto& link : dependencyCache_.pattern() )
           {
+            int source = link.first;
             const size_t bufSize = dependencyCache_.recvBufferSize( source ) * dataSize;
             recvFutures_.insert( std::make_pair( source, comm.irecv( BufferType(comm, bufSize), source, tag_ ) ) );
             //auto buffer = comm.rrecv( BufferType(comm), source, tag_ );
@@ -394,9 +287,7 @@ namespace Dune
 
       //! constructor taking communicator object
       CommunicationPattern()
-      : linkStorage_(),
-        recvIndexMap_(),
-        sendIndexMap_(),
+      : pattern_(),
         comm_(),
         exchangeTime_( 0.0 ),
         buildTime_( 0.0 ),
@@ -414,11 +305,13 @@ namespace Dune
         }
       }
 
-      const std::set< int >& linkStorage() const { return linkStorage_; }
+      auto& pattern() { return pattern_; }
+
+      const auto& pattern() const { return pattern_; }
 
       operator bool() const
       {
-        return linkStorage_.size() > 0;
+        return pattern_.size() > 0;
       }
 
       // no copying
@@ -444,16 +337,16 @@ namespace Dune
 
       size_t recvBufferSize( const int rank ) const
       {
-        auto it = recvIndexMap_.find( rank );
-        const auto &indexMap = it->second;
+        auto it = pattern_.find( rank );
+        const auto &indexMap = it->second.recvIndices;
         return indexMap.size();
       }
 
     public:
 
-        void setCommunicationPattern (Dune::MPIComm::CommunicationPattern<GlobalKeyType> /* TODO */)
-        {
-        }
+      void setCommunicationPattern (Dune::MPIComm::CommunicationPattern<GlobalKeyType> /* TODO */)
+      {
+      }
 
       /** \brief Rebuild underlying exchange dof mapping.
        *  \note: Different spaces may have the same exchange dof mapping!
@@ -487,6 +380,23 @@ namespace Dune
           // store time needed
           buildTime_ = buildTime.elapsed();
         }
+
+        // for (int r = 0; r < gridView.comm().size(); r++)
+        // {
+        //     if (r == gridView.comm().rank())
+        //         for (auto && link : pattern_)
+        //         {
+        //             int rank = link.first;
+        //             const auto & Old = sendIndexMap_[rank];
+        //             const auto & New = link.second.sendIndices;
+        //             assert(Old.size() == New.size());
+        //             for (int i=0; i<Old.size(); i++)
+        //                 std::cout << gridView.comm().rank() << "/" << rank << " ::::::: "
+        //                           << Old[i] << " <-> " << New[i]
+        //                           << std::endl;
+        //         }
+        //     gridView.comm().barrier();
+        // }
       }
 
       //! exchange data of discrete function
@@ -515,8 +425,8 @@ namespace Dune
       // check consistency of maps
       inline void checkConsistency();
 
-      template< class GridView, class Comm, class LS, class IMV, InterfaceType CI >
-      inline void buildMaps( const GridView& gv, PatternBuilder< Comm, LS, IMV, CI > &handle );
+      template< class GridView, class Comm, InterfaceType CI >
+      inline void buildMaps( const GridView& gv, PatternBuilder< Comm, CI > &handle );
 
     protected:
       // serialize data of DataImp& vector to object stream
@@ -526,8 +436,10 @@ namespace Dune
                                Buffer &buffer,
                                const Data &data ) const
       {
-        auto it = sendIndexMap_.find( dest );
-        const auto &indexMap = it->second;
+        // auto it = sendIndexMap_.find( dest );
+        // const auto &indexMap = it->second;
+        auto it = pattern_.find( dest );
+        const auto &indexMap = it->second.sendIndices;
         const int size = indexMap.size();
 
         //typedef typename Data :: DofType DofType;
@@ -559,8 +471,10 @@ namespace Dune
                        "CommunicationPattern::readBuffer: Operation needs to be a reference!");
 
         // get index map of rank belonging to source
-        auto it = recvIndexMap_.find( source );
-        const auto &indexMap = it->second;
+        // auto it = recvIndexMap_.find( source );
+        // const auto &indexMap = it->second;
+        auto it = pattern_.find( source );
+        const auto &indexMap = it->second.recvIndices;
 
         const int size = indexMap.size();
 
@@ -596,10 +510,10 @@ namespace Dune
      *
      */
     template< class BlockMapper >
-    template< class Communication, class LinkStorage, class IndexVectorMap, InterfaceType CommInterface >
+    template< class Communication, InterfaceType CommInterface >
     class CommunicationPattern< BlockMapper > :: PatternBuilder
     : public CommDataHandleIF
-      < PatternBuilder< Communication, LinkStorage, IndexVectorMap, CommInterface >,
+      < PatternBuilder< Communication, CommInterface >,
         typename BlockMapperType::GlobalKeyType /* we currently assume that the rank can be sent in the same format as the indices */ >
     {
     public:
@@ -608,10 +522,8 @@ namespace Dune
 
       typedef typename BlockMapperType::GlobalKeyType GlobalKeyType;
 
-      typedef LinkStorage LinkStorageType;
-      typedef IndexVectorMap IndexVectorMapType;
-
       typedef GlobalKeyType DataType;
+      using Pattern = MPIComm::CommunicationPattern<DataType>;
 
     protected:
       const CommunicationType& comm_;
@@ -620,25 +532,21 @@ namespace Dune
       const GlobalKeyType myRank_;
       const GlobalKeyType mySize_;
 
-      LinkStorageType &linkStorage_;
-
-      IndexVectorMapType &sendIndexMap_;
-      IndexVectorMapType &recvIndexMap_;
+      Pattern &pattern_;
+      // LinkStorageType &linkStorage_;
+      // IndexVectorMapType &sendIndexMap_;
+      // IndexVectorMapType &recvIndexMap_;
 
 
     public:
       PatternBuilder( const CommunicationType& comm,
-                   const BlockMapperType& blockMapper,
-                   LinkStorageType &linkStorage,
-                   IndexVectorMapType &sendIdxMap,
-                   IndexVectorMapType &recvIdxMap )
+                      const BlockMapperType& blockMapper,
+                      Pattern &pattern )
       : comm_( comm ),
         blockMapper_( blockMapper ),
         myRank_( comm.rank() ),
         mySize_( comm.size() ),
-        linkStorage_( linkStorage ),
-        sendIndexMap_( sendIdxMap ),
-        recvIndexMap_( recvIdxMap )
+        pattern_( pattern )
       {}
 
     protected:
@@ -649,22 +557,25 @@ namespace Dune
 
         std::map< int, FutureType > recvFutures, sendFutures;
 
-        for( const auto& dest : linkStorage_ )
+        for( const auto& link : pattern_ )
         {
+          auto dest = link.first;
+          auto& sendIndexMap_ = link.second.sendIndices;
           BufferType buffer( comm_ );
-          buffer << sendIndexMap_[ dest ];
+          buffer << sendIndexMap_; // [ dest ];
           //sendFutures.insert( std::make_pair( dest, comm_.isend(std::move(buffer), dest, 123) ) );
           comm_.send(buffer, dest, 124);
         }
 
-        for( const auto& source : linkStorage_ )
+        for( auto& link : pattern_ )
         {
+          auto source = link.first;
           //recvFutures.insert( std::make_pair( source, comm_.irecv( BufferType(comm_), source, 123 ) ) );
           auto buffer = comm_.rrecv( BufferType(comm_), source, 124 );
-          auto& indices = sendIndexMap_[ source ];
+          auto& indices = link.second.sendIndices;
+          // auto& indices = sendIndexMap_[ source ];
           buffer >> indices;
         }
-
 
         /*
         for( auto& [rank, future] : recvFutures )
@@ -752,7 +663,8 @@ namespace Dune
           const bool receive = EntityCommHelper< CommInterface > :: receive( myPartitionType );
 
           // insert rank of link into set of links
-          linkStorage_.insert( rank );
+          // linkStorage_.insert( rank );
+          pattern_[rank].rank = rank; // Dune::MPIComm::Link<GlobalKeyType>(rank); // TODO Index typ
 
           // read indices from stream
           std::vector< GlobalKeyType > indices( dataSize - 1 );
@@ -772,7 +684,8 @@ namespace Dune
 
             // if data has been send and we are receive entity
             // then insert indices into send map of rank
-            insert( sendIndexMap_[rank], indices );
+            insert( pattern_[rank].sendIndices, indices );
+            // insert( sendIndexMap_[rank], indices );
 
             // resize vector
             indices.resize( blockMapper_.numEntityDofs( entity ) );
@@ -781,7 +694,8 @@ namespace Dune
             // copy all global keys
             blockMapper_.obtainEntityDofs( entity, indices );
 
-            insert( recvIndexMap_[rank], indices );
+            insert( pattern_[rank].recvIndices, indices );
+            // insert( recvIndexMap_[rank], indices );
           }
         }
       }
@@ -792,6 +706,7 @@ namespace Dune
         {
           const size_t size = indices.size();
           size_t count = idxMap.size();
+          // std::cout << myRank_ << "\tInsert2 " << count << std::endl;
 
           // reserve memory
           idxMap.resize( count + size );
@@ -824,31 +739,24 @@ namespace Dune
     template< class GridView >
     inline void CommunicationPattern< BlockMapper > :: buildMaps( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface )
     {
+        // TODO replace by switchCases(const Cases& cases, const Value& value, Branches&& branches)
       typedef typename GridView::CollectiveCommunication CommunicationType;
       if( interface == InteriorBorder_All_Interface )
       {
-        PatternBuilder< CommunicationType, LinkStorageType, IndexVectorMapType,
-                     InteriorBorder_All_Interface >
-          handle( gv.comm(),
-                  blockMapper,
-                  linkStorage_, sendIndexMap_, recvIndexMap_ );
+        PatternBuilder< CommunicationType, InteriorBorder_All_Interface >
+          handle( gv.comm(), blockMapper, pattern_);
         buildMaps( gv, handle );
       }
       else if( interface == InteriorBorder_InteriorBorder_Interface )
       {
-        PatternBuilder< CommunicationType, LinkStorageType, IndexVectorMapType,
-                     InteriorBorder_InteriorBorder_Interface >
-          handle( gv.comm(),
-                  blockMapper,
-                  linkStorage_, sendIndexMap_, recvIndexMap_ );
+        PatternBuilder< CommunicationType, InteriorBorder_InteriorBorder_Interface >
+          handle( gv.comm(), blockMapper, pattern_);
         buildMaps( gv, handle );
       }
       else if( interface == All_All_Interface )
       {
-        PatternBuilder< CommunicationType, LinkStorageType, IndexVectorMapType, All_All_Interface >
-          handle( gv.comm(),
-                  blockMapper,
-                  linkStorage_, sendIndexMap_, recvIndexMap_ );
+        PatternBuilder< CommunicationType, All_All_Interface >
+          handle( gv.comm(), blockMapper, pattern_);
         buildMaps( gv, handle );
       }
       else
@@ -861,17 +769,11 @@ namespace Dune
 
 
     template< class BlockMapper >
-    template< class GridView, class Comm, class LS, class IMV, InterfaceType CI >
+    template< class GridView, class Comm, InterfaceType CI >
     inline void CommunicationPattern< BlockMapper >
-    :: buildMaps( const GridView& gv, PatternBuilder< Comm, LS, IMV, CI > &handle )
+    :: buildMaps( const GridView& gv, PatternBuilder< Comm, CI > &handle )
     {
-      linkStorage_.clear();
-      const size_t size = recvIndexMap_.size();
-      for( size_t i = 0; i < size; ++i )
-      {
-        recvIndexMap_[ i ].clear();
-        sendIndexMap_[ i ].clear();
-      }
+      pattern_.clear();
 
       // make one all to all communication to build up communication pattern
       gv.communicate( handle, All_All_Interface , ForwardCommunication );
@@ -899,4 +801,4 @@ namespace Dune
     //@}
 
 } // namespace Dune
-#endif // #ifndef DUNE_FEM_CACHED_COMMUNICATION_MANAGER_HH
+#endif // #ifndef DUNE_FEM_CACHED_COMMUNICATION_MANAGER_HHbuildMap
