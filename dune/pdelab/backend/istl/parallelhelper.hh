@@ -101,7 +101,7 @@ namespace Dune {
 
       public:
 
-        inline static bool useCaches = true;
+        inline static bool useCaches = false;
 
         ParallelHelper (const GFS& gfs, int verbose = 1)
           : _gfs(gfs)
