@@ -7,7 +7,6 @@
 #include <vector>
 
 #include <dune/common/parallel/mpihelper.hh>
-#include <dune/common/std/make_array.hh>
 #include <dune/grid/yaspgrid.hh>
 
 #include <dune/localfunctions/lagrange.hh>
@@ -54,7 +53,6 @@ int test_variable_fem (const GV& gv, const Backend & backend, const OrderingTag 
     // paranoia check of size
     const auto & v = Dune::PDELab::Backend::native(x);
     int BCxBS = v.size() * v[0].size();
-    int expected = 4*8*9;
     std::cout << "  vector " << Dune::className(v) << "\n"
             << "     with " << v.size() << " blocks of size " << v[0].size() << "\n"
             << "     => " << BCxBS << " entries\n"
