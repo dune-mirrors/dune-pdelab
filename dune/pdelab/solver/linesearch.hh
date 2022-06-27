@@ -168,6 +168,42 @@ namespace Dune::PDELab
                     << lambda << std::endl;
     }
 
+  /** \brief Projected line search
+   *
+   * Projects the solution to the feasible region. The projection is
+   * user-defined lambda and passed as constructor argument.
+   *
+   * Can be passed to the solver via setLineSearch method.
+   */
+  template <typename Solver, typename Projection>
+  class LineSearchProjectedNone : public LineSearchInterface<typename Solver::Domain>
+  {
+  public:
+    using Domain = typename Solver::Domain;
+    using Real = typename Solver::Real;
+
+    LineSearchProjectedNone(Solver& solver, const Projection projection) : _solver(solver) {}
+
+    //! Do line search (in this case just update the solution)
+    virtual void lineSearch(Domain& solution, const Domain& correction) override
+    {
+      solution.axpy(-1.0, correction);
+      _projection(solution); // project the solution candidate to the feasible region
+      _solver.updateDefect(solution);
+    }
+
+    virtual void setParameters(const ParameterTree&) override {}
+
+    // print line search type
+    virtual void printParameters() const override
+    {
+      std::cout << "LineSearch.Type........... ProjectedNone" << std::endl;
+    }
+
+  private:
+    Solver& _solver;
+    const Projection& _projection;
+  };
 
     /* \brief Set parameters
      *
@@ -234,6 +270,8 @@ namespace Dune::PDELab
         return LineSearchStrategy::hackbuschReusken;
       if (name == "hackbuschReuskenAcceptBest")
         return LineSearchStrategy::hackbuschReuskenAcceptBest;
+      if (name == "projectedNoLineSearch")
+        return LineSearchStrategy::projectedNoLineSearch;
       DUNE_THROW(Exception,"Unkown line search strategy: " << name);
     }
   }
@@ -265,6 +303,11 @@ namespace Dune::PDELab
       auto lineSearch = std::make_shared<LineSearchHackbuschReusken<Solver>> (solver, true);
       std::cout << "Warning: linesearch hackbuschReuskenAcceptBest is deprecated and will be removed after PDELab 2.7.\n"
                 << "         Please use 'hackbuschReusken' and add the parameter 'LineSearchAcceptBest : true'";
+      return lineSearch;
+    }
+    if (strategy == LineSearchStrategy::projectedNoLineSearch){
+      std::cout << "Projected line search requires loading via setLineSearch method. Using LineSearchNone till then." << std::endl;
+      auto lineSearch = std::make_shared<LineSearchNone<Solver>> (solver);
       return lineSearch;
     }
     DUNE_THROW(Exception,"Unkown line search strategy");
