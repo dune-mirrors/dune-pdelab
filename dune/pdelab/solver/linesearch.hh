@@ -182,7 +182,7 @@ namespace Dune::PDELab
     using Domain = typename Solver::Domain;
     using Real = typename Solver::Real;
 
-    LineSearchProjectedNone(Solver& solver, const Projection projection) : _solver(solver) {}
+    LineSearchProjectedNone(Solver& solver, const Projection& projection) : _solver(solver), _projection(projection) {}
 
     //! Do line search (in this case just update the solution)
     virtual void lineSearch(Domain& solution, const Domain& correction) override
