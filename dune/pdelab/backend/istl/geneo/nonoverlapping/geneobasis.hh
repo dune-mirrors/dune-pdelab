@@ -82,40 +82,34 @@ namespace Dune {
         arpack.computeGenNonSymMinMagnitude(ovlp_mat, eps, eigenvectors, eigenvalues, shift);
         std::cout << " done" << std::endl;
 
-        Dune::BlockVector<Dune::FieldVector<double, 1>> export_eigenvalues(nev_arpack);
-        // Dune::BlockVector<Dune::FieldVector<double, 1>> error(nev_arpack);
+        // Dune::BlockVector<Dune::FieldVector<double, 1>> export_eigenvalues(nev_arpack);
+        // // Dune::BlockVector<Dune::FieldVector<double, 1>> error(nev_arpack);
 
-        for(int g =0; g<nev_arpack; g++){
-          // Vector left(A_extended->N()), right(A_extended->N());
-          // A_extended->mv(eigenvectors[g],left);
-          // ovlp_mat.mv(eigenvectors[g],right);
-          // right *= eigenvalues[g];
+        // for(int g =0; g<nev_arpack; g++){
+        //   // Vector left(A_extended->N()), right(A_extended->N());
+        //   // A_extended->mv(eigenvectors[g],left);
+        //   // ovlp_mat.mv(eigenvectors[g],right);
+        //   // right *= eigenvalues[g];
 
-          // double L2 = 0.0;
-          // for (int i=0; i< A_extended->N(); i++) {
-          //   double local_dist=0.0;
-          //   local_dist += (right[i][0] - left[i][0])*(right[i][0] - left[i][0]);
-          //   local_dist += (right[i][1] - left[i][1])*(right[i][1] - left[i][1]);
-          //   local_dist += (right[i][2] - left[i][2])*(right[i][2] - left[i][2]);
-          //   L2 += local_dist;
-          // }
-          // L2 = sqrt(L2);
-          // std::cout << "Subdomain : " << adapter.gridView().comm().rank() << " ==> L2 error norm EV " << g << " : " << L2 << std::endl;
-          // std::cout << "EValue: " << eigenvalues[g] << std::endl;
-          export_eigenvalues[g] = eigenvalues[g];
-          // error[g] = L2;
-        }
+        //   // double L2 = 0.0;
+        //   // for (int i=0; i< A_extended->N(); i++) {
+        //   //   double local_dist=0.0;
+        //   //   local_dist += (right[i][0] - left[i][0])*(right[i][0] - left[i][0]);
+        //   //   local_dist += (right[i][1] - left[i][1])*(right[i][1] - left[i][1]);
+        //   //   local_dist += (right[i][2] - left[i][2])*(right[i][2] - left[i][2]);
+        //   //   L2 += local_dist;
+        //   // }
+        //   // L2 = sqrt(L2);
+        //   // std::cout << "Subdomain : " << adapter.gridView().comm().rank() << " ==> L2 error norm EV " << g << " : " << L2 << std::endl;
+        //   // std::cout << "EValue: " << eigenvalues[g] << std::endl;
+        //   export_eigenvalues[g] = eigenvalues[g];
+        //   // error[g] = L2;
+        // }
 
-        std::string filename_eigenvalues = "Offline/" + std::to_string(adapter.gridView().comm().rank()) + "_" + std::to_string(nev_arpack) + "_GenEO-eigenvalues.mm";
-        Dune::storeMatrixMarket(export_eigenvalues, filename_eigenvalues, 15);
+        // std::string filename_eigenvalues = "Offline/" + std::to_string(adapter.gridView().comm().rank()) + "_" + std::to_string(nev_arpack) + "_GenEO-eigenvalues.mm";
+        // Dune::storeMatrixMarket(export_eigenvalues, filename_eigenvalues, 15);
         // std::string filename_error = "Offline/" + std::to_string(adapter.gridView().comm().rank()) + "_" + std::to_string(nev_arpack) + "_GenEO-error.mm";
         // Dune::storeMatrixMarket(error, filename_error, 15);
-
-
-
-
-
-
 
 
         // Count eigenvectors below threshold
@@ -127,14 +121,16 @@ namespace Dune {
               break;
             }
           }
-          if (verbose > 0)
-            std::cout << "Process " << adapter.gridView().comm().rank() << " picked " << cnt << " eigenvectors" << std::endl;
+          // if (verbose > 0)
+          std::cout << "Process " << adapter.gridView().comm().rank() << " picked " << cnt << " eigenvectors" << std::endl;
           if (cnt == -1)
             cnt = nev;
             // DUNE_THROW(Dune::Exception,"No eigenvalue above threshold - not enough eigenvalues computed!");
         } else {
           cnt = nev;
         }
+
+        // std::cout << adapter.gridView().comm().rank() << " ici." << std::endl;
 
         // Write results to basis
         this->local_basis.resize(cnt);
@@ -148,6 +144,8 @@ namespace Dune {
           }
         }
 
+        // std::cout << adapter.gridView().comm().rank() << " wrote results to basis." << std::endl;
+
         // Normalize basis vectors
         for (auto& v : this->local_basis) {
           *v *= 1.0 / v->two_norm2();
@@ -159,6 +157,8 @@ namespace Dune {
           this->local_basis.insert (this->local_basis.begin(), std::make_shared<Vector>(*part_unity));
           this->local_basis.pop_back();
         }
+
+        std::cout << adapter.gridView().comm().rank() << " have added PoU in the basis." << std::endl;
       }
     };
 

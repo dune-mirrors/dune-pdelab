@@ -685,9 +685,12 @@ namespace ArpackMLGeneo
       // define what we need: eigenvalues with smallest magnitude
       char which[] = "LM";
 
+      Real* initResid = new Real[A.nrows()];
+      for(int i=0; i<A.nrows(); i++){initResid[i] = 1e-5;}
+
       // Solve problem as a standard EV problem with own shift_invert
       ARSymGenEig<Real,WrappedMatrix,WrappedMatrix>
-        dprob('S',nrows, nev, &A, &WrappedMatrix::multMv, &A, &WrappedMatrix::multMvB, sigma, which, ncv, tol, maxit);
+        dprob('S',nrows, nev, &A, &WrappedMatrix::multMv, &A, &WrappedMatrix::multMvB, sigma, which, ncv, tol, maxit, initResid);
 
       // set ARPACK verbosity mode if requested
       if (verbosity_level_ > 3) dprob.Trace();
@@ -697,6 +700,19 @@ namespace ArpackMLGeneo
       auto ev_data = ev.data();
       auto ev_imag_data = ev_imag.data();
       dprob.Eigenvalues(ev_data,ev_imag_data,ivec);
+
+      // std::vector<float>* Resid = dprob.ResidualVector(0);
+
+      // Print the residual vector
+      // std::cout << "Size of the residual: " << dprob.GetN() << std::endl;
+      // std::cout << "A.nrows(): " << A.nrows() << std::endl;
+      // std::cout << "Residual vector: " << std::endl;
+      // for(int i=0; i<dprob.GetN(); i++){
+      //   std::cout << dprob.ResidualVector(i) << std::endl;
+      // }
+
+      delete[] initResid;
+
 
       // std::cout << "raw eigenvalues from APP:" << std::endl;
       // for (int i=0; i<nev; i++)

@@ -68,14 +68,16 @@ namespace Dune {
         std::shared_ptr<Matrix> A_overlap_extended = std::get<1>(geneo_matrices);
         std::shared_ptr<Vector> part_unity = std::get<2>(geneo_matrices);
 
-        auto subdomainbasis = std::make_shared<Dune::PDELab::NonoverlappingGenEOBasis<GO, Matrix, Vector>>(adapter, A_extended, A_overlap_extended, part_unity, eigenvalue_threshold, nev, nev_arpack, shift);
+        auto subdomainbasis = std::make_shared<Dune::PDELab::NonoverlappingGenEOBasis<GO, Matrix, Vector>>(adapter, A_extended, A_overlap_extended, part_unity, eigenvalue_threshold, nev, nev_arpack, shift, true);
 
-        // MPI_Barrier(gv.comm());
+        // std::cout << adapter.gridView().comm().rank() << " before the coarse space construction." << std::endl;
 
         // auto coarse_space = std::make_shared<Dune::PDELab::NonoverlappingSubdomainProjectedCoarseSpaceHeldByRank0<GV, Matrix, Vector>>(adapter, gv, *A_extended, subdomainbasis, verbose);
         auto coarse_space = std::make_shared<Dune::PDELab::NonoverlappingSubdomainProjectedCoarseSpace<GV, Matrix, Vector>>(adapter, gv, *A_extended, subdomainbasis, verbose);
+        std::cout << adapter.gridView().comm().rank() << " have built the coarse space." << std::endl;
 
-        prec = std::make_shared<Dune::PDELab::ISTL::NonoverlappingTwoLevelOverlappingAdditiveSchwarz<GV, Matrix, Vector>>(adapter, A_extended, *part_unity, coarse_space, true, verbose);
+        prec = std::make_shared<Dune::PDELab::ISTL::NonoverlappingTwoLevelOverlappingAdditiveSchwarz<GV, Matrix, Vector>>(adapter, A_extended, *part_unity, coarse_space, true);
+        std::cout << adapter.gridView().comm().rank() << " prec initialized." << std::endl;
 
       }
 
