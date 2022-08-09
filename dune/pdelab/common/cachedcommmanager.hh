@@ -64,8 +64,8 @@ namespace Dune
       @{
   **/
 
-  template< class Communication, class BlockMapper, InterfaceType CommInterface >
-  class PatternBuilder;
+    template< class Communication, class BlockMapper, InterfaceType CommInterface >
+    class PatternBuilder;
 
     /** \brief Handle "halo"-exchange between neighboring processes
      *
@@ -455,8 +455,8 @@ namespace Dune
       const CommunicationType& comm_;
       const BlockMapperType &blockMapper_;
 
-      const Index myRank_;
-      const Index mySize_;
+      const int myRank_;
+      const int mySize_;
 
       Pattern &pattern_;
       // LinkStorageType &linkStorage_;
@@ -537,12 +537,47 @@ namespace Dune
       bool contains( int dim, int codim ) const
       {
         return blockMapper_.contains( codim );
+        // _communication_descriptor.contains(_gfs,dim,codim);
       }
 
       //! return whether we have a fixed size
       bool fixedSize( int dim, int codim ) const
       {
         return false;
+        // _communication_descriptor.fixedSize(_gfs,dim,codim);
+      }
+
+      template<typename Idx,
+               std::enable_if_t<IsNumber<Idx>::value, int> = 0>
+      static Idx int2index(int i)
+      {
+        return Idx(i);
+      }
+
+#warning TODO better SFINAE
+      template<typename Idx,
+               std::enable_if_t<not IsNumber<Idx>::value, int> = 0>
+      static Idx int2index(int i)
+      {
+        Idx idx;
+        idx[0] = i;
+        return idx;
+      }
+
+      template<typename Idx,
+               std::enable_if_t<IsNumber<Idx>::value, int> = 0>
+      static int index2int(Idx i)
+      {
+        return int(i);
+      }
+
+#warning TODO better SFINAE
+      template<typename Idx,
+               std::enable_if_t<not IsNumber<Idx>::value, int> = 0>
+      static int index2int(Idx idx)
+      {
+        int i;
+        return idx[0];
       }
 
       //! read buffer and apply operation
@@ -557,7 +592,8 @@ namespace Dune
         if( send )
         {
           // send rank for linkage
-          buffer.write( myRank_ );
+          Index rank = int2index<Index>(myRank_);
+          buffer.write( rank );
 
           const unsigned int numDofs = blockMapper_.numEntityDofs( entity );
 
@@ -580,8 +616,9 @@ namespace Dune
         if( dataSize > 0 )
         {
           // read rank of other side
-          Index rank;
-          buffer.read( rank );
+          Index rankIndex;
+          buffer.read( rankIndex );
+          int rank = index2int(rankIndex);
           assert( (rank >= 0) && (rank < mySize_) );
 
           // check whether we are a sending entity
@@ -659,8 +696,6 @@ namespace Dune
             ) : 0;
       }
     };
-
-
 
     template< class GridView, class BlockMapper >
     Dune::MPIComm::CommunicationPattern<typename BlockMapper::GlobalKeyType>

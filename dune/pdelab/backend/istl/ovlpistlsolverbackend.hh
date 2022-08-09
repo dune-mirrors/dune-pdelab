@@ -171,6 +171,7 @@ namespace Dune {
         if (gfs.gridView().comm().size()>1)
         {
           if (helper.allToAllCommunication()) {
+            std::cout << "parallel prec communicate via cache" << std::endl;
             auto add = [](const double& a, double& b) { b += a; };
             helper.allToAllCommunication().exchange( Backend::native(v), add );
           }
@@ -241,10 +242,17 @@ namespace Dune {
         Y b(d); // need copy, since solver overwrites right hand side
         solver.apply(Backend::native(v),Backend::native(b),stat);
         if (gfs.gridView().comm().size()>1)
+        {
+          // if (helper.allToAllCommunication()) {
+          //   auto add = [](const double& a, double& b) { b += a; };
+          //   helper.allToAllCommunication().exchange( v, add );
+          // }
+          // else {
           {
-            AddDataHandle<GFS,X> adddh(gfs,v);
+            Dune::PDELab::AddDataHandle<GFS,domain_type> adddh(gfs,v);
             gfs.gridView().communicate(adddh,Dune::All_All_Interface,Dune::ForwardCommunication);
           }
+        }
       }
 
       SolverCategory::Category category() const override
@@ -302,10 +310,17 @@ namespace Dune {
         Y b(d); // need copy, since solver overwrites right hand side
         solver.apply(Backend::native(v),Backend::native(b),stat);
         if (gfs.gridView().comm().size()>1)
+        {
+          // if (helper.allToAllCommunication()) {
+          //   auto add = [](const double& a, double& b) { b += a; };
+          //   helper.allToAllCommunication().exchange( v, add );
+          // }
+          // else {
           {
-            AddDataHandle<GFS,X> adddh(gfs,v);
+            Dune::PDELab::AddDataHandle<GFS,domain_type> adddh(gfs,v);
             gfs.gridView().communicate(adddh,Dune::All_All_Interface,Dune::ForwardCommunication);
           }
+        }
       }
 
       SolverCategory::Category category() const override
@@ -1072,8 +1087,15 @@ namespace Dune {
         jac.post(native(z));
         if (gfs.gridView().comm().size()>1)
         {
-          CopyDataHandle<GFS,V> copydh(gfs,z);
-          gfs.gridView().communicate(copydh,Dune::InteriorBorder_All_Interface,Dune::ForwardCommunication);
+          // if (helper.allToAllCommunication()) {
+          //   auto copy = [](const double& a, double& b) { b = a; };
+          //   helper._interiorBorder_all_comm.exchange( z, copy );
+          // }
+          // else {
+          {
+            CopyDataHandle<GFS,V> copydh(gfs,z);
+            gfs.gridView().communicate(copydh,Dune::InteriorBorder_All_Interface,Dune::ForwardCommunication);
+          }
         }
         res.converged  = true;
         res.iterations = 1;

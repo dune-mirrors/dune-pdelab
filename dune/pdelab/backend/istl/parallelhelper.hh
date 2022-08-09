@@ -48,30 +48,53 @@ namespace Dune {
       {
         using IndexSet = typename GFS::Traits::GridView::IndexSet;
 
+        using Ordering = typename GFS::Ordering;
+        using GlobalKeyType = typename Ordering::Traits::ContainerIndex;
+
         const GFS& gfs_;
         const IndexSet& indexSet_;
         const int localSize_;
 
-        typedef typename IndexSet::IndexType GlobalKeyType;
+        // temporary storage
+        // container to store local DOFIndices (needing during calculation)
+        using DOFIndex = typename Ordering::Traits::DOFIndex;
+        static const std::size_t leaf_count = TypeTree::TreeInfo<Ordering>::leafCount;
+        using Offsets = std::array<std::size_t,leaf_count + 1>;
+        std::vector<DOFIndex> dofIndices_;
+        Offsets offsets_;
+
+        // typedef typename IndexSet::IndexType GlobalKeyType;
 
         EntityDOFMapper( const GFS& gfs ) :
           gfs_(gfs), indexSet_(gfs_.gridView().indexSet()), localSize_(4) /* hard coded for our initial example */
         {}
 
-        bool contains( const int codim ) const { return codim == 0; }
+        bool contains( const int codim ) const {
+          return gfs_.dataHandleContains(codim);
+          // return codim == 0;
+        }
 
         template <class Entity>
         unsigned int numEntityDofs(const Entity& entity) const {
-          assert(Entity::codimension == 0);
-          return localSize_;
+          // we should add an option to not communicate indices of the
+          // leaf entities (if the blocking is appropriate, e.g. dG
+          // spaces or PowerGFS)
+          return gfs_.dataHandleSize(entity);
+          // assert(Entity::codimension == 0);
+          // return localSize_;
         }
 
         // we use blocked vectors and only store the cell indices
         template <class Entity, class Vector> // Vector = std::vector< GlobalKeyType >
         void obtainEntityDofs( const Entity& entity, Vector& vector ) const
         {
-          assert( vector.size() == numEntityDofs( entity ) ); // numEntityDofs
-          vector[ 0 ] = indexSet_.index( entity );
+          gfs_.dataHandleIndices(entity,
+            vector,
+            dofIndices_,
+            offsets_.begin(),
+            std::integral_constant<bool,false>());
+          // assert( vector.size() == numEntityDofs( entity ) ); // numEntityDofs
+          // vector[ 0 ] = indexSet_.index( entity );
         }
       };
 
