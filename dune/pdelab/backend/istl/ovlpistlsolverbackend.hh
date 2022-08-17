@@ -1001,6 +1001,31 @@ namespace Dune {
       {}
     };
 
+    /**
+     * @brief Overlapping parallel BiCGStab solver with UMFPack preconditioner
+     * @tparam GFS The Type of the GridFunctionSpace.
+     * @tparam CC The Type of the Constraints Container.
+     */
+    template<class GFS, class CC>
+    class ISTLBackend_OVLP_BCGS_UMFPack
+      : public ISTLBackend_OVLP_UMFPack_Base<GFS,CC,Dune::BiCGSTABSolver>
+    {
+    public:
+
+      /*! \brief make a linear solver object
+
+        \param[in] gfs_ a grid function space
+        \param[in] cc_ a constraints object
+        \param[in] maxiter_ maximum number of iterations to do
+        \param[in] verbose_ print messages if true
+      */
+      ISTLBackend_OVLP_BCGS_UMFPack (const GFS& gfs_, const CC& cc_,
+                                              unsigned maxiter_=5000,
+                                              int verbose_=1)
+        : ISTLBackend_OVLP_UMFPack_Base<GFS,CC,Dune::BiCGSTABSolver>(gfs_,cc_,maxiter_,verbose_)
+      {}
+    };
+
 
     /** @brief Solver to be used for explicit time-steppers with (block-)diagonal mass matrix
      * @tparam GFS The Type of the GridFunctionSpace.
