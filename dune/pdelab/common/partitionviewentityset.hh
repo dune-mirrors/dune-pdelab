@@ -54,7 +54,7 @@ namespace Dune {
 
       using IntersectionIterator = typename GV::Traits::IntersectionIterator;
 
-      using CollectiveCommunication = typename GV::Traits::CollectiveCommunication;
+      using CollectiveCommunication = typename GV::Traits::Communication;
 
       using size_type = std::size_t;
       using dim_type = int;
