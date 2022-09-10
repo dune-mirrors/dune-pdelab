@@ -358,6 +358,18 @@ namespace Dune
       inline void buildMaps( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface );
 
     protected:
+
+      template<typename T>
+      auto & accessVector(T & data, Index index) const
+      {
+#warning avoid PDELab code
+        return Dune::PDELab::ISTL::access_vector_element(
+          Dune::PDELab::ISTL::container_tag(data),
+          data,
+          index,
+          index.size()-1);
+      }
+
       // serialize data of DataImp& vector to object stream
       // --writeBuffer
       template< class Buffer, class Data >
@@ -365,27 +377,42 @@ namespace Dune
                                Buffer &buffer,
                                const Data &data ) const
       {
-        // auto it = sendIndexMap_.find( dest );
-        // const auto &indexMap = it->second;
         auto it = pattern_.find( dest );
         const auto &indexMap = it->second.sendIndices;
         const int size = indexMap.size();
 
+        #warning PDELab specific
         //typedef typename Data :: DofType DofType;
         typedef typename Data::value_type value_type;
         typedef typename value_type :: field_type DofType;
 
+        //static const int blockSize = Data::blockSize;
+        static const int blockSize = value_type::dimension;
+        buffer.enlarge( size * blockSize * sizeof( DofType ) );
+        for( int i = 0; i < size; ++i )
         {
-          //static const int blockSize = Data::blockSize;
-          static const int blockSize = value_type::dimension;
-          buffer.enlarge( size * blockSize * sizeof( DofType ) );
-          for( int i = 0; i < size; ++i )
-          {
-            const auto &block = data[ indexMap[ i ] ];
-            for( int k=0; k<blockSize; ++k )
-              buffer << block[ k ];
-          }
+          auto &&block = accessVector(data, indexMap[ i ]);
+          writeBlock(buffer, block);
         }
+      }
+
+      template< class Buffer >
+      inline void writeBlock( Buffer &buffer, double d) const
+      {
+        buffer << d;
+      }
+
+        template< class Buffer, int N >
+      inline void writeBlock( Buffer &buffer, bigunsignedint<N> d) const
+      {
+        buffer << d;
+      }
+
+      template< class Buffer, class K, unsigned int n>
+      inline void writeBlock( Buffer &buffer, const FieldVector<K,n>& v) const
+      {
+        for (unsigned int i = 0; i<n; i++)
+          buffer << v[i];
       }
 
       // deserialize data from object stream to DataImp& data vector
@@ -411,22 +438,49 @@ namespace Dune
         typedef typename value_type :: field_type DofType;
 
         {
-          static const int blockSize = value_type::dimension;
+          static const int blockSize = 1; // value_type::dimension;
           assert( static_cast< std::size_t >( size * blockSize * sizeof( DofType ) ) <= static_cast< std::size_t >( (buffer.size()-buffer.tell()) ) );
           for( int i = 0; i < size; ++i )
           {
-            auto &&block = data[ indexMap[ i ] ];
-            for( int k=0; k<blockSize; ++k )
-            {
-              DofType value;
-              buffer >> value;
-              // apply operation, i.e. COPY, ADD, etc.
-              operation( value, block[ k ] );
-            }
+            auto &&block = accessVector(data, indexMap[ i ]);
+            // apply operation, i.e. COPY, ADD, etc.
+            // depending on the block type (scalar or vector), we specialize
+            applyOperation(operation, buffer, block);
           }
         }
       }
     };
+
+    template<typename Buffer, typename Operation>
+    void applyOperation(const Operation& operation, Buffer& buffer, double & data)
+    {
+      double value;
+      buffer >> value;
+      operation( value, data );
+    }
+
+    template<typename Buffer, typename Operation, int N>
+    void applyOperation(const Operation& operation, Buffer& buffer, bigunsignedint<N> & data)
+    {
+      bigunsignedint<N> value;
+      buffer >> value;
+      operation( value, data );
+    }
+
+//   template<typename Buffer, typename Operation>
+//   void applyOperation()
+//   {
+//     for( int k=0; k<blockSize; ++k )
+//     {
+//       DofType value;
+//       buffer >> value;
+//       // apply operation, i.e. COPY, ADD, etc.
+// #warning TODO
+//       // auto & ref = block[ k ];
+//       auto & ref = block;
+//       operation( value, ref );
+//     }
+//   }
 
     /** --PatternBuilder
      *
@@ -678,7 +732,7 @@ namespace Dune
           // copy indices to index vector
           for( size_t i = 0; i < size; ++i, ++count )
           {
-            assert( indices[ i ] >= 0 );
+            // WORKS ONLY FOR SCALAR INDICES: assert( indices[ i ] >= 0 );
             idxMap[ count ] = indices[ i ];
           }
         }
@@ -703,7 +757,7 @@ namespace Dune
     {
       Dune::MPIComm::CommunicationPattern<typename BlockMapper::GlobalKeyType> pattern;
       // TODO replace by switchCases(const Cases& cases, const Value& value, Branches&& branches)
-      typedef typename GridView::CollectiveCommunication CommunicationType;
+      typedef typename GridView::Communication CommunicationType;
       if( interface == InteriorBorder_All_Interface )
       {
         PatternBuilder< CommunicationType, BlockMapper, InteriorBorder_All_Interface >

@@ -42,6 +42,8 @@ namespace Dune {
       //! \ingroup PDELab
       //! \{
 
+#define USEGFS 1
+
       // Helper class to map DOFs per (sub-)entity
       template<typename GFS>
       struct EntityDOFMapper
@@ -53,25 +55,31 @@ namespace Dune {
 
         const GFS& gfs_;
         const IndexSet& indexSet_;
+#if not USEGFS
         const int localSize_;
+#endif
 
         // temporary storage
         // container to store local DOFIndices (needing during calculation)
         using DOFIndex = typename Ordering::Traits::DOFIndex;
         static const std::size_t leaf_count = TypeTree::TreeInfo<Ordering>::leafCount;
         using Offsets = std::array<std::size_t,leaf_count + 1>;
-        std::vector<DOFIndex> dofIndices_;
-        Offsets offsets_;
-
-        // typedef typename IndexSet::IndexType GlobalKeyType;
+        mutable std::vector<DOFIndex> dofIndices_;
+        mutable Offsets offsets_;
 
         EntityDOFMapper( const GFS& gfs ) :
-          gfs_(gfs), indexSet_(gfs_.gridView().indexSet()), localSize_(4) /* hard coded for our initial example */
+          gfs_(gfs), indexSet_(gfs_.gridView().indexSet())
+#if not USEGFS
+          , localSize_(1) /* hard coded for our initial example */
+#endif
         {}
 
         bool contains( const int codim ) const {
+#if USEGFS
           return gfs_.dataHandleContains(codim);
-          // return codim == 0;
+#else
+          return codim == 0;
+#endif
         }
 
         template <class Entity>
@@ -79,22 +87,42 @@ namespace Dune {
           // we should add an option to not communicate indices of the
           // leaf entities (if the blocking is appropriate, e.g. dG
           // spaces or PowerGFS)
+#if USEGFS
           return gfs_.dataHandleSize(entity);
-          // assert(Entity::codimension == 0);
-          // return localSize_;
+#else
+          assert(Entity::codimension == 0);
+          return localSize_;
+#endif
         }
 
         // we use blocked vectors and only store the cell indices
         template <class Entity, class Vector> // Vector = std::vector< GlobalKeyType >
-        void obtainEntityDofs( const Entity& entity, Vector& vector ) const
+        void obtainEntityDofs( const Entity& entity, Vector& containerIndices ) const
         {
-          gfs_.dataHandleIndices(entity,
-            vector,
+          assert( containerIndices.size() == numEntityDofs( entity ) ); // numEntityDofs
+#if USEGFS
+          assert(gfs_.dataHandleContains(Entity::codimension));
+
+          std::fill(offsets_.begin(),offsets_.end(),0);
+          gfs_.dataHandleIndices(
+            entity,
+            containerIndices,
             dofIndices_,
             offsets_.begin(),
             std::integral_constant<bool,false>());
-          // assert( vector.size() == numEntityDofs( entity ) ); // numEntityDofs
-          // vector[ 0 ] = indexSet_.index( entity );
+#else
+          if (localSize_ == 1) ////// SCALAR
+          {
+            containerIndices[ 0 ] = indexSet_.index( entity );
+          }
+          else /////// BLOCKED
+          {
+            for (unsigned int i=0; i<localSize_; i++) {
+              containerIndices[i].set(indexSet_.index( entity ));
+              vector[i].push_back(i);
+            }
+          }
+#endif
         }
       };
 

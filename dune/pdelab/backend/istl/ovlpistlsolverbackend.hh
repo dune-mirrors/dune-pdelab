@@ -171,8 +171,9 @@ namespace Dune {
         if (gfs.gridView().comm().size()>1)
         {
           if (helper.allToAllCommunication()) {
-            std::cout << "parallel prec communicate via cache" << std::endl;
-            auto add = [](const double& a, double& b) { b += a; };
+            auto add = [](const double& a, double& b) {
+              b += a;
+            };
             helper.allToAllCommunication().exchange( Backend::native(v), add );
           }
           else {
