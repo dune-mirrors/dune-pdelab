@@ -211,8 +211,10 @@ int main(int argc, char **argv)
   DifferenceSquared differencesquared(xdgf,xdgf2);
   typename DifferenceSquared::Traits::RangeType l2errorsquared(0.0);
   Dune::PDELab::integrateGridFunction(differencesquared,l2errorsquared,10);
+  l2errorsquared = gridView.comm().sum(l2errorsquared);
 
-  std::cout << std::endl << "l2 error squared: " << l2errorsquared << std::endl;
+  if (gridView.comm().rank() == 0)
+    std::cout << std::endl << "l2 error squared: " << l2errorsquared << std::endl;
 
   if (l2errorsquared>1e-14){
     return 1;
