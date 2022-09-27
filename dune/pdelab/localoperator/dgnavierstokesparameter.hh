@@ -41,7 +41,7 @@ namespace Dune {
       void initFromString(const std::string & method)
       {
         std::string s = method;
-        std::transform(s.begin(), s.end(), s.begin(), tolower);
+        // std::transform(s.begin(), s.end(), s.begin(), tolower);
 
         // nipg (epsilon=1) 2d p1 -> Klaus sagt sollte auch sigma 1 klappen
         if (s.find("nipg") != std::string::npos)
