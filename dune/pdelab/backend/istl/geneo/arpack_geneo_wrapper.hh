@@ -666,7 +666,7 @@ namespace ArpackMLGeneo
       BCRSMatrix ashiftb(a_);
       ashiftb.axpy(-sigma,b_);
 
-      std::cout << "solving GEVP with nev=" << nev << std::endl;
+      // std::cout << "solving GEVP with nev=" << nev << std::endl;
 
       // use type ArPackPlusPlus_BCRSMatrixWrapperGen to store matrix information
       // and to perform the product (A-sigma B)^-1 v (LU decomposition is not used)
@@ -685,12 +685,14 @@ namespace ArpackMLGeneo
       // define what we need: eigenvalues with smallest magnitude
       char which[] = "LM";
 
-      Real* initResid = new Real[A.nrows()];
-      for(int i=0; i<A.nrows(); i++){initResid[i] = 1e-5;}
+      // Real* initResid = new Real[A.nrows()];
+      // for(int i=0; i<A.nrows(); i++){initResid[i] = 1e-5;}
 
       // Solve problem as a standard EV problem with own shift_invert
       ARSymGenEig<Real,WrappedMatrix,WrappedMatrix>
-        dprob('S',nrows, nev, &A, &WrappedMatrix::multMv, &A, &WrappedMatrix::multMvB, sigma, which, ncv, tol, maxit, initResid);
+        dprob('S',nrows, nev, &A, &WrappedMatrix::multMv, &A, &WrappedMatrix::multMvB, sigma, which, ncv, tol, maxit);
+        // dprob('S',nrows, nev, &A, &WrappedMatrix::multMv, &A, &WrappedMatrix::multMvB, sigma, which, ncv, tol, maxit, initResid);
+        // dprob('S',nrows, nev, &A, &WrappedMatrix::multMv, &A, &WrappedMatrix::multMvB, sigma, which, ncv, tol, maxit, initResid, false);
 
       // set ARPACK verbosity mode if requested
       if (verbosity_level_ > 3) dprob.Trace();
@@ -711,7 +713,7 @@ namespace ArpackMLGeneo
       //   std::cout << dprob.ResidualVector(i) << std::endl;
       // }
 
-      delete[] initResid;
+      // delete[] initResid;
 
 
       // std::cout << "raw eigenvalues from APP:" << std::endl;
