@@ -437,6 +437,25 @@ namespace Dune::PDELab
         _jacobian.reset();
     }
 
+    //! Access stored Jacobian matrix.
+    std::shared_ptr<Jacobian> getJacobian ()
+    {
+      // does not work with matrix-free solvers
+      if constexpr (!linearSolverIsMatrixFree<LinearSolver>()){
+        if (not _jacobian)
+          _jacobian = std::make_shared<Jacobian>(_gridOperator);
+        return _jacobian;
+      }
+      else
+        DUNE_THROW(NewtonError,"Jacobian is not available, solver is matrix-free.");
+    }
+
+    //! Access stored residual
+    const Range& getResidual () const
+    {
+      return _residual;
+    }
+
     /**\brief Set the minimal reduction in the linear solver
      *
      * \note with minLinearReduction > 0, the linear reduction will be

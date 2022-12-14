@@ -245,13 +245,82 @@ namespace Dune::PDELab
     const Projection& _projection;
   };
 
+  //! Class for simply updating the solution without line search
+  template <typename Solver>
+  class LineSearchWithGradientDescent : public LineSearchInterface<typename Solver::Domain>
+  {
+  public:
+    using Domain = typename Solver::Domain;
+    using Real = typename Solver::Real;
+
+    LineSearchWithGradientDescent(Solver& solver) : _solver(solver)
+    {}
+
+    //! Update is a mix of Newton direction and Gradient Descent direction
+    virtual void lineSearch(Domain& solution, const Domain& correction) override
+    {
+      if (not gdcorrection)
+        gdcorrection = std::make_shared<Domain>(correction);
+
+      try
+      {
+        uint itnr = _solver.result().iterations;
+        if (itnr==0)
+          alphawarp = alpha;
+        else
+          alphawarp = std::min(1., alphawarp*arise);
+      }
+      catch (...)
+      {
+        alphawarp = alpha;
+      }
+      Backend::native(*(_solver.getJacobian())).mtv(Backend::native(_solver.getResidual()),Backend::native(*gdcorrection)); // J^T f(x), gradient ascent
+      solution.axpy(-alphawarp, correction);
+      solution.axpy(-(1.-alphawarp)*std::sqrt(alphawarp),*gdcorrection);
+      _solver.updateDefect(solution);
+    }
+
+    virtual void setParameters(const ParameterTree& parameterTree) override
+    {
+      alpha = parameterTree.get<Real>("Alpha", alpha);
+      arise = parameterTree.get<Real>("AlphaRise", arise);
+    }
+
+    void setAlpha (const Real& _alpha)
+    {
+      alpha = _alpha;
+    }
+
+    void setRise (const Real& _arise)
+    {
+      arise = _arise;
+    }
+
+    // print line search type
+    virtual void printParameters() const override
+    {
+      std::cout << "LineSearch.Type........... LineSearchWithGradientDescent" << std::endl;
+      std::cout << "LineSearch.Alpha.......... " << alpha << std::endl;
+      std::cout << "LineSearch.AlphaRise...... " << arise << std::endl;
+    }
+
+  private:
+    Solver& _solver;
+    std::shared_ptr<Domain> gdcorrection; // gradient desent direction
+    Real alpha=0.5; // starting value of mixing
+    Real arise=1.1; // increasing rate, alphawarp is at maximum 1
+    Real alphawarp = alpha;  // Mixing parameter, 1=Newton directon, 0 goes to damped gradient descent
+  };
+
+
   //! Flags for different line search strategies
   enum class LineSearchStrategy
   {
     noLineSearch,
     hackbuschReusken,
     hackbuschReuskenAcceptBest,
-    projectedNoLineSearch
+    projectedNoLineSearch,
+    lineSearchWithGradientDescent
   };
 
   // we put this into an emty namespace, so that we don't violate the one-definition-rule
@@ -271,6 +340,8 @@ namespace Dune::PDELab
         return LineSearchStrategy::hackbuschReusken;
       if (name == "hackbuschReuskenAcceptBest")
         return LineSearchStrategy::hackbuschReuskenAcceptBest;
+      if (name == "lineSearchWithGradientDescent")
+        return LineSearchStrategy::lineSearchWithGradientDescent;
       if (name == "projectedNoLineSearch")
         return LineSearchStrategy::projectedNoLineSearch;
       DUNE_THROW(Exception,"Unkown line search strategy: " << name);
@@ -304,6 +375,10 @@ namespace Dune::PDELab
       auto lineSearch = std::make_shared<LineSearchHackbuschReusken<Solver>> (solver, true);
       std::cout << "Warning: linesearch hackbuschReuskenAcceptBest is deprecated and will be removed after PDELab 2.7.\n"
                 << "         Please use 'hackbuschReusken' and add the parameter 'LineSearchAcceptBest : true'";
+      return lineSearch;
+    }
+    if (strategy == LineSearchStrategy::lineSearchWithGradientDescent){
+      auto lineSearch = std::make_shared<LineSearchWithGradientDescent<Solver>> (solver);
       return lineSearch;
     }
     if (strategy == LineSearchStrategy::projectedNoLineSearch){
