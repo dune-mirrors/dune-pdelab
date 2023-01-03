@@ -208,6 +208,19 @@ namespace Dune::PDELab
     bool _forceAcceptBest;
   };
 
+  namespace Impl
+  {
+    // Default projection for LineSearch with projection step.
+    template<typename Domain>
+    struct ThrowingProjection
+    {
+      void operator() (Domain& solution) const
+      {
+        DUNE_THROW(LineSearchError,"Using projecting LineSearch without user-defined projection.");
+      }
+    };
+  }
+
   /** \brief Projected line search
    *
    * Projects the solution to the feasible region. The projection is
@@ -382,8 +395,14 @@ namespace Dune::PDELab
       return lineSearch;
     }
     if (strategy == LineSearchStrategy::projectedNoLineSearch){
-      std::cout << "Projected line search requires loading via setLineSearch method. Using LineSearchNone till then." << std::endl;
-      auto lineSearch = std::make_shared<LineSearchNone<Solver>> (solver);
+      // std::cout << "Projected line search requires loading via setLineSearch method. Using LineSearchNone till then." << std::endl;
+      // auto lineSearch = std::make_shared<LineSearchNone<Solver>> (solver);
+      if (solver.getVerbosityLevel()>=4)
+        std::cout << "Setting default projectedNoLineSearch with ThrowingProjection step. "
+                  << "Create custom LineSearch and add it via NewtonMethod's setLineSearch method."<< std::endl;
+      using Projection = Impl::ThrowingProjection<typename Solver::Domain>;
+      Projection throwproj;
+      auto lineSearch = std::make_shared<LineSearchProjectedNone<Solver,Projection> > (solver, throwproj);
       return lineSearch;
     }
     DUNE_THROW(Exception,"Unkown line search strategy");
