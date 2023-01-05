@@ -258,7 +258,7 @@ namespace Dune::PDELab
     const Projection& _projection;
   };
 
-  //! Class for simply updating the solution without line search
+  //! Class for mixing Newton and Steepest descent direction
   template <typename Solver>
   class LineSearchWithGradientDescent : public LineSearchInterface<typename Solver::Domain>
   {
@@ -272,59 +272,245 @@ namespace Dune::PDELab
     //! Update is a mix of Newton direction and Gradient Descent direction
     virtual void lineSearch(Domain& solution, const Domain& correction) override
     {
-      if (not gdcorrection)
-        gdcorrection = std::make_shared<Domain>(correction);
+      if (not _ga)
+        _ga = std::make_shared<Domain>(correction);
 
       try
       {
         uint itnr = _solver.result().iterations;
         if (itnr==0)
-          alphawarp = alpha;
+          _alphawarp = _alpha;
         else
-          alphawarp = std::min(1., alphawarp*arise);
+          _alphawarp = std::min(1., _alphawarp*_arise);
       }
       catch (...)
       {
-        alphawarp = alpha;
+        _alphawarp = _alpha;
       }
-      Backend::native(*(_solver.getJacobian())).mtv(Backend::native(_solver.getResidual()),Backend::native(*gdcorrection)); // J^T f(x), gradient ascent
-      solution.axpy(-alphawarp, correction);
-      solution.axpy(-(1.-alphawarp)*std::sqrt(alphawarp),*gdcorrection);
+      Backend::native(*(_solver.getJacobian())).mtv(Backend::native(_solver.getResidual()),Backend::native(*_ga)); // J^T f(x), gradient ascent
+      solution.axpy(-_alphawarp, correction);
+      solution.axpy(-(1.-_alphawarp)*std::sqrt(_alphawarp),*_ga);
       _solver.updateDefect(solution);
     }
 
     virtual void setParameters(const ParameterTree& parameterTree) override
     {
-      alpha = parameterTree.get<Real>("Alpha", alpha);
-      arise = parameterTree.get<Real>("AlphaRise", arise);
+      _alpha = parameterTree.get<Real>("Alpha", _alpha);
+      _arise = parameterTree.get<Real>("AlphaRise", _arise);
     }
 
-    void setAlpha (const Real& _alpha)
+    void setAlpha (const Real& alpha)
     {
-      alpha = _alpha;
+      _alpha = alpha;
     }
 
-    void setRise (const Real& _arise)
+    void setRise (const Real& arise)
     {
-      arise = _arise;
+      _arise = arise;
     }
 
     // print line search type
     virtual void printParameters() const override
     {
       std::cout << "LineSearch.Type........... LineSearchWithGradientDescent" << std::endl;
-      std::cout << "LineSearch.Alpha.......... " << alpha << std::endl;
-      std::cout << "LineSearch.AlphaRise...... " << arise << std::endl;
+      std::cout << "LineSearch.Alpha.......... " << _alpha << std::endl;
+      std::cout << "LineSearch.AlphaRise...... " << _arise << std::endl;
     }
 
   private:
     Solver& _solver;
-    std::shared_ptr<Domain> gdcorrection; // gradient desent direction
-    Real alpha=0.5; // starting value of mixing
-    Real arise=1.1; // increasing rate, alphawarp is at maximum 1
-    Real alphawarp = alpha;  // Mixing parameter, 1=Newton directon, 0 goes to damped gradient descent
+    std::shared_ptr<Domain> _ga; // gradient ascent direction
+    Real _alpha=0.5; // starting value of mixing
+    Real _arise=1.1; // increasing rate, _alphawarp is at maximum 1
+    Real _alphawarp = _alpha;  // Mixing parameter, 1=Newton directon, 0 goes to damped gradient descent
   };
 
+
+  //! Implement Newton Cauchy Dogleg method via line search method
+  template<typename Solver>
+  class DoglegLineSearch : public LineSearchInterface<typename Solver::Domain>
+  {
+  public:
+    using Domain = typename Solver::Domain;
+    using Real = typename Solver::Real;
+
+    DoglegLineSearch(Solver& solver) : _solver(solver)
+    {}
+
+    //! Update is a mix of Newton direction and Gradient Descent direction
+    virtual void lineSearch(Domain& solution, const Domain& correction) override
+    {
+      std::shared_ptr<const Domain> pcorr(&correction,[](const Domain*){});
+      std::shared_ptr<Domain> _ga; // gradient ascent direction
+      std::shared_ptr<Domain> _jv; // temporary, mostly Jacobian*vector
+
+      if (_solver.getVerbosityLevel() >= 4)
+        std::cout << "      Performing line search with trust region " << _radius << std::endl;
+
+      const Real& defectold = _solver.result().defect;
+
+      // gradient ascent direction
+      if (not _ga)
+        _ga = std::make_shared<Domain>(correction);
+      Backend::native(*(_solver.getJacobian())).mtv(Backend::native(_solver.getResidual()),Backend::native(*_ga)); // J^T f(x), gradient ascent
+
+      while(true) // reduce radius until rho>nu1
+      {
+        if (correction.two_norm()<=_radius)
+        {
+          // Newton direction if Newton guess is inside TrustRegion
+          if (_solver.getVerbosityLevel()>=4)
+            std::cout << "          Newton direction chosen" << std::endl;
+          _pu.set(-1.,pcorr);
+        }
+        else
+        {
+          Real ganorm = std::max(_ga->two_norm(),1e-100);
+          if (not _jv)
+            _jv = std::make_shared<Domain>(*_ga);
+          Backend::native(*(_solver.getJacobian())).mtv(Backend::native(*_ga),Backend::native(*_jv)); // J J^T f(x),
+          Real gaBga = _jv->two_norm2(); // approximate Hessian by J^TJ
+          gaBga = std::max(gaBga,1e-100);
+          Real alpha = std::min(_radius/ganorm, ganorm*ganorm/gaBga);
+          if (ganorm*alpha>=_radius)
+          {
+            // damped Cauchy direction if it is big enough
+            if (_solver.getVerbosityLevel()>=4)
+              std::cout << "          Cauchy direction chosen" << std::endl;
+            _pu.set(-alpha,_ga);
+          }
+          else
+          {
+            // dogleg direction
+            // Point on the line between Newton (N) and Cauchy (C) point at distance TrustRegion (r) from Starting point (S)
+            // S-N is correction, S-C is *_ga
+            // we search for tau such that \|C-S+tau(N-C)\|=r
+            // => quadratic eq. tau^2 NC^2 + 2tau <NC,CS> + CS^2-r^2=0
+            // knowing \|C-S\|<r this has one negative root and one in (0,1) that we seek
+            // N-C=(S-C)-(S-N) is not constructed.
+
+            Real cs2 = _ga->two_norm2();
+            Real sn_sc = Backend::native(correction) * Backend::native(*_ga); // <S-N,S-C>
+            Real nc2 = correction.two_norm2()-2.*sn_sc+cs2; // squared norm of N-C
+            Real sp = cs2-sn_sc; // <N-C,S-C>
+            Real tau = (-sp+std::sqrt(sp*sp-4.*nc2+(cs2-_radius*_radius)))/(2.*nc2);
+            if (_solver.getVerbosityLevel()>=4)
+              std::cout << "          Dogleg direction chosen" << std::endl;
+            _pu.set(tau-1.,_ga); // Cauchy point
+            _pu.add(-tau,pcorr); // Dogleg point
+          }
+        }
+
+        // postprocess, calculate rho
+        if (not _jv)
+          _jv = std::make_shared<Domain>(solution);
+        Backend::native(*_jv)=Backend::native(solution);
+        _jv->axpy(-1.,correction);
+        _solver.updateDefect(*_jv);
+        Real defNewton = _solver.result().defect;
+        Backend::native(*(_solver.getJacobian())).mv(Backend::native(correction),Backend::native(*_jv)); // J*p, p is Newton
+        Real pJJp = _jv->two_norm2();
+        Real resJp = Backend::native(_solver.getResidual()) * Backend::native(*_jv);
+        Real rho = (defectold*defectold - defNewton*defNewton)/(resJp-0.5*pJJp);
+
+        // use rho to change radius and decide to continue iterating
+        if (rho>=_nu3)
+          _radius *= _t2;
+        else if (rho<=_nu2)
+          _radius *= _t1;
+        if (rho>_nu1)
+          break;
+        else if (_radius<_minRadius)
+        {
+          _pu.clear();
+          DUNE_THROW(LineSearchError,"DoglegLineSearch did not converge, TrustRegion reduced below minimum");
+        }
+        else
+          if (_solver.getVerbosityLevel()>=4)
+            std::cout << "        Iteration failed, reducing trust region radius" << std::endl;
+      } // end while
+
+      if (_solver.getVerbosityLevel()>=4)
+        std::cout << "        Applying chosen direction" << std::endl;
+      _pu.apply(solution);
+      _solver.updateDefect(solution);
+    }
+
+    virtual void setParameters(const ParameterTree& parameterTree) override
+    {
+      _radius = parameterTree.get<Real>("TrustRegion", _radius);
+      _nu1 = parameterTree.get<Real>("Nu1", _nu1);
+      _nu2 = parameterTree.get<Real>("Nu2", _nu2);
+      _nu3 = parameterTree.get<Real>("Nu3", _nu3);
+      _t1 = parameterTree.get<Real>("T1", _t1);
+      _t2 = parameterTree.get<Real>("T2", _t2);
+    }
+
+    void setTrustRegion(const Real& radius)
+    {
+      _radius=radius;
+    }
+    void setTrustRegion(const Domain& solution)
+    {
+      _radius = _iniRadius*solution.two_norm();
+    }
+
+    // print line search type
+    virtual void printParameters() const override
+    {
+      std::cout << "LineSearch.Type........... DoglegLineSearch" << std::endl;
+      std::cout << "LineSearch.IniTrustRegion. " << _iniRadius << std::endl;
+      std::cout << "LineSearch.MinTrustRegion. " << _minRadius << std::endl;
+      std::cout << "LineSearch.Nu1............ " << _nu1 << std::endl;
+      std::cout << "LineSearch.Nu2............ " << _nu2 << std::endl;
+      std::cout << "LineSearch.Nu3............ " << _nu3 << std::endl;
+      std::cout << "LineSearch.T1............. " << _t1 << std::endl;
+      std::cout << "LineSearch.T2............. " << _t2 << std::endl;
+    }
+
+  private:
+    //! Structure holding proposed updates
+    // Avoid storing extra result vector, Dogleg makes two steps
+    struct ProposedUpdate
+    {
+      //! set an update, clear
+      void set(const Real& coef, const std::shared_ptr<const Domain>& pu)
+      {
+        clear();
+        add(coef,pu);
+      }
+
+      //! add another update
+      void add(const Real& coef, const std::shared_ptr<const Domain>& pu)
+      {
+        _pu.push_back(std::pair(coef,pu));
+      }
+
+      //! apply proposed updates and clear cache
+      void apply(Domain& domain)
+      {
+        for (const auto& v : _pu)
+          domain.axpy(v.first,*(v.second));
+        _pu.clear();
+      }
+
+      void clear()
+      {
+        _pu.clear();
+      }
+
+    private:
+      std::vector<std::pair<Real,std::shared_ptr<const Domain>>> _pu;
+    };
+
+    Solver& _solver;
+    Real _radius=0.; // trust region _radius, solution-dependent
+    Real _iniRadius=0.2;
+    Real _minRadius=1e-6;
+    Real _nu1=0.001, _nu2=0.25, _nu3=0.75;
+    Real _t1=0.25, _t2=2.0;
+    ProposedUpdate _pu;
+  };
 
   //! Flags for different line search strategies
   enum class LineSearchStrategy
@@ -333,7 +519,8 @@ namespace Dune::PDELab
     hackbuschReusken,
     hackbuschReuskenAcceptBest,
     projectedNoLineSearch,
-    lineSearchWithGradientDescent
+    lineSearchWithGradientDescent,
+    doglegLineSearch
   };
 
   // we put this into an emty namespace, so that we don't violate the one-definition-rule
@@ -357,6 +544,8 @@ namespace Dune::PDELab
         return LineSearchStrategy::lineSearchWithGradientDescent;
       if (name == "projectedNoLineSearch")
         return LineSearchStrategy::projectedNoLineSearch;
+      if (name == "doglegLineSearch")
+        return LineSearchStrategy::doglegLineSearch;
       DUNE_THROW(Exception,"Unkown line search strategy: " << name);
     }
   }
@@ -403,6 +592,10 @@ namespace Dune::PDELab
       using Projection = Impl::ThrowingProjection<typename Solver::Domain>;
       Projection throwproj;
       auto lineSearch = std::make_shared<LineSearchProjectedNone<Solver,Projection> > (solver, throwproj);
+      return lineSearch;
+    }
+    if (strategy == LineSearchStrategy::doglegLineSearch){
+      auto lineSearch = std::make_shared<DoglegLineSearch<Solver>> (solver);
       return lineSearch;
     }
     DUNE_THROW(Exception,"Unkown line search strategy");
