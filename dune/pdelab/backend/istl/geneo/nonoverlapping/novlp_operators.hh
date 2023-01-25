@@ -152,6 +152,10 @@ namespace Dune {
       virtual field_type dot (const Vector& x, const Vector& y) const override
       {
         field_type sum = 0.0;
+        Vector y_cpy(y);
+        NonoverlappingVectorAddDataHandle<GV,Vector> adddh(gv,y_cpy);
+        if (gv.comm().size()>1)
+          gv.communicate(adddh,Dune::All_All_Interface,Dune::ForwardCommunication);
         for (typename Vector::size_type i=0; i<x.N(); i++) sum += x[i]*y[i];
         auto sumsum = gv.comm().sum(sum);
         return sumsum;
@@ -164,11 +168,11 @@ namespace Dune {
       */
       virtual double norm (const Vector& x) const override
       {
-        Vector y(x);
-        NonoverlappingVectorAddDataHandle<GV,Vector> adddh(gv,y);
-        if (gv.comm().size()>1)
-          gv.communicate(adddh,Dune::All_All_Interface,Dune::ForwardCommunication);
-        auto sp = static_cast<double>(this->dot(x,y));
+        // Vector y(x);
+        // NonoverlappingVectorAddDataHandle<GV,Vector> adddh(gv,y);
+        // if (gv.comm().size()>1)
+        //   gv.communicate(adddh,Dune::All_All_Interface,Dune::ForwardCommunication);
+        auto sp = static_cast<double>(this->dot(x,x));
         auto rv = std::sqrt(std::abs(sp)); // due to roundoff this may become negative for close to zero norms
         return rv;
       }
