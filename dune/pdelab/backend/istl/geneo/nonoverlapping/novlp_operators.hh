@@ -156,7 +156,7 @@ namespace Dune {
         NonoverlappingVectorAddDataHandle<GV,Vector> adddh(gv,y_cpy);
         if (gv.comm().size()>1)
           gv.communicate(adddh,Dune::All_All_Interface,Dune::ForwardCommunication);
-        for (typename Vector::size_type i=0; i<x.N(); i++) sum += x[i]*y[i];
+        for (typename Vector::size_type i=0; i<x.N(); i++) sum += x[i]*y_cpy[i];
         auto sumsum = gv.comm().sum(sum);
         return sumsum;
       }
