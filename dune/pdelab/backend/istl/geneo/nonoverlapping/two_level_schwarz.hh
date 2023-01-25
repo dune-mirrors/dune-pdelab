@@ -320,7 +320,7 @@ namespace Dune {
           // extend nonoverlapping vector d to overlapping vector b.
           Vector b(adapter_.getExtendedSize()), correction(adapter_.getExtendedSize());
           adapter_.extendVector(d, b);
-          std::cout << "Maximum entry in b = " << b.infinity_norm() << std::endl;
+          // std::cout << "Maximum entry in b = " << b.infinity_norm() << std::endl;
 
           if (verbosity_ > 2) Dune::printvector(std::cout, b, "defect (extended)", "", 1, 10, 17);
           // make function known in other subdomains. Here it is important that we masked the dof on the nonoverlapping processor boundaries earlier
