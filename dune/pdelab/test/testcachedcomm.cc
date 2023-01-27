@@ -82,9 +82,18 @@ void checkConsistentCommnunication(const Grid& grid, Dune::TestSuite & test, FS 
   all_all_comm.init(gfs.gridView().comm());
   all_all_comm.setCommunicationPattern(all_all_pattern);
   all_all_comm.exchange( Backend::native(v),
-    [&test](const auto& a, auto& b) {
-      test.check(b == a, "consistend global indices in cached communication")
-        << " expected " << b << " got " << a;
+    [&test](const auto& a, const auto& b) {
+      #warning this needs to be improved ...
+      using A = std::decay_t<decltype(a)>;
+      if constexpr (std::is_same<A,Dune::bigunsignedint<55>>{}) {
+        test.check(b == a, "consistend global indices in cached communication")
+          << " expected " << b << " got " << a;
+      }
+      else{
+        // this should never be called, but currently the compiler can possibly
+        // instantiate this block
+        assert(false);
+      }
     }
     );
 }

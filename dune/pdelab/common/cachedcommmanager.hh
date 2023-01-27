@@ -24,6 +24,9 @@
 #include <dune/grid/common/datahandleif.hh>
 #include <dune/grid/utility/entitycommhelper.hh>
 
+#include <dune/istl/access.hh>
+#include <dune/istl/foreach.hh>
+
 /*
   Issues Grid-Comm Interface
 
@@ -196,10 +199,9 @@ namespace Dune
           for( const auto& link : dependencyCache_.pattern() )
           {
             int source = link.first;
+            #warning needs update for inhomogeneous containers
             const size_t bufSize = dependencyCache_.recvBufferSize( source ) * dataSize;
             recvFutures_.insert( std::make_pair( source, comm.irecv( BufferType(comm, bufSize), source, tag_ ) ) );
-            //auto buffer = comm.rrecv( BufferType(comm), source, tag_ );
-            //unpack( source, buffer, data, operation );
           }
 
           for( auto& [rank, future] : recvFutures_ )
@@ -359,15 +361,36 @@ namespace Dune
 
     protected:
 
-      template<typename T>
-      auto & accessVector(T & data, Index index) const
+      template< typename Indices, typename Data >
+      std::size_t calcSize(const Indices & indices,
+                           const Data &data ) const
       {
-#warning avoid PDELab code
-        return Dune::PDELab::ISTL::access_vector_element(
-          Dune::PDELab::ISTL::container_tag(data),
-          data,
-          index,
-          index.size()-1);
+        using namespace Dune::ISTL;
+        if constexpr (false) // (uniform_access<Data>())
+        {
+          std::size_t blocksize = 0;
+          applyAtIndex(indices[0], data,
+            [&](auto && block, const auto & index)
+            {
+              blocksize = sizeof(block);
+            });
+          return blocksize * indices.size();
+        }
+        else
+        {
+          std::size_t size = 0;
+          forEachIndex(indices, data,
+            [&](auto && block, const auto & index)
+            {
+              // serialize the block
+              flatVectorForEach(block,
+                [&](auto && entry, const auto & index){
+                  size += sizeof(entry);
+                });
+            }
+            );
+          return size;
+        }
       }
 
       // serialize data of DataImp& vector to object stream
@@ -378,41 +401,22 @@ namespace Dune
                                const Data &data ) const
       {
         auto it = pattern_.find( dest );
-        const auto &indexMap = it->second.sendIndices;
-        const int size = indexMap.size();
+        const auto &indices = it->second.sendIndices;
 
-        #warning PDELab specific
-        //typedef typename Data :: DofType DofType;
-        typedef typename Data::value_type value_type;
-        typedef typename value_type :: field_type DofType;
+        // static const int blockSize = Data::blockSize;
+        const int size = calcSize(indices, data);
+        buffer.enlarge( size );
 
-        //static const int blockSize = Data::blockSize;
-        static const int blockSize = value_type::dimension;
-        buffer.enlarge( size * blockSize * sizeof( DofType ) );
-        for( int i = 0; i < size; ++i )
+        using namespace Dune::ISTL;
+        auto writeEntry = [&](const auto & entry, const auto & index){ buffer << entry; };
+        auto writeBlock = [&](const auto & block, const auto & index)
         {
-          auto &&block = accessVector(data, indexMap[ i ]);
-          writeBlock(buffer, block);
-        }
-      }
+          // serialize the block
+          flatVectorForEach(block, writeEntry);
+        };
 
-      template< class Buffer >
-      inline void writeBlock( Buffer &buffer, double d) const
-      {
-        buffer << d;
-      }
-
-        template< class Buffer, int N >
-      inline void writeBlock( Buffer &buffer, bigunsignedint<N> d) const
-      {
-        buffer << d;
-      }
-
-      template< class Buffer, class K, unsigned int n>
-      inline void writeBlock( Buffer &buffer, const FieldVector<K,n>& v) const
-      {
-        for (unsigned int i = 0; i<n; i++)
-          buffer << v[i];
+        // for each index
+        forEachIndex(indices, data, writeBlock);
       }
 
       // deserialize data from object stream to DataImp& data vector
@@ -430,57 +434,24 @@ namespace Dune
         // auto it = recvIndexMap_.find( source );
         // const auto &indexMap = it->second;
         auto it = pattern_.find( source );
-        const auto &indexMap = it->second.recvIndices;
+        const auto &indices = it->second.recvIndices;
 
-        const int size = indexMap.size();
-
-        typedef typename Data::value_type value_type;
-        typedef typename value_type :: field_type DofType;
-
-        {
-          static const int blockSize = 1; // value_type::dimension;
-          assert( static_cast< std::size_t >( size * blockSize * sizeof( DofType ) ) <= static_cast< std::size_t >( (buffer.size()-buffer.tell()) ) );
-          for( int i = 0; i < size; ++i )
+        using namespace Dune::ISTL;
+        // apply operation, i.e. COPY, ADD, etc.
+        // depending on the block type (scalar or vector),
+        // we need to specialize the operation
+        forEachIndex(indices, data,
+          [&](auto && block, const auto & index)
           {
-            auto &&block = accessVector(data, indexMap[ i ]);
-            // apply operation, i.e. COPY, ADD, etc.
-            // depending on the block type (scalar or vector), we specialize
-            applyOperation(operation, buffer, block);
+            auto value = block; // not only correct type, but also correct size
+            buffer >> value;
+            // must work if branch is true
+            #warning should this nesting should be the responsibility of the user?
+            operation(value, block);
           }
-        }
+          );
       }
     };
-
-    template<typename Buffer, typename Operation>
-    void applyOperation(const Operation& operation, Buffer& buffer, double & data)
-    {
-      double value;
-      buffer >> value;
-      operation( value, data );
-    }
-
-    template<typename Buffer, typename Operation, int N>
-    void applyOperation(const Operation& operation, Buffer& buffer, bigunsignedint<N> & data)
-    {
-      bigunsignedint<N> value;
-      buffer >> value;
-      operation( value, data );
-    }
-
-//   template<typename Buffer, typename Operation>
-//   void applyOperation()
-//   {
-//     for( int k=0; k<blockSize; ++k )
-//     {
-//       DofType value;
-//       buffer >> value;
-//       // apply operation, i.e. COPY, ADD, etc.
-// #warning TODO
-//       // auto & ref = block[ k ];
-//       auto & ref = block;
-//       operation( value, ref );
-//     }
-//   }
 
     /** --PatternBuilder
      *
@@ -513,10 +484,6 @@ namespace Dune
       const int mySize_;
 
       Pattern &pattern_;
-      // LinkStorageType &linkStorage_;
-      // IndexVectorMapType &sendIndexMap_;
-      // IndexVectorMapType &recvIndexMap_;
-
 
     public:
       PatternBuilder( const CommunicationType& comm,
@@ -553,7 +520,6 @@ namespace Dune
           //recvFutures.insert( std::make_pair( source, comm_.irecv( BufferType(comm_), source, 123 ) ) );
           auto buffer = comm_.rrecv( BufferType(comm_), source, 124 );
           auto& indices = link.second.sendIndices;
-          // auto& indices = sendIndexMap_[ source ];
           buffer >> indices;
         }
 
@@ -751,11 +717,32 @@ namespace Dune
       }
     };
 
+    /** expected Mapper interface:
+     *
+     *  - true if any DOFs are associated with entites of codim
+     *    `Mapper.contains( codim );`
+     *  - number of DOFs associated with entity
+     *    `Mapper.numEntityDofs( entity );`
+     *  - write multi-indices of DOFs associated with entity into indices
+     *    `Mapper.obtainEntityDofs( entity, indices );`
+     *
+     */
     template< class GridView, class BlockMapper >
     Dune::MPIComm::CommunicationPattern<typename BlockMapper::GlobalKeyType>
     buildCommunicationPatternFromMapper( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface )
     {
       Dune::MPIComm::CommunicationPattern<typename BlockMapper::GlobalKeyType> pattern;
+      // return Hybrid::switchCases(
+      //   std::make_index_sequence<Size::value>{},
+      //   {InteriorBorder_All_Interface},
+      //   mi[mi.size()-i-1],
+      //   [&](auto ii) {
+      //     PatternBuilder< CommunicationType, BlockMapper, InteriorBorder_All_Interface >
+      //       handle( gv.comm(), blockMapper, pattern);
+      //     // make one all to all communication to build up communication pattern
+      //     gv.communicate( handle, InteriorBorder_All_Interface , ForwardCommunication );
+      //   });
+
       // TODO replace by switchCases(const Cases& cases, const Value& value, Branches&& branches)
       typedef typename GridView::Communication CommunicationType;
       if( interface == InteriorBorder_All_Interface )
@@ -763,14 +750,14 @@ namespace Dune
         PatternBuilder< CommunicationType, BlockMapper, InteriorBorder_All_Interface >
           handle( gv.comm(), blockMapper, pattern);
         // make one all to all communication to build up communication pattern
-        gv.communicate( handle, All_All_Interface , ForwardCommunication );
+        gv.communicate( handle, InteriorBorder_All_Interface , ForwardCommunication );
       }
       else if( interface == InteriorBorder_InteriorBorder_Interface )
       {
         PatternBuilder< CommunicationType, BlockMapper, InteriorBorder_InteriorBorder_Interface >
           handle( gv.comm(), blockMapper, pattern);
         // make one all to all communication to build up communication pattern
-        gv.communicate( handle, All_All_Interface , ForwardCommunication );
+        gv.communicate( handle, InteriorBorder_InteriorBorder_Interface , ForwardCommunication );
       }
       else if( interface == All_All_Interface )
       {

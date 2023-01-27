@@ -72,7 +72,8 @@ namespace Dune {
 #if not USEGFS
           , localSize_(1) /* hard coded for our initial example */
 #endif
-        {}
+        {
+        }
 
         bool contains( const int codim ) const {
 #if USEGFS
@@ -110,6 +111,13 @@ namespace Dune {
             dofIndices_,
             offsets_.begin(),
             std::integral_constant<bool,false>());
+
+          // -- reverse indices
+          // PDELab uses (inner -> outer) ordering [for technical reasons],
+          // whereas dune-istl expects (outer -> inner) [which is more intuitive].
+          for (auto it = containerIndices.end()-numEntityDofs(entity);
+               it < containerIndices.end(); ++it)
+            reverseMultiIndex(*it);
 #else
           if (localSize_ == 1) ////// SCALAR
           {
@@ -123,6 +131,15 @@ namespace Dune {
             }
           }
 #endif
+        }
+
+      private:
+        template<typename MI>
+        void reverseMultiIndex(MI & mi) const
+        {
+          auto S = mi.size();
+          for (unsigned int i=0; i<S/2; i++)
+            std::swap(mi[i], mi[S-i-1]);
         }
       };
 

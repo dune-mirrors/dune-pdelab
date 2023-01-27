@@ -171,7 +171,7 @@ namespace Dune {
         if (gfs.gridView().comm().size()>1)
         {
           if (helper.allToAllCommunication()) {
-            auto add = [](const double& a, double& b) {
+            auto add = [](const auto& a, auto& b) {
               b += a;
             };
             helper.allToAllCommunication().exchange( Backend::native(v), add );
