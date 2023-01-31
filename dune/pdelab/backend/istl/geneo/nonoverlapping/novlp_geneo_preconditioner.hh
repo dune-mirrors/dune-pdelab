@@ -3,6 +3,8 @@
 
 #include <dune/pdelab/backend/istl/geneo/nonoverlapping/geneobasis.hh>
 
+// #include <dune/composites/Driver/Solvers/zembasis_virtual_overlap.hh>
+
 namespace Dune {
   namespace PDELab {
 
@@ -70,14 +72,19 @@ namespace Dune {
 
         auto subdomainbasis = std::make_shared<Dune::PDELab::NonoverlappingGenEOBasis<GO, Matrix, Vector>>(adapter, A_extended, A_overlap_extended, part_unity, eigenvalue_threshold, nev, nev_arpack, shift, true);
 
+        /* Test preconditionner using zeros energy modes to build the coarse space*/
+        // auto subdomainbasis = std::make_shared<Dune::PDELab::ZEMBasis_virtual_overlap<GO,Vector,Matrix,3,3> >(go, adapter, part_unity);
+
         // std::cout << adapter.gridView().comm().rank() << " before the coarse space construction." << std::endl;
 
         // auto coarse_space = std::make_shared<Dune::PDELab::NonoverlappingSubdomainProjectedCoarseSpaceHeldByRank0<GV, Matrix, Vector>>(adapter, gv, *A_extended, subdomainbasis, verbose);
         auto coarse_space = std::make_shared<Dune::PDELab::NonoverlappingSubdomainProjectedCoarseSpace<GV, Matrix, Vector>>(adapter, gv, *A_extended, subdomainbasis, verbose);
-        std::cout << adapter.gridView().comm().rank() << " have built the coarse space." << std::endl;
+        if(verbose)
+          std::cout << adapter.gridView().comm().rank() << " have built the coarse space." << std::endl;
 
         prec = std::make_shared<Dune::PDELab::ISTL::NonoverlappingTwoLevelOverlappingAdditiveSchwarz<GV, Matrix, Vector>>(adapter, A_extended, *part_unity, coarse_space, true);
-        std::cout << adapter.gridView().comm().rank() << " prec initialized." << std::endl;
+        if(verbose)
+          std::cout << adapter.gridView().comm().rank() << " prec initialized." << std::endl;
 
       }
 

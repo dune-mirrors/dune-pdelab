@@ -65,22 +65,23 @@ namespace Dune {
           }
         }
 
-        int verbosity = 0;
-        if (adapter.gridView().comm().rank() == 22 || adapter.gridView().comm().rank() == 0)
-          verbosity=4;
-
         // Setup Arpack for solving generalized eigenproblem
-        std::cout << "ARPACK setup...";
-        ArpackGeneo::ArPackPlusPlus_Algorithms<Matrix, Vector> arpack(*A_extended, 1000, verbosity);
-        std::cout << " done" << std::endl;
+        if(verbose)
+          std::cout << "ARPACK setup...";
+        ArpackGeneo::ArPackPlusPlus_Algorithms<Matrix, Vector> arpack(*A_extended, 1000, verbose);
+        if(verbose)
+          std::cout << " done" << std::endl;
         double eps = 0.0;
 
         std::vector<double> eigenvalues(nev_arpack,0.0);
         std::vector<Vector> eigenvectors(nev_arpack,Vector(adapter.getExtendedSize()));
 
-        std::cout << "ARPACK solve...";
+
+        if(verbose)
+          std::cout << "ARPACK solve...";
         arpack.computeGenNonSymMinMagnitude(ovlp_mat, eps, eigenvectors, eigenvalues, shift);
-        std::cout << " done" << std::endl;
+        if(verbose)
+          std::cout << " done" << std::endl;
 
         // Dune::BlockVector<Dune::FieldVector<double, 1>> export_eigenvalues(nev_arpack);
         // // Dune::BlockVector<Dune::FieldVector<double, 1>> error(nev_arpack);
@@ -121,8 +122,8 @@ namespace Dune {
               break;
             }
           }
-          // if (verbose > 0)
-          std::cout << "Process " << adapter.gridView().comm().rank() << " picked " << cnt << " eigenvectors" << std::endl;
+          if (verbose > 0)
+            std::cout << "Process " << adapter.gridView().comm().rank() << " picked " << cnt << " eigenvectors" << std::endl;
           if (cnt == -1)
             cnt = nev;
             // DUNE_THROW(Dune::Exception,"No eigenvalue above threshold - not enough eigenvalues computed!");
@@ -158,7 +159,8 @@ namespace Dune {
           this->local_basis.pop_back();
         }
 
-        std::cout << adapter.gridView().comm().rank() << " have added PoU in the basis." << std::endl;
+        if(verbose)
+          std::cout << adapter.gridView().comm().rank() << " have added PoU in the basis." << std::endl;
       }
     };
 

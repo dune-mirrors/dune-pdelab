@@ -156,12 +156,12 @@ namespace Dune {
     };
 
     template<class Vector, typename vector1i>
-    class GenEOBasisFinalPlot : public SubdomainBasis<Vector>
+    class ReadBasisFromDataBase : public SubdomainBasis<Vector>
     { // For testing
 
     public:
 
-      GenEOBasisFinalPlot(std::string& path_to_storage, int basis_size, int subdomain_number, std::string defectID="", int verbose = 0) {
+      ReadBasisFromDataBase(std::string& path_to_storage, int basis_size, int subdomain_number, std::string defectID="", int verbose = 0) {
 
         if (verbose > 1) std::cout << "Getting EV basis for subdomain: " << subdomain_number << " from offline." << std::endl;
 
