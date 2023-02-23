@@ -57,7 +57,7 @@ namespace Dune {
       }
 
       NonoverlappingGenEOPreconditioner(const GO& go, const typename GO::Jacobian& A, int algebraic_overlap, int avg_nonzeros, const double eigenvalue_threshold, int& nev,
-                          int nev_arpack = -1, const double shift = 0.001, int verbose = 0)
+                          int nev_arpack = -1, const double shift = 0.001, int verbose = 0, std::string preconditionerType = "fullyAdditive")
       {
         using Dune::PDELab::Backend::native;
 
@@ -69,6 +69,7 @@ namespace Dune {
         std::shared_ptr<Matrix> A_extended = std::get<0>(geneo_matrices);
         std::shared_ptr<Matrix> A_overlap_extended = std::get<1>(geneo_matrices);
         std::shared_ptr<Vector> part_unity = std::get<2>(geneo_matrices);
+        std::vector<int> IntBndDofs = std::get<3>(geneo_matrices);
 
         auto subdomainbasis = std::make_shared<Dune::PDELab::NonoverlappingGenEOBasis<GO, Matrix, Vector>>(adapter, A_extended, A_overlap_extended, part_unity, eigenvalue_threshold, nev, nev_arpack, shift, true);
 
@@ -82,7 +83,11 @@ namespace Dune {
         if(verbose)
           std::cout << adapter.gridView().comm().rank() << " have built the coarse space." << std::endl;
 
-        prec = std::make_shared<Dune::PDELab::ISTL::NonoverlappingTwoLevelOverlappingAdditiveSchwarz<GV, Matrix, Vector>>(adapter, A_extended, *part_unity, coarse_space, true);
+        if (preconditionerType == "restrictedHybrid") {
+          prec = std::make_shared<Dune::PDELab::ISTL::RestrictedHybridTwoLevelSchwarz<GV, Matrix, Vector>>(adapter, A_extended, avg_nonzeros, *part_unity, IntBndDofs, coarse_space, true, verbose);
+        } else {
+          prec = std::make_shared<Dune::PDELab::ISTL::NonoverlappingTwoLevelOverlappingAdditiveSchwarz<GV, Matrix, Vector>>(adapter, A_extended, *part_unity, coarse_space, true, verbose);
+        }
         if(verbose)
           std::cout << adapter.gridView().comm().rank() << " prec initialized." << std::endl;
 
@@ -90,7 +95,7 @@ namespace Dune {
 
     private:
 
-      std::shared_ptr<Dune::PDELab::ISTL::NonoverlappingTwoLevelOverlappingAdditiveSchwarz<GV, Matrix, Vector>> prec = nullptr;
+      std::shared_ptr<Dune::Preconditioner<Vector,Vector>> prec = nullptr;
 
     };
 

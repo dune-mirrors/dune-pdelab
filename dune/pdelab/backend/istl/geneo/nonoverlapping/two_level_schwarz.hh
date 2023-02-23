@@ -311,7 +311,7 @@ namespace Dune {
           auto communicator = std::shared_ptr<Dune::BufferedCommunicator>(new Dune::BufferedCommunicator());
           communicator->build<Vector>(*allinterface);
 
-
+          Dune::Timer timer_local_solve;
           // ------------------------------------- subdomain solves --------------------------------------
           // first, prepare rhs. Since d_const is constant, we have to make a copy.
           Vector d(d_const);
@@ -348,6 +348,7 @@ namespace Dune {
               correction[i][j]*=part_unity_[i][j];
             }
           }
+          local_time_ += timer_local_solve.elapsed();
 
           communicator->forward<AddGatherScatter<Vector>>(correction,correction); // add all local corrections up
 
@@ -397,6 +398,8 @@ namespace Dune {
           \copydoc Preconditioner::post(X&)
         */
         virtual void post (Vector& x) {
+          if (verbosity_ > 0) std::cout << "Local time =" << local_time_ << std::endl;
+          if (verbosity_ > 0) std::cout << "Local time per apply =" << local_time_ / apply_calls_ << std::endl;
           if (verbosity_ > 0) std::cout << "Coarse time CT=" << coarse_time_ << std::endl;
           if (verbosity_ > 0) std::cout << "Coarse time per apply CTA=" << coarse_time_ / apply_calls_ << std::endl;
         }
@@ -415,6 +418,7 @@ namespace Dune {
         std::vector<int> intBndDofs_;
 
         double coarse_time_ = 0.0;
+        double local_time_ = 0.0;
         int apply_calls_ = 0;
 
         std::shared_ptr<CoarseSpace<Vector> > coarse_space_;
