@@ -57,8 +57,10 @@ namespace Dune {
       }
 
       NonoverlappingGenEOPreconditioner(const GO& go, const typename GO::Jacobian& A, int algebraic_overlap, int avg_nonzeros, const double eigenvalue_threshold, int& nev,
-                          int nev_arpack = -1, const double shift = 0.001, int verbose = 0)
+                          int nev_arpack = -1, const double shift = 0.001, int verbose = 0, std::string filename_timer="Timer_prec.txt")
       {
+
+        Dune::Timer timer_detailed(true);
         using Dune::PDELab::Backend::native;
 
         const GV& gv = go.trialGridFunctionSpace().gridView();
@@ -70,7 +72,11 @@ namespace Dune {
         std::shared_ptr<Matrix> A_overlap_extended = std::get<1>(geneo_matrices);
         std::shared_ptr<Vector> part_unity = std::get<2>(geneo_matrices);
 
+        double time_Matrix_construction = timer_detailed.elapsed(); timer_detailed.reset();
+
         auto subdomainbasis = std::make_shared<Dune::PDELab::NonoverlappingGenEOBasis<GO, Matrix, Vector>>(adapter, A_extended, A_overlap_extended, part_unity, eigenvalue_threshold, nev, nev_arpack, shift, true);
+
+        double time_Eigen_solve = timer_detailed.elapsed(); timer_detailed.reset();
 
         /* Test preconditionner using zeros energy modes to build the coarse space*/
         // auto subdomainbasis = std::make_shared<Dune::PDELab::ZEMBasis_virtual_overlap<GO,Vector,Matrix,3,3> >(go, adapter, part_unity);
@@ -79,12 +85,34 @@ namespace Dune {
 
         // auto coarse_space = std::make_shared<Dune::PDELab::NonoverlappingSubdomainProjectedCoarseSpaceHeldByRank0<GV, Matrix, Vector>>(adapter, gv, *A_extended, subdomainbasis, verbose);
         auto coarse_space = std::make_shared<Dune::PDELab::NonoverlappingSubdomainProjectedCoarseSpace<GV, Matrix, Vector>>(adapter, gv, *A_extended, subdomainbasis, verbose);
+
+        double time_coarse_space_setup = timer_detailed.elapsed(); timer_detailed.reset();
+
+
         if(verbose)
           std::cout << adapter.gridView().comm().rank() << " have built the coarse space." << std::endl;
 
         prec = std::make_shared<Dune::PDELab::ISTL::NonoverlappingTwoLevelOverlappingAdditiveSchwarz<GV, Matrix, Vector>>(adapter, A_extended, *part_unity, coarse_space, true);
+
+        double time_preconditionner = timer_detailed.elapsed(); timer_detailed.reset();
+
         if(verbose)
           std::cout << adapter.gridView().comm().rank() << " prec initialized." << std::endl;
+                std::ofstream timer_out;
+
+        timer_out.open(filename_timer, std::ios_base::app);
+        if (timer_out.is_open()){
+          if (gv.comm().rank() == 0){
+            timer_out << std::endl;
+            timer_out << "Time matrix construction : " << time_Matrix_construction << std::endl;
+            timer_out << "Time eigen solve : " << time_Eigen_solve << std::endl;
+            timer_out << "Time coarse space setup : " << time_coarse_space_setup << std::endl;
+            timer_out << "Time preconditionner : " << time_preconditionner << std::endl;
+            // timer_out << std::endl << std::endl << std::endl;
+          }
+          // RF total_time = time_fine_assembly + time_ovlp_construction + time_BC_detection + time_EIgenP_solve + time_Coarse_solve;
+        }
+        timer_out.close();
 
       }
 
