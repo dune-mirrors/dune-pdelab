@@ -48,7 +48,10 @@ namespace Dune {
           return Dune::SolverCategory::nonoverlapping;
         }
 
-        NonoverlappingTwoLevelOverlappingAdditiveSchwarz (const NonoverlappingOverlapAdapter<GridView, Vector, Matrix>& adapter, std::shared_ptr<Matrix> A, const Vector& part_unity, std::shared_ptr<CoarseSpace<Vector> > coarse_space, bool coarse_space_active = true, int verbosity = 0)
+        NonoverlappingTwoLevelOverlappingAdditiveSchwarz (const NonoverlappingOverlapAdapter<GridView,
+            Vector, Matrix>& adapter, std::shared_ptr<Matrix> A, const Vector& part_unity,
+            std::shared_ptr<CoarseSpace<Vector> > coarse_space, bool coarse_space_active = true,
+            int verbosity = 0, std::string filename_timer="Timer_prec.txt")
         : verbosity_(verbosity),
           coarse_space_active_(coarse_space_active),
           adapter_(adapter),
@@ -56,7 +59,8 @@ namespace Dune {
           coarse_space_(coarse_space),
           coarse_solver_ (*coarse_space_->get_coarse_system()),
           coarse_defect_(coarse_space_->basis_size(), coarse_space_->basis_size()),
-          prolongated_(adapter_.getExtendedSize())
+          prolongated_(adapter_.getExtendedSize()),
+          filename_timer_(filename_timer)
         {
           const int block_size = Vector::block_type::dimension;
 
@@ -183,6 +187,21 @@ namespace Dune {
         virtual void post (Vector& x) {
           if (verbosity_ > 0) std::cout << "Coarse time CT=" << coarse_time_ << std::endl;
           if (verbosity_ > 0) std::cout << "Coarse time per apply CTA=" << coarse_time_ / apply_calls_ << std::endl;
+
+
+
+          std::ofstream timer_out;
+          timer_out.open(filename_timer_, std::ios_base::app);
+          if (adapter_.gridView().comm().rank()==0){
+            if (timer_out.is_open()){
+              // timer_out << "Local time =" << local_time_ << std::endl;
+              // timer_out << "Local time per apply =" << local_time_ / apply_calls_ << std::endl;
+              timer_out << "Coarse time CT=" << coarse_time_ << std::endl;
+              timer_out << "Coarse time per apply CTA=" << coarse_time_ / apply_calls_ << std::endl;
+            }
+          }
+          timer_out.close();
+
         }
 
       private:
@@ -202,6 +221,8 @@ namespace Dune {
 
         typename CoarseSpace<Vector>::COARSE_V coarse_defect_;
         Vector prolongated_;
+
+        std::string filename_timer_;
 
       };
 
@@ -235,7 +256,10 @@ namespace Dune {
           return Dune::SolverCategory::nonoverlapping;
         }
 
-        RestrictedHybridTwoLevelSchwarz (const NonoverlappingOverlapAdapter<GridView, Vector, Matrix>& adapter, std::shared_ptr<Matrix> A, int avg_nonzeros, const Vector& part_unity,std::vector<int>& intBndDofs, std::shared_ptr<CoarseSpace<Vector> > coarse_space, bool coarse_space_active = true, int verbosity = 0)
+        RestrictedHybridTwoLevelSchwarz (const NonoverlappingOverlapAdapter<GridView, Vector, Matrix>& adapter,
+            std::shared_ptr<Matrix> A, int avg_nonzeros, const Vector& part_unity,std::vector<int>& intBndDofs,
+            std::shared_ptr<CoarseSpace<Vector> > coarse_space, bool coarse_space_active = true, int verbosity = 0,
+            std::string filename_timer="Timer_prec.txt")
         : verbosity_(verbosity),
           coarse_space_active_(coarse_space_active),
           adapter_(adapter),
@@ -245,7 +269,8 @@ namespace Dune {
           coarse_defect_(coarse_space_->basis_size(), coarse_space_->basis_size()),
           prolongated_(adapter_.getExtendedSize()),
           part_unity_(part_unity),
-          intBndDofs_(intBndDofs)
+          intBndDofs_(intBndDofs),
+          filename_timer_(filename_timer)
         {
           using Dune::PDELab::Backend::native;
           const int block_size = Vector::block_type::dimension;
@@ -402,6 +427,18 @@ namespace Dune {
           if (verbosity_ > 0) std::cout << "Local time per apply =" << local_time_ / apply_calls_ << std::endl;
           if (verbosity_ > 0) std::cout << "Coarse time CT=" << coarse_time_ << std::endl;
           if (verbosity_ > 0) std::cout << "Coarse time per apply CTA=" << coarse_time_ / apply_calls_ << std::endl;
+
+          std::ofstream timer_out;
+          if (adapter_.gridView().comm().rank()==0){
+            timer_out.open(filename_timer_, std::ios_base::app);
+            if (timer_out.is_open()){
+              timer_out << "Local time =" << local_time_ << std::endl;
+              timer_out << "Local time per apply =" << local_time_ / apply_calls_ << std::endl;
+              timer_out << "Coarse time CT=" << coarse_time_ << std::endl;
+              timer_out << "Coarse time per apply CTA=" << coarse_time_ / apply_calls_ << std::endl;
+            }
+          }
+          timer_out.close();
         }
 
       private:
@@ -426,6 +463,8 @@ namespace Dune {
 
         typename CoarseSpace<Vector>::COARSE_V coarse_defect_;
         Vector prolongated_;
+
+        std::string filename_timer_;
 
       };
     }
