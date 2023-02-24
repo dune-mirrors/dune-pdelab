@@ -57,7 +57,7 @@ namespace Dune {
       }
 
       NonoverlappingGenEOPreconditioner(const GO& go, const typename GO::Jacobian& A, int algebraic_overlap, int avg_nonzeros, const double eigenvalue_threshold, int& nev,
-                          int nev_arpack = -1, const double shift = 0.001, int verbose = 0, std::string filename_timer="Timer_prec.txt")
+                          int nev_arpack = -1, const double shift = 0.001, int verbose = 0, std::string preconditionerType = "additiveTwoLevelSchwarz", std::string filename_timer="Timer_prec.txt")
       {
 
         Dune::Timer timer_detailed(true);
@@ -71,6 +71,7 @@ namespace Dune {
         std::shared_ptr<Matrix> A_extended = std::get<0>(geneo_matrices);
         std::shared_ptr<Matrix> A_overlap_extended = std::get<1>(geneo_matrices);
         std::shared_ptr<Vector> part_unity = std::get<2>(geneo_matrices);
+        std::vector<int> IntBndDofs = std::get<3>(geneo_matrices);
 
         double time_Matrix_construction = timer_detailed.elapsed(); timer_detailed.reset();
 
@@ -92,14 +93,18 @@ namespace Dune {
         if(verbose)
           std::cout << adapter.gridView().comm().rank() << " have built the coarse space." << std::endl;
 
-        prec = std::make_shared<Dune::PDELab::ISTL::NonoverlappingTwoLevelOverlappingAdditiveSchwarz<GV, Matrix, Vector>>(adapter, A_extended, *part_unity, coarse_space, true);
-
         double time_preconditionner = timer_detailed.elapsed(); timer_detailed.reset();
+
+        if (preconditionerType == "restrictedHybridTwoLevelSchwarz") {
+          prec = std::make_shared<Dune::PDELab::ISTL::RestrictedHybridTwoLevelSchwarz<GV, Matrix, Vector>>(adapter, A_extended, avg_nonzeros, *part_unity, IntBndDofs, coarse_space, true, verbose, filename_timer);
+        } else if(preconditionerType == "additiveTwoLevelSchwarz") {
+          prec = std::make_shared<Dune::PDELab::ISTL::NonoverlappingTwoLevelOverlappingAdditiveSchwarz<GV, Matrix, Vector>>(adapter, A_extended, *part_unity, coarse_space, true, verbose, filename_timer);
+        }
 
         if(verbose)
           std::cout << adapter.gridView().comm().rank() << " prec initialized." << std::endl;
-                std::ofstream timer_out;
 
+        std::ofstream timer_out;
         timer_out.open(filename_timer, std::ios_base::app);
         if (timer_out.is_open()){
           if (gv.comm().rank() == 0){
@@ -118,7 +123,7 @@ namespace Dune {
 
     private:
 
-      std::shared_ptr<Dune::PDELab::ISTL::NonoverlappingTwoLevelOverlappingAdditiveSchwarz<GV, Matrix, Vector>> prec = nullptr;
+      std::shared_ptr<Dune::Preconditioner<Vector,Vector>> prec = nullptr;
 
     };
 
