@@ -98,7 +98,7 @@ namespace Dune {
         if (preconditionerType == "restrictedHybridTwoLevelSchwarz") {
           prec = std::make_shared<Dune::PDELab::ISTL::RestrictedHybridTwoLevelSchwarz<GV, Matrix, Vector>>(adapter, A_extended, avg_nonzeros, *part_unity, IntBndDofs, coarse_space, true, verbose, filename_timer);
         } else if(preconditionerType == "additiveTwoLevelSchwarz") {
-          prec = std::make_shared<Dune::PDELab::ISTL::NonoverlappingTwoLevelOverlappingAdditiveSchwarz<GV, Matrix, Vector>>(adapter, A_extended, *part_unity, coarse_space, true, verbose, filename_timer);
+          prec = std::make_shared<Dune::PDELab::ISTL::NonoverlappingTwoLevelOverlappingAdditiveSchwarz<GV, Matrix, Vector>>(adapter, A_extended, *part_unity, IntBndDofs, coarse_space, true, verbose, filename_timer);
         }
 
         if(verbose)

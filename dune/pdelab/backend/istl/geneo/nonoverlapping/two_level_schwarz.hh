@@ -49,7 +49,7 @@ namespace Dune {
         }
 
         NonoverlappingTwoLevelOverlappingAdditiveSchwarz (const NonoverlappingOverlapAdapter<GridView,
-            Vector, Matrix>& adapter, std::shared_ptr<Matrix> A, const Vector& part_unity,
+            Vector, Matrix>& adapter, std::shared_ptr<Matrix> A, const Vector& part_unity, std::vector<int>& intBndDofs,
             std::shared_ptr<CoarseSpace<Vector> > coarse_space, bool coarse_space_active = true,
             int verbosity = 0, std::string filename_timer="Timer_prec.txt")
         : verbosity_(verbosity),
@@ -60,16 +60,33 @@ namespace Dune {
           coarse_solver_ (*coarse_space_->get_coarse_system()),
           coarse_defect_(coarse_space_->basis_size(), coarse_space_->basis_size()),
           prolongated_(adapter_.getExtendedSize()),
+          intBndDofs_(intBndDofs),
           filename_timer_(filename_timer)
         {
           const int block_size = Vector::block_type::dimension;
 
-          // Apply Dirichlet conditions to matrix on processor boundaries, inferred from partition of unity
+          // // Apply Dirichlet conditions to matrix on processor boundaries, inferred from partition of unity
+          // for (auto rIt=A_->begin(); rIt!=A_->end(); ++rIt){
+          //   for(int block_i = 0; block_i < block_size; block_i++){
+          //     if (part_unity[rIt.index()][block_i] == .0) {
+          //       for (auto cIt=rIt->begin(); cIt!=rIt->end(); ++cIt)
+          //       {
+          //         for(int block_j = 0; block_j < block_size; block_j++){
+          //           (*cIt)[block_i][block_j] = (rIt.index() == cIt.index() && block_i == block_j) ? 1.0 : 0.0;
+          //         }
+          //       }
+          //     }
+          //   }
+          // }
+
+          // Apply Dirichlet conditions to matrix A_ on processor boundaries
+          int j = 0;
           for (auto rIt=A_->begin(); rIt!=A_->end(); ++rIt){
-            for(int block_i = 0; block_i < block_size; block_i++){
-              if (part_unity[rIt.index()][block_i] == .0) {
-                for (auto cIt=rIt->begin(); cIt!=rIt->end(); ++cIt)
-                {
+            if (rIt.index() == intBndDofs_[j]){
+              if (verbosity_> 2) {std::cout << "j = " << j << ". intBndDof index = " << intBndDofs_[j] << std::endl;}
+              j++;
+              for (auto cIt=rIt->begin(); cIt!=rIt->end(); ++cIt){
+                for(int block_i = 0; block_i < block_size; block_i++){
                   for(int block_j = 0; block_j < block_size; block_j++){
                     (*cIt)[block_i][block_j] = (rIt.index() == cIt.index() && block_i == block_j) ? 1.0 : 0.0;
                   }
@@ -109,6 +126,7 @@ namespace Dune {
           if (verbosity_ > 2) Dune::printvector(std::cout, d, "defect (local)", "", 1, 10, 17);
 
           // first the subdomain solves
+          Dune::Timer timer_local_solve;
           Vector b(adapter_.getExtendedSize()), correction(adapter_.getExtendedSize()); // need copy, since solver overwrites right hand side
           adapter_.extendVector(d, b);
           if (verbosity_ > 2) Dune::printvector(std::cout, b, "defect (extended)", "", 1, 10, 17);
@@ -137,10 +155,21 @@ namespace Dune {
                   }
               }
           }
+
+          // // write zeros into b at processor boudnaries, for the Dirichlet BCs there.
+          // const int block_size = Vector::block_type::dimension;
+          // Vector b_cpy(b);// need copy, since solver overwrites right hand side
+          // for (int j = 0; j<intBndDofs_.size() ; ++j) {
+          //   for (int i = 0; i < block_size; ++i){
+          //     b_cpy[intBndDofs_[j]][i] = .0;
+          //   }
+          // }
+
           if (verbosity_ > 2) Dune::printvector(std::cout, b_cpy, "defect (Dirichlet applied) ", "", 1, 10, 17);
 
           Dune::InverseOperatorResult result;
           solverf_->apply(correction,b_cpy,result);
+          local_time_ += timer_local_solve.elapsed();
 
           if (verbosity_ > 2) Dune::printvector(std::cout, correction, "correction (1lvl) ", "", 1, 10, 17);
 
@@ -165,10 +194,10 @@ namespace Dune {
 
             if (verbosity_ > 2) Dune::printvector(std::cout, prolongated_, "prolongated_ ", "", 1, 10, 17);
 
-            correction += prolongated_;
             if (verbosity_ > 2) Dune::printvector(std::cout, correction, "correction ", "", 1, 10, 17);
 
-            communicator->forward<AddGatherScatter<Vector>>(correction,correction); // make function known in other subdomains
+            communicator->forward<AddGatherScatter<Vector>>(prolongated_,prolongated_); // make function known in other subdomains
+            correction += prolongated_;
             if (verbosity_ > 2) Dune::printvector(std::cout, correction, "correction (sum) ", "", 1, 10, 17);
 
             adapter_.restrictVector(correction, v);
@@ -194,8 +223,8 @@ namespace Dune {
           timer_out.open(filename_timer_, std::ios_base::app);
           if (adapter_.gridView().comm().rank()==0){
             if (timer_out.is_open()){
-              // timer_out << "Local time =" << local_time_ << std::endl;
-              // timer_out << "Local time per apply =" << local_time_ / apply_calls_ << std::endl;
+              timer_out << "Local time =" << local_time_ << std::endl;
+              timer_out << "Local time per apply =" << local_time_ / apply_calls_ << std::endl;
               timer_out << "Coarse time CT=" << coarse_time_ << std::endl;
               timer_out << "Coarse time per apply CTA=" << coarse_time_ / apply_calls_ << std::endl;
             }
@@ -212,8 +241,10 @@ namespace Dune {
 
         std::shared_ptr<Matrix> A_ = nullptr;
         std::shared_ptr<Dune::UMFPack<Matrix>> solverf_ = nullptr;
+        std::vector<int> intBndDofs_;
 
         double coarse_time_ = 0.0;
+        double local_time_ = 0.0;
         int apply_calls_ = 0;
 
         std::shared_ptr<CoarseSpace<Vector> > coarse_space_;
@@ -257,7 +288,7 @@ namespace Dune {
         }
 
         RestrictedHybridTwoLevelSchwarz (const NonoverlappingOverlapAdapter<GridView, Vector, Matrix>& adapter,
-            std::shared_ptr<Matrix> A, int avg_nonzeros, const Vector& part_unity,std::vector<int>& intBndDofs,
+            std::shared_ptr<Matrix> A, int avg_nonzeros, const Vector& part_unity, std::vector<int>& intBndDofs,
             std::shared_ptr<CoarseSpace<Vector> > coarse_space, bool coarse_space_active = true, int verbosity = 0,
             std::string filename_timer="Timer_prec.txt")
         : verbosity_(verbosity),
