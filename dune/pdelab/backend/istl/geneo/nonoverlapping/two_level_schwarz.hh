@@ -65,28 +65,12 @@ namespace Dune {
         {
           const int block_size = Vector::block_type::dimension;
 
-          // // Apply Dirichlet conditions to matrix on processor boundaries, inferred from partition of unity
-          // for (auto rIt=A_->begin(); rIt!=A_->end(); ++rIt){
-          //   for(int block_i = 0; block_i < block_size; block_i++){
-          //     if (part_unity[rIt.index()][block_i] == .0) {
-          //       for (auto cIt=rIt->begin(); cIt!=rIt->end(); ++cIt)
-          //       {
-          //         for(int block_j = 0; block_j < block_size; block_j++){
-          //           (*cIt)[block_i][block_j] = (rIt.index() == cIt.index() && block_i == block_j) ? 1.0 : 0.0;
-          //         }
-          //       }
-          //     }
-          //   }
-          // }
-
-          // Apply Dirichlet conditions to matrix A_ on processor boundaries
-          int j = 0;
+          // Apply Dirichlet conditions to matrix on processor boundaries, inferred from partition of unity
           for (auto rIt=A_->begin(); rIt!=A_->end(); ++rIt){
-            if (rIt.index() == intBndDofs_[j]){
-              if (verbosity_> 2) {std::cout << "j = " << j << ". intBndDof index = " << intBndDofs_[j] << std::endl;}
-              j++;
-              for (auto cIt=rIt->begin(); cIt!=rIt->end(); ++cIt){
-                for(int block_i = 0; block_i < block_size; block_i++){
+            for(int block_i = 0; block_i < block_size; block_i++){
+              if (part_unity[rIt.index()][block_i] == .0) {
+                for (auto cIt=rIt->begin(); cIt!=rIt->end(); ++cIt)
+                {
                   for(int block_j = 0; block_j < block_size; block_j++){
                     (*cIt)[block_i][block_j] = (rIt.index() == cIt.index() && block_i == block_j) ? 1.0 : 0.0;
                   }
@@ -94,6 +78,22 @@ namespace Dune {
               }
             }
           }
+
+          // // Apply Dirichlet conditions to matrix A_ on processor boundaries
+          // int j = 0;
+          // for (auto rIt=A_->begin(); rIt!=A_->end(); ++rIt){
+          //   if (rIt.index() == intBndDofs_[j]){
+          //     if (verbosity_> 2) {std::cout << "j = " << j << ". intBndDof index = " << intBndDofs_[j] << std::endl;}
+          //     j++;
+          //     for (auto cIt=rIt->begin(); cIt!=rIt->end(); ++cIt){
+          //       for(int block_i = 0; block_i < block_size; block_i++){
+          //         for(int block_j = 0; block_j < block_size; block_j++){
+          //           (*cIt)[block_i][block_j] = (rIt.index() == cIt.index() && block_i == block_j) ? 1.0 : 0.0;
+          //         }
+          //       }
+          //     }
+          //   }
+          // }
 
           solverf_ = std::make_shared<Dune::UMFPack<Matrix>>(*A_,false);
         }
@@ -195,9 +195,9 @@ namespace Dune {
             if (verbosity_ > 2) Dune::printvector(std::cout, prolongated_, "prolongated_ ", "", 1, 10, 17);
 
             if (verbosity_ > 2) Dune::printvector(std::cout, correction, "correction ", "", 1, 10, 17);
-
-            communicator->forward<AddGatherScatter<Vector>>(prolongated_,prolongated_); // make function known in other subdomains
             correction += prolongated_;
+
+            communicator->forward<AddGatherScatter<Vector>>(correction,correction); // make function known in other subdomains
             if (verbosity_ > 2) Dune::printvector(std::cout, correction, "correction (sum) ", "", 1, 10, 17);
 
             adapter_.restrictVector(correction, v);
@@ -355,7 +355,7 @@ namespace Dune {
 
           \copydoc Preconditioner::apply(X&,const Y&)
         */
-        virtual void apply (Vector& v, const Vector& d_const)
+        virtual void apply (Vector& v, const Vector& d)
         {
           using Dune::PDELab::Backend::native;
           using Attribute = EPISAttribute;
@@ -370,7 +370,6 @@ namespace Dune {
           Dune::Timer timer_local_solve;
           // ------------------------------------- subdomain solves --------------------------------------
           // first, prepare rhs. Since d_const is constant, we have to make a copy.
-          Vector d(d_const);
           if (verbosity_ > 2) Dune::printvector(std::cout, d, "defect (local)", "", 1, 10, 17);
 
           // extend nonoverlapping vector d to overlapping vector b.
