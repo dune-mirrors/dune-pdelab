@@ -14,6 +14,11 @@
 #include <dune/grid/uggrid.hh>
 #endif
 
+//- dune-grid includes
+#include <dune/grid/common/grid.hh>
+#include <dune/grid/common/datahandleif.hh>
+#include <dune/grid/utility/entitycommhelper.hh>
+
 #include <dune/istl/owneroverlapcopy.hh>
 #include <dune/istl/solvercategory.hh>
 #include <dune/istl/operators.hh>
@@ -24,6 +29,7 @@
 #include <dune/istl/paamg/pinfo.hh>
 #include <dune/istl/io.hh>
 #include <dune/istl/superlu.hh>
+#include <dune/istl/access.hh>
 
 #include <dune/pdelab/constraints/common/constraints.hh>
 #include <dune/pdelab/gridfunctionspace/genericdatahandle.hh>
@@ -37,6 +43,307 @@
 namespace Dune {
   namespace PDELab {
     namespace ISTL {
+
+      /** --PatternBuilder
+       *
+       *  BlockMapperInterface:
+       *    bool contains( codim ) returns true if dofs are attached to entities with this codim
+       *
+       *    size_t numEntityDofs( entity ) -> return number of dofs located at this entity
+       *
+       *    void mapEntityDofs( entity, std::vector< GlobalKey >& indices ) which fills a vector with global keys (vector indices) of the dofs
+       *
+       */
+      template< class Communication, class BlockMapper, InterfaceType CommInterface >
+      class PatternBuilder :
+        public CommDataHandleIF< PatternBuilder< Communication, BlockMapper, CommInterface >,
+                                 typename BlockMapper::GlobalKeyType
+                                 /* we currently assume that the rank can be sent in the same format as the indices */
+                                 >
+      {
+      public:
+        typedef Communication  CommunicationType;
+        typedef BlockMapper    BlockMapperType;
+
+        typedef typename BlockMapperType::GlobalKeyType Index;
+
+        using Pattern = MPIComm::CommunicationPattern<Index>;
+
+      protected:
+        const CommunicationType& comm_;
+        const BlockMapperType &blockMapper_;
+
+        const int myRank_;
+        const int mySize_;
+
+        Pattern &pattern_;
+
+      public:
+        PatternBuilder( const CommunicationType& comm,
+          const BlockMapperType& blockMapper,
+          Pattern &pattern)
+          : comm_( comm ),
+            blockMapper_( blockMapper ),
+            myRank_( comm.rank() ),
+            mySize_( comm.size() ),
+            pattern_( pattern )
+        {}
+
+      protected:
+        void sendBackSendMaps()
+        {
+          typedef MPIPack BufferType;
+          typedef MPIFuture< BufferType > FutureType;
+
+          std::map< int, FutureType > recvFutures, sendFutures;
+
+          for( const auto& link : pattern_ )
+          {
+            auto dest = link.first;
+            auto& sendIndexMap_ = link.second.sendIndices;
+            BufferType buffer( comm_ );
+            buffer << sendIndexMap_; // [ dest ];
+            //sendFutures.insert( std::make_pair( dest, comm_.isend(std::move(buffer), dest, 123) ) );
+            comm_.send(buffer, dest, 124);
+          }
+
+          for( auto& link : pattern_ )
+          {
+            auto source = link.first;
+            //recvFutures.insert( std::make_pair( source, comm_.irecv( BufferType(comm_), source, 123 ) ) );
+            auto buffer = comm_.rrecv( BufferType(comm_), source, 124 );
+            auto& indices = link.second.sendIndices;
+            buffer >> indices;
+          }
+
+        }
+
+      public:
+        //! destructor
+        ~PatternBuilder()
+        {
+          sendBackSendMaps();
+        }
+
+        //! returns true if combination is contained
+        bool contains( int dim, int codim ) const
+        {
+          return blockMapper_.contains( codim );
+          // _communication_descriptor.contains(_gfs,dim,codim);
+        }
+
+        //! return whether we have a fixed size
+        bool fixedSize( int dim, int codim ) const
+        {
+          return false;
+          // _communication_descriptor.fixedSize(_gfs,dim,codim);
+        }
+
+        template<typename Idx,
+                 std::enable_if_t<IsNumber<Idx>::value, int> = 0>
+        static Idx int2index(int i)
+        {
+          return Idx(i);
+        }
+
+#warning TODO better SFINAE
+        template<typename Idx,
+                 std::enable_if_t<not IsNumber<Idx>::value, int> = 0>
+        static Idx int2index(int i)
+        {
+          Idx idx;
+          idx[0] = i;
+          return idx;
+        }
+
+        template<typename Idx,
+                 std::enable_if_t<IsNumber<Idx>::value, int> = 0>
+        static int index2int(Idx i)
+        {
+          return int(i);
+        }
+
+#warning TODO better SFINAE
+        template<typename Idx,
+                 std::enable_if_t<not IsNumber<Idx>::value, int> = 0>
+        static int index2int(Idx idx)
+        {
+          int i;
+          return idx[0];
+        }
+
+        //! read buffer and apply operation
+        template< class MessageBuffer, class Entity >
+        void gather( MessageBuffer &buffer, const Entity &entity ) const
+        {
+          // check whether we are a sending entity
+          const auto myPartitionType = entity.partitionType();
+          const bool send = EntityCommHelper< CommInterface >::send( myPartitionType );
+
+          // if we send data then send rank and dofs
+          if( send )
+          {
+            // send rank for linkage
+            Index rank = int2index<Index>(myRank_);
+            buffer.write( rank );
+
+            const unsigned int numDofs = blockMapper_.numEntityDofs( entity );
+
+            std::vector< Index > indices( numDofs );
+
+            // copy all global keys
+            blockMapper_.obtainEntityDofs( entity, indices );
+
+            // write global keys to message buffer
+            for( unsigned int i = 0; i < numDofs; ++i )
+              buffer.write( indices[ i ] );
+          }
+        }
+
+        //! read buffer and apply operation
+        template< class MessageBuffer, class Entity >
+        void scatter( MessageBuffer &buffer, const Entity &entity, const size_t dataSize )
+        {
+          // if data size > 0 then other side is sender
+          if( dataSize > 0 )
+          {
+            // read rank of other side
+            Index rankIndex;
+            buffer.read( rankIndex );
+            int rank = index2int(rankIndex);
+            assert( (rank >= 0) && (rank < mySize_) );
+
+            // check whether we are a sending entity
+            const auto myPartitionType = entity.partitionType();
+            const bool receive = EntityCommHelper< CommInterface >::receive( myPartitionType );
+
+            // insert rank of link into set of links
+            // linkStorage_.insert( rank );
+            pattern_[rank].rank = rank; // Dune::MPIComm::Link<Index>(rank); // TODO Index typ
+
+            // read indices from stream
+            std::vector< Index > indices( dataSize - 1 );
+            for(size_t i=0; i<dataSize-1; ++i)
+              buffer.read( indices[i] );
+
+            // if we are a receiving entity
+            if( receive )
+            {
+              //////////////////////////////////////////////////////////
+              //
+              // Problem here: sending and receiving order might differ
+              // Solution: sort all dofs after receiving order and send
+              // senders dofs back at the end
+              //
+              //////////////////////////////////////////////////////////
+
+              // if data has been send and we are receive entity
+              // then insert indices into send map of rank
+              insert( pattern_[rank].sendIndices, indices );
+              // insert( sendIndexMap_[rank], indices );
+
+              // resize vector
+              indices.resize( blockMapper_.numEntityDofs( entity ) );
+
+              // build local mapping for receiving of dofs
+              // copy all global keys
+              blockMapper_.obtainEntityDofs( entity, indices );
+
+              insert( pattern_[rank].recvIndices, indices );
+              // insert( recvIndexMap_[rank], indices );
+
+            }
+          }
+        }
+
+        template <class Vector>
+        void insert(Vector& idxMap, const Vector& indices)
+        {
+          {
+            const size_t size = indices.size();
+            size_t count = idxMap.size();
+            // std::cout << myRank_ << "\tInsert2 " << count << std::endl;
+
+            // reserve memory
+            idxMap.resize( count + size );
+            assert( idxMap.size() == (count + size) );
+
+            // copy indices to index vector
+            for( size_t i = 0; i < size; ++i, ++count )
+            {
+              #warning generalize to work with arbitrary nested spaces
+              // WORKS ONLY FOR SCALAR INDICES: assert( indices[ i ] >= 0 );
+              idxMap[ count ] = indices[ i ];
+            }
+          }
+        }
+
+        //! return local dof size to be communicated
+        template< class Entity >
+        size_t size( const Entity &entity ) const
+        {
+          const PartitionType myPartitionType = entity.partitionType();
+          const bool send = EntityCommHelper< CommInterface >::send( myPartitionType );
+          return (send) ? (
+            blockMapper_.numEntityDofs( entity ) // dofs
+            +1 // rank
+            ) : 0;
+        }
+      };
+
+      /** expected Mapper interface:
+       *
+       *  - true if any DOFs are associated with entites of codim
+       *    `Mapper.contains( codim );`
+       *  - number of DOFs associated with entity
+       *    `Mapper.numEntityDofs( entity );`
+       *  - write multi-indices of DOFs associated with entity into indices
+       *    `Mapper.obtainEntityDofs( entity, indices );`
+       *
+       */
+      template< class GridView, class BlockMapper >
+      Dune::MPIComm::CommunicationPattern<typename BlockMapper::GlobalKeyType>
+      buildCommunicationPatternFromMapper( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface )
+      {
+        Dune::MPIComm::CommunicationPattern<typename BlockMapper::GlobalKeyType> pattern;
+        // return Hybrid::switchCases(
+        //   std::make_index_sequence<Size::value>{},
+        //   {InteriorBorder_All_Interface},
+        //   mi[mi.size()-i-1],
+        //   [&](auto ii) {
+        //     PatternBuilder< CommunicationType, BlockMapper, InteriorBorder_All_Interface >
+        //       handle( gv.comm(), blockMapper, pattern);
+        //     // make one all to all communication to build up communication pattern
+        //     gv.communicate( handle, InteriorBorder_All_Interface , ForwardCommunication );
+        //   });
+
+        // TODO replace by switchCases(const Cases& cases, const Value& value, Branches&& branches)
+        typedef typename GridView::Communication CommunicationType;
+        if( interface == InteriorBorder_All_Interface )
+        {
+          PatternBuilder< CommunicationType, BlockMapper, InteriorBorder_All_Interface >
+            handle( gv.comm(), blockMapper, pattern, skip);
+          // make one all to all communication to build up communication pattern
+          gv.communicate( handle, InteriorBorder_All_Interface , ForwardCommunication );
+        }
+        else if( interface == InteriorBorder_InteriorBorder_Interface )
+        {
+          PatternBuilder< CommunicationType, BlockMapper, InteriorBorder_InteriorBorder_Interface >
+            handle( gv.comm(), blockMapper, pattern, skip);
+          // make one all to all communication to build up communication pattern
+          gv.communicate( handle, InteriorBorder_InteriorBorder_Interface , ForwardCommunication );
+        }
+        else if( interface == All_All_Interface )
+        {
+          PatternBuilder< CommunicationType, BlockMapper, All_All_Interface >
+            handle( gv.comm(), blockMapper, pattern, skip);
+          // make one all to all communication to build up communication pattern
+          gv.communicate( handle, All_All_Interface , ForwardCommunication );
+        }
+        else
+          DUNE_THROW( NotImplemented, "CommunicationPattern for the given interface has not been implemented, yet." );
+        return pattern;
+      }
 
       //! \addtogroup Backend
       //! \ingroup PDELab
