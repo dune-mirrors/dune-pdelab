@@ -364,17 +364,19 @@ namespace Dune
         if constexpr (false) // (uniform_access<Data>())
         {
           std::size_t blocksize = 0;
-          applyAtIndex(indices[0], data,
+          applyAtIndex(
             [&](auto && block, const auto & index)
             {
               blocksize = sizeof(block);
-            });
+            },
+            indices[0], data
+            );
           return blocksize * indices.size();
         }
         else
         {
           std::size_t size = 0;
-          forEachIndex(indices, data,
+          forEachIndex(
             [&](auto && block, const auto & index)
             {
               // serialize the block
@@ -382,7 +384,8 @@ namespace Dune
                 [&](auto && entry, const auto & index){
                   size += sizeof(entry);
                 });
-            }
+            },
+            indices, data
             );
           return size;
         }
@@ -411,7 +414,7 @@ namespace Dune
         };
 
         // for each index
-        forEachIndex(indices, data, writeBlock);
+        forEachIndex(writeBlock, indices, data);
       }
 
       // deserialize data from object stream to DataImp& data vector
@@ -435,7 +438,7 @@ namespace Dune
         // apply operation, i.e. COPY, ADD, etc.
         // depending on the block type (scalar or vector),
         // we need to specialize the operation
-        forEachIndex(indices, data,
+        forEachIndex(
           [&](auto && block, const auto & index)
           {
             auto value = block; // not only correct type, but also correct size
@@ -443,7 +446,8 @@ namespace Dune
             // must work if branch is true
             #warning should this nesting should be the responsibility of the user?
             operation(value, block);
-          }
+          },
+          indices, data
           );
       }
     };
