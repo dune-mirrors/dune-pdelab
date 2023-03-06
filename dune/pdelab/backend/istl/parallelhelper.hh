@@ -488,8 +488,6 @@ namespace Dune {
 
         //! Type used to store owner rank values of all DOFs.
         using RankVector = Dune::PDELab::Backend::Vector<GFS,RankIndex>;
-        //! Type used to store ghost flag of all DOFs.
-        using GhostVector = Dune::PDELab::Backend::Vector<GFS,bool>;
 
         //! ContainerIndex of the underlying GridFunctionSpace.
         typedef typename GFS::Ordering::Traits::ContainerIndex ContainerIndex;
@@ -507,7 +505,6 @@ namespace Dune {
           : _gfs(gfs)
           , _rank(gfs.gridView().comm().rank())
           , _rank_partition(gfs,_rank)
-          , _ghosts(gfs,false)
           , _verbose(verbose)
         {
 
@@ -547,19 +544,11 @@ namespace Dune {
 
           if (_gfs.gridView().comm().size()>1)
             {
-
-              // find out about ghosts
-              //GFSDataHandle<GFS,GhostVector,GhostGatherScatter>
-              GhostDataHandle<GFS,GhostVector>
-                gdh(_gfs,_ghosts,false);
-              _gfs.gridView().communicate(gdh,_interiorBorder_all_interface,Dune::ForwardCommunication);
-
               // create disjoint DOF partitioning
               //            GFSDataHandle<GFS,RankVector,DisjointPartitioningGatherScatter<RankIndex> >
               //  ibdh(_gfs,_rank_partition,DisjointPartitioningGatherScatter<RankIndex>(_rank));
               DisjointPartitioningDataHandle<GFS,RankVector> pdh(_gfs,_rank_partition);
               _gfs.gridView().communicate(pdh,_interiorBorder_all_interface,Dune::ForwardCommunication);
-
             }
 
           // Generate list of neighbors' ranks
@@ -647,12 +636,6 @@ namespace Dune {
         bool owned(const ContainerIndex& i) const
         {
           return _rank_partition[i] == _rank;
-        }
-
-        //! Tests whether the given index belongs to a ghost DOF.
-        bool isGhost(const ContainerIndex& i) const
-        {
-          return _ghosts[i];
         }
 
         //! Calculates the (rank-local) dot product of x and y on the disjoint partition defined by the helper.
@@ -788,7 +771,6 @@ namespace Dune {
         const RankIndex _rank;
         RankVector _rank_partition; // vector to identify unique decomposition
         std::vector<RankIndex> _neighbor_ranks; // list of neighbors' ranks
-        GhostVector _ghosts; //vector to identify ghost dofs
         int _verbose; //verbosity
 
         //! The actual communication interface used when algorithm requires InteriorBorder_All_Interface.
