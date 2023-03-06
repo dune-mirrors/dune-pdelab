@@ -53,7 +53,7 @@ void checkConsistentCommnunication(const Grid& grid, Dune::TestSuite & test, FS 
   using CachedComm = Dune::ExchangeCommunication< typename DOFMapper::GlobalKeyType >;
 
   DOFMapper dofmapper(gfs);
-  auto all_all_pattern =
+  auto [all_all_pattern, skipIndices] =
     buildCommunicationPatternFromMapper(gfs.gridView(), dofmapper, Dune::All_All_Interface);
 
   /* check pattern entries */

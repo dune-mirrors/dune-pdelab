@@ -78,15 +78,19 @@ namespace Dune {
 
         Pattern &pattern_;
 
+        std::vector<Index> &skip_;
+
       public:
         PatternBuilder( const CommunicationType& comm,
           const BlockMapperType& blockMapper,
-          Pattern &pattern)
+          Pattern &pattern,
+          std::vector<Index> &skip)
           : comm_( comm ),
             blockMapper_( blockMapper ),
             myRank_( comm.rank() ),
             mySize_( comm.size() ),
-            pattern_( pattern )
+            pattern_( pattern ),
+            skip_( skip )
         {}
 
       protected:
@@ -115,7 +119,6 @@ namespace Dune {
             auto& indices = link.second.sendIndices;
             buffer >> indices;
           }
-
         }
 
       public:
@@ -252,6 +255,25 @@ namespace Dune {
               insert( pattern_[rank].recvIndices, indices );
               // insert( recvIndexMap_[rank], indices );
 
+              //////////////////////////////////////////////////////////
+              // construct disjoint set of DOFs
+              //////////////////////////////////////////////////////////
+              switch(myPartitionType)
+              {
+                case InteriorEntity:
+                  // we own all interior DOFs, so no need to skip
+                  break;
+                case BorderEntity:
+                  // Assign DOFs to processor with minimum rank
+                  // -> skip if our rank is larger than remote rank
+                  if (myRank_ > rank) break;
+                case OverlapEntity:
+                case FrontEntity:
+                case GhostEntity:
+                  // add all indices belonging to current entity to skip list
+                  insert( skip_, indices );
+              }
+
             }
           }
         }
@@ -302,10 +324,12 @@ namespace Dune {
        *
        */
       template< class GridView, class BlockMapper >
-      Dune::MPIComm::CommunicationPattern<typename BlockMapper::GlobalKeyType>
+      std::tuple<Dune::MPIComm::CommunicationPattern<typename BlockMapper::GlobalKeyType>,
+                 std::vector<typename BlockMapper::GlobalKeyType>>
       buildCommunicationPatternFromMapper( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface )
       {
         Dune::MPIComm::CommunicationPattern<typename BlockMapper::GlobalKeyType> pattern;
+        std::vector<typename BlockMapper::GlobalKeyType> skip;
         // return Hybrid::switchCases(
         //   std::make_index_sequence<Size::value>{},
         //   {InteriorBorder_All_Interface},
@@ -342,7 +366,7 @@ namespace Dune {
         }
         else
           DUNE_THROW( NotImplemented, "CommunicationPattern for the given interface has not been implemented, yet." );
-        return pattern;
+        return std::make_tuple(pattern,skip);
       }
 
       //! \addtogroup Backend
@@ -473,6 +497,7 @@ namespace Dune {
         // ...
         using DOFMapper = EntityDOFMapper<GFS>;
         using CachedComm = Dune::ExchangeCommunication< typename DOFMapper::GlobalKeyType >;
+        using SkipList = std::vector< typename DOFMapper::GlobalKeyType >;
 
       public:
 
@@ -506,14 +531,18 @@ namespace Dune {
           if (useCaches)
           {
             DOFMapper dofmapper(gfs);
-            auto all_all_pattern =
+            auto [all_all_pattern, skip] =
               buildCommunicationPatternFromMapper(_gfs.gridView(), dofmapper, All_All_Interface);
             _all_all_comm.init(_gfs.gridView().comm());
             _all_all_comm.setCommunicationPattern(all_all_pattern);
-            auto interiorBorder_all_pattern =
+            auto [interiorBorder_all_pattern, _ignore] =
               buildCommunicationPatternFromMapper(_gfs.gridView(), dofmapper, InteriorBorder_All_Interface);
             _interiorBorder_all_comm.init(_gfs.gridView().comm());
             _interiorBorder_all_comm.setCommunicationPattern(interiorBorder_all_pattern);
+            //
+            std::sort(skip.begin(), skip.end());
+            std::unique(skip.begin(), skip.end());
+            std::swap(_skip_indices, skip);
           }
 
           if (_gfs.gridView().comm().size()>1)
@@ -534,13 +563,20 @@ namespace Dune {
             }
 
           // Generate list of neighbors' ranks
-          std::set<RankIndex> rank_set;
-          for (RankIndex rank : _rank_partition)
-            if (rank != _rank)
-              rank_set.insert(rank);
+          if(useCaches) {
+            auto& pattern = _all_all_comm.pattern();
+            for (const auto & [rank,link] : pattern)
+              _neighbor_ranks.push_back(rank);
+          }
+          else {
+            std::set<RankIndex> rank_set;
+            for (RankIndex rank : _rank_partition)
+              if (rank != _rank)
+                rank_set.insert(rank);
 
-          for (RankIndex rank : rank_set)
-            _neighbor_ranks.push_back(rank);
+            for (RankIndex rank : rank_set)
+              _neighbor_ranks.push_back(rank);
+          }
         }
 
         const CachedComm& allToAllCommunication() const
@@ -564,8 +600,19 @@ namespace Dune {
         void maskForeignDOFs(X& x) const
         {
           using Backend::native;
-          // dispatch to implementation.
-          maskForeignDOFs(ISTL::container_tag(native(x)),native(x),native(_rank_partition));
+          if (useCaches)
+          {
+            ::Dune::ISTL::forEachIndex (
+              [](auto & val, auto & mi) {
+                val = 0.0; // set skipped entries to zero
+              },
+              _skip_indices, native(x)
+              );
+          }
+          {
+            // dispatch to implementation.
+            maskForeignDOFs(ISTL::container_tag(native(x)),native(x),native(_rank_partition));
+          }
         }
 
       private:
@@ -617,11 +664,24 @@ namespace Dune {
         disjointDot(const X& x, const Y& y) const
         {
           using Backend::native;
-          return disjointDot(ISTL::container_tag(native(x)),
-                             native(x),
-                             native(y),
-                             native(_rank_partition)
-                             );
+          if (useCaches)
+          {
+            auto sp = native(x).dot(native(y));
+            decltype(sp) skip = 0.0;
+            ::Dune::ISTL::forEachIndex (
+              [&skip](auto & v, auto & w, auto & mi) { skip += dot(v,w); },
+              _skip_indices, native(x), native(y)
+              );
+            return sp-skip;
+          }
+          else
+          {
+            return disjointDot(ISTL::container_tag(native(x)),
+                               native(x),
+                               native(y),
+                               native(_rank_partition)
+                               );
+          }
         }
 
       private:
@@ -740,6 +800,9 @@ namespace Dune {
         //! cached communicators
         CachedComm _all_all_comm;
         CachedComm _interiorBorder_all_comm;
+
+        //! list of DOF indices not owned by the local rank
+        SkipList _skip_indices;
       };
 
 #if HAVE_MPI
