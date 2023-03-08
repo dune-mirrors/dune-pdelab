@@ -63,9 +63,6 @@ namespace Dune
       @{
   **/
 
-    template< class Communication, class BlockMapper, InterfaceType CommInterface >
-    class PatternBuilder;
-
     /** \brief Handle "halo"-exchange between neighboring processes
      *
      *
