@@ -67,7 +67,7 @@ namespace Dune {
 
         typedef typename BlockMapperType::GlobalKeyType Index;
 
-        using Pattern = MPIComm::CommunicationPattern<Index>;
+        using Pattern = typename ExchangeCommunication<Index>::CommunicationPattern;
 
       protected:
         const CommunicationType& comm_;
@@ -324,11 +324,12 @@ namespace Dune {
        *
        */
       template< class GridView, class BlockMapper >
-      std::tuple<Dune::MPIComm::CommunicationPattern<typename BlockMapper::GlobalKeyType>,
+      std::tuple<
+                 typename ExchangeCommunication<typename BlockMapper::GlobalKeyType>::CommunicationPattern,
                  std::vector<typename BlockMapper::GlobalKeyType>>
       buildCommunicationPatternFromMapper( const GridView& gv, const BlockMapper& blockMapper, const InterfaceType interface )
       {
-        Dune::MPIComm::CommunicationPattern<typename BlockMapper::GlobalKeyType> pattern;
+        typename ExchangeCommunication<typename BlockMapper::GlobalKeyType>::CommunicationPattern pattern;
         std::vector<typename BlockMapper::GlobalKeyType> skip;
         // return Hybrid::switchCases(
         //   std::make_index_sequence<Size::value>{},

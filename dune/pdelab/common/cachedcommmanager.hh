@@ -1,5 +1,5 @@
-#ifndef DUNE_CACHED_COMMUNICATION_MANAGER_HH
-#define DUNE_CACHED_COMMUNICATION_MANAGER_HH
+#ifndef DUNE_HALO_EXCHANGE_HH
+#define DUNE_HALO_EXCHANGE_HH
 
 #include <cassert>
 #include <cstddef>
@@ -35,38 +35,13 @@
 namespace Dune
 {
 
-  namespace MPIComm
-  {
-
-    template<typename IndexType>
-    struct Link
-    {
-      using Indices = std::vector< IndexType >;
-      int rank;
-      Indices recvIndices;
-      Indices sendIndices;
-
-      Link () : rank(-1) {
-        assert(sendIndices.size() == 0);
-      }
-      Link (int r) : rank(r) {}
-    };
-
-    // todo (1): add rank, sort by rank in Link
-    // todo (2): make this a lightweight object
-    template<typename IndexType>
-    using CommunicationPattern = std::map<int, Link<IndexType>>; // rank -> Link
-
-  } // end namespace MPIComm
-
   /** @addtogroup Communication Communication
       @{
   **/
 
     /** \brief Handle "halo"-exchange between neighboring processes
      *
-     *
-     * CommunicationPattern is a convenience class to build up a map
+     * ExchangeCommunication is a helper that explicitly stores CommunicationPattern is a convenience class to build up a map
      * of all dofs of entities to be exchanged during a communication procedure.
      * This speeds up the communication procedure, because no grid traversal is
      * necessary anymore to exchange data. This class is singleton for different
@@ -81,13 +56,30 @@ namespace Dune
         // typedef BlockMapper BlockMapperType;
       using Index = IndexType; // typedef typename BlockMapperType :: GlobalKeyType
 
+      struct Link
+      {
+        using Indices = std::vector< IndexType >;
+        int rank;
+        Indices recvIndices;
+        Indices sendIndices;
+
+        Link () : rank(-1) {
+          assert(sendIndices.size() == 0);
+        }
+        Link (int r) : rank(r) {}
+      };
+
+      // todo (1): add rank, sort by rank in Link
+      // todo (2): make this a lightweight object
+      using CommunicationPattern = std::map<int, Link>; // rank -> Link
+
     protected:
       typedef Dune::MPIHelper::MPICommunicator MPICommunicatorType;
       typedef Dune::Communication< MPICommunicatorType > CommunicationType;
 
     protected:
 
-      MPIComm::CommunicationPattern<Index> pattern_;
+      CommunicationPattern pattern_;
 
       // communicator
       std::unique_ptr< CommunicationType > comm_;
@@ -240,7 +232,6 @@ namespace Dune
           dependencyCache_.readBuffer( rank, buffer, data, operation );
         }
 
-      protected:
         const ExchangeCommunicationType& dependencyCache_;
         typedef MPIPack BufferType;
         typedef MPIFuture< BufferType > FutureType;
@@ -323,7 +314,7 @@ namespace Dune
 
     public:
 
-      void setCommunicationPattern (const Dune::MPIComm::CommunicationPattern<Index> & pattern)
+      void setCommunicationPattern (const CommunicationPattern & pattern)
       {
         pattern_ = pattern;
       }
@@ -467,4 +458,4 @@ namespace Dune
 
 } // namespace Dune
 
-#endif // #ifndef DUNE_FEM_CACHED_COMMUNICATION_MANAGER_HHbuildMap
+#endif // DUNE_HALO_EXCHANGE_HH
