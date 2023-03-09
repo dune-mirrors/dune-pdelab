@@ -374,8 +374,6 @@ namespace Dune {
       //! \ingroup PDELab
       //! \{
 
-#define USEGFS 1
-
       // Helper class to map DOFs per (sub-)entity
       template<typename GFS>
       struct EntityDOFMapper
@@ -387,9 +385,6 @@ namespace Dune {
 
         const GFS& gfs_;
         const IndexSet& indexSet_;
-#if not USEGFS
-        const int localSize_;
-#endif
 
         // temporary storage
         // container to store local DOFIndices (needing during calculation)
@@ -401,18 +396,11 @@ namespace Dune {
 
         EntityDOFMapper( const GFS& gfs ) :
           gfs_(gfs), indexSet_(gfs_.gridView().indexSet())
-#if not USEGFS
-          , localSize_(1) /* hard coded for our initial example */
-#endif
         {
         }
 
         bool contains( const int codim ) const {
-#if USEGFS
           return gfs_.dataHandleContains(codim);
-#else
-          return codim == 0;
-#endif
         }
 
         template <class Entity>
@@ -420,12 +408,7 @@ namespace Dune {
           // we should add an option to not communicate indices of the
           // leaf entities (if the blocking is appropriate, e.g. dG
           // spaces or PowerGFS)
-#if USEGFS
           return gfs_.dataHandleSize(entity);
-#else
-          assert(Entity::codimension == 0);
-          return localSize_;
-#endif
         }
 
         // we use blocked vectors and only store the cell indices
@@ -433,7 +416,6 @@ namespace Dune {
         void obtainEntityDofs( const Entity& entity, Vector& containerIndices ) const
         {
           assert( containerIndices.size() == numEntityDofs( entity ) ); // numEntityDofs
-#if USEGFS
           assert(gfs_.dataHandleContains(Entity::codimension));
 
           std::fill(offsets_.begin(),offsets_.end(),0);
@@ -450,19 +432,6 @@ namespace Dune {
           for (auto it = containerIndices.end()-numEntityDofs(entity);
                it < containerIndices.end(); ++it)
             reverseMultiIndex(*it);
-#else
-          if (localSize_ == 1) ////// SCALAR
-          {
-            containerIndices[ 0 ] = indexSet_.index( entity );
-          }
-          else /////// BLOCKED
-          {
-            for (unsigned int i=0; i<localSize_; i++) {
-              containerIndices[i].set(indexSet_.index( entity ));
-              vector[i].push_back(i);
-            }
-          }
-#endif
         }
 
       private:
