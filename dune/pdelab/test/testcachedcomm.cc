@@ -18,6 +18,8 @@
 template<typename Grid, typename FS>
 void checkConsistentCommnunication(const Grid& grid, Dune::TestSuite & test, FS & fs)
 {
+  std::cout << "checkConsistentCommnunication ... " << std::endl;
+
   using namespace Dune::PDELab;
   using V = typename FS::DOF;
   // setup piece wise constant FEM
@@ -113,41 +115,14 @@ void checkConsistentCommnunication(const Grid& grid, Dune::TestSuite & test, FS 
   }
 }
 
-/** Parameter class for the stationary convection-diffusion equation of the following form:
- *
- * \f{align*}{
- *   \nabla\cdot(-A(x) \nabla u + b(x) u) + c(x)u &=& f \mbox{ in } \Omega,  \ \
- *                                              u &=& g \mbox{ on } \partial\Omega_D (Dirichlet)\ \
- *                (b(x,u) - A(x)\nabla u) \cdot n &=& j \mbox{ on } \partial\Omega_N (Flux)\ \
- *                        -(A(x)\nabla u) \cdot n &=& o \mbox{ on } \partial\Omega_O (Outflow)
- * \f}
- * Note:
- *  - This formulation is valid for velocity fields which are non-divergence free.
- *  - Outflow boundary conditions should only be set on the outflow boundary
- *
- * The template parameters are:
- *  - GV a model of a GridView
- *  - RF numeric type to represent results
- */
+// Poisson problem definition
 template<typename GV, typename RF>
-class GenericAdvectionProblem
+class GenericEllipticProblem
 {
   typedef Dune::PDELab::ConvectionDiffusionBoundaryConditions::Type BCType;
 
 public:
   typedef Dune::PDELab::ConvectionDiffusionParameterTraits<GV,RF> Traits;
-
-  GenericAdvectionProblem ()
-  {
-    for (std::size_t i=0; i<Traits::dimDomain; i++)
-      for (std::size_t j=0; j<Traits::dimDomain; j++)
-        I[i][j] = (i==j) ? 0 : 0;
-    for (std::size_t i=0; i<Traits::dimDomain; i++)
-      v[i] = 0.0;
-    v[0] = 1.0;
-    v[1] = 1.0/3.0;
-    b0 = 0.25;
-  }
 
   //! tensor diffusion constant per cell? return false if you want more than one evaluation of A per cell.
   static constexpr bool permeabilityIsConstantPerCell()
@@ -159,6 +134,10 @@ public:
   typename Traits::PermTensorType
   A (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
   {
+    typename Traits::PermTensorType I;
+    for (std::size_t i=0; i<Traits::dimDomain; i++)
+      for (std::size_t j=0; j<Traits::dimDomain; j++)
+        I[i][j] = (i==j) ? 1 : 0;
     return I;
   }
 
@@ -166,6 +145,7 @@ public:
   typename Traits::RangeType
   b (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
   {
+    typename Traits::RangeType v(0.0);
     return v;
   }
 
@@ -178,34 +158,24 @@ public:
 
   //! source term
   typename Traits::RangeFieldType
-  f (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+  f (const typename Traits::ElementType& e, const typename Traits::DomainType& xlocal) const
   {
-    return 0.0;
+    auto x = e.geometry().global(xlocal);
+    return x[0] * std::sin(5.0*M_PI*x[1]) + std::exp(-((x[0]-0.5)*(x[0]-0.5) + (x[1]-0.5)*(x[1]-0.5)) / 0.02);
   }
 
-  //! boundary condition type function
-  /* return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Dirichlet for Dirichlet boundary conditions
-   * return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Neumann for flux boundary conditions
-   * return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Outflow for outflow boundary conditions
-   */
+  //! Boundary condition type function. Will not be evaluated on periodic boundary, so we simply set Dirichlet.
   BCType
-  bctype (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& xlocal) const
+  bctype (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& x) const
   {
-    if (is.outerNormal(xlocal)*v<0)
-      return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Dirichlet;
-    else
-      return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Outflow;
+    return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Dirichlet;
   }
 
   //! Dirichlet boundary condition value
   typename Traits::RangeFieldType
   g (const typename Traits::ElementType& e, const typename Traits::DomainType& xlocal) const
   {
-    typename Traits::DomainType x = e.geometry().global(xlocal);
-    if (x[1] < v[1]*x[0]+b0)
-      return 0.0;
-    else
-      return 1.0;
+    return 0.0;
   }
 
   //! flux boundary condition
@@ -221,11 +191,6 @@ public:
   {
     return 0.0;
   }
-
-private:
-  typename Traits::PermTensorType I;
-  typename Traits::RangeType v;
-  typename Traits::RangeFieldType b0;
 };
 
 // Solve problem
@@ -244,10 +209,10 @@ void solveProblem(const Grid& grid, FS& fs, typename FS::DOF& x, Problem& proble
   fs.setNonConstrainedDOFS(x,0.0);
 
   // assembler for finite elemenent problem
-  typedef typename Dune::PDELab::ConvectionDiffusionDG<Problem,typename FS::FEM> LOP;
+  typedef Dune::PDELab::ConvectionDiffusionDG<Problem,typename FS::FEM> LOP;
   LOP lop(problem,Dune::PDELab::ConvectionDiffusionDGMethod::SIPG,Dune::PDELab::ConvectionDiffusionDGWeights::weightsOn,2.0);
-  typedef typename Dune::PDELab::GalerkinGlobalAssembler<FS,LOP,solvertype> ASSEMBLER;
-  ASSEMBLER assembler(fs,lop,20);
+  typedef Dune::PDELab::GalerkinGlobalAssembler<FS,LOP,solvertype> ASSEMBLER;
+  ASSEMBLER assembler(fs,lop,27);
 
   // make linear solver and solve problem
   typedef typename Dune::PDELab::ISTLSolverBackend_IterativeDefault<FS,ASSEMBLER,solvertype> SBE;
@@ -267,6 +232,8 @@ void solveProblem(const Grid& grid, FS& fs, typename FS::DOF& x, Problem& proble
 template<Dune::SolverCategory::Category solvertype, int degree, typename Grid, typename FS, typename Problem>
 void checkFullProblem(const Grid& grid, Dune::TestSuite & test, FS & fs, Problem & problem)
 {
+  std::cout << "checkFullProblem ... " << std::endl;
+
   // DOF vector
   typedef typename FS::DOF X;
   X x(fs.getGFS(),0.0);
@@ -319,7 +286,7 @@ int main(int argc, char **argv)
   Grid grid({1.0,1.0}, {cells,cells});
 
   // make problem parameters
-  typedef GenericAdvectionProblem<typename Grid::LeafGridView,NumberType> Problem;
+  typedef GenericEllipticProblem<typename Grid::LeafGridView,NumberType> Problem;
   Problem problem;
 
   // prepare test suite
@@ -351,7 +318,7 @@ int main(int argc, char **argv)
     checkConsistentCommnunication(grid,test,fs);
 
     // run advanced test
-    // checkFullProblem<solvertype, degree>(grid,test,fs,problem);
+    checkFullProblem<solvertype, degree>(grid,test,fs,problem);
   }
 
   // done
