@@ -43,9 +43,15 @@ void checkConsistentCommnunication(const Grid& grid, Dune::TestSuite & test, FS 
     lfs.bind(e);
     cache.update();
 
+    auto && fem = lfs.finiteElement();
     for (unsigned int n = 0; n < lfs.size(); n++) {
+      // find sub-entity associated with this DOF
+      auto && key = fem.localCoefficients().localKey(n);
+      // get global id of sub-entity
+      auto id = gid.subId(e, key.subEntity(), key.codim());
+      // store in the vector
       auto i = cache.containerIndex(n);
-      v[i] = gid.id(e);
+      v[i] = id;
     }
   }
 
@@ -78,24 +84,33 @@ void checkConsistentCommnunication(const Grid& grid, Dune::TestSuite & test, FS 
   //   std::cout << comm.rank() << "\t" << "from " << all_all_pattern.begin()->first << " ... " << entry << std::endl;
 
   /* and try to communicate global indices */
-  CachedComm all_all_comm;
-  all_all_comm.init(gfs.gridView().comm());
-  all_all_comm.setCommunicationPattern(all_all_pattern);
-  all_all_comm.exchange( Backend::native(v),
-    [&test](const auto& a, const auto& b) {
-      #warning this needs to be improved ...
-      using A = std::decay_t<decltype(a)>;
-      if constexpr (std::is_same<A,Dune::bigunsignedint<55>>{}) {
-        test.check(b == a, "consistend global indices in cached communication")
-          << " expected " << b << " got " << a;
+  try {
+    CachedComm all_all_comm;
+    all_all_comm.init(gfs.gridView().comm());
+    all_all_comm.setCommunicationPattern(all_all_pattern);
+    all_all_comm.exchange( Backend::native(v),
+      [&test,&gfs](const auto& a, const auto& b) {
+#warning this needs to be improved ...
+        using A = std::decay_t<decltype(a)>;
+        if constexpr (std::is_convertible<A,Dune::bigunsignedint<55>>{}) {
+          test.check(b == a, "consistend global indices in cached communication")
+            << gfs.gridView().comm().rank() << " expected " << b << " got " << a;
+        }
+        else{
+          // this should never be called, but currently the compiler can possibly
+          // instantiate this block
+          test.check(false, "consistend global indices in cached communication")
+            << " expected " << className(b) << " got " << className(a);
+          unsigned int X = 666;
+          throw X;
+        }
       }
-      else{
-        // this should never be called, but currently the compiler can possibly
-        // instantiate this block
-        assert(false);
-      }
-    }
-    );
+      );
+  }
+  catch (unsigned int i)
+  {
+    return;
+  }
 }
 
 /** Parameter class for the stationary convection-diffusion equation of the following form:
@@ -249,18 +264,13 @@ void solveProblem(const Grid& grid, FS& fs, typename FS::DOF& x, Problem& proble
 }
 
 /** \brief run system test, comparing the solution of a linear transport problem using grid & cached communication */
-template<Dune::SolverCategory::Category solvertype, int degree, typename Grid, typename FS>
-void checkFullProblem(const Grid& grid, Dune::TestSuite & test, FS & fs)
+template<Dune::SolverCategory::Category solvertype, int degree, typename Grid, typename FS, typename Problem>
+void checkFullProblem(const Grid& grid, Dune::TestSuite & test, FS & fs, Problem & problem)
 {
   // DOF vector
   typedef typename FS::DOF X;
   X x(fs.getGFS(),0.0);
   X x2(fs.getGFS(),0.0);
-
-  // make problem parameters
-  using NumberType = typename FS::NT;
-  typedef GenericAdvectionProblem<typename Grid::LeafGridView,NumberType> Problem;
-  Problem problem;
 
   // solve problem
   std::cout << "Running (parallel) solve with grid communication\n";
@@ -299,6 +309,7 @@ int main(int argc, char **argv)
   // define parameters
   const unsigned int dim = 2;
   const unsigned int degree = 1;
+  const Dune::PDELab::MeshType meshtype = Dune::PDELab::MeshType::conforming;
   const Dune::GeometryType::BasicType elemtype = Dune::GeometryType::cube;
   const Dune::SolverCategory::Category solvertype = Dune::SolverCategory::overlapping;
   typedef double NumberType;
@@ -307,16 +318,41 @@ int main(int argc, char **argv)
   typedef Dune::YaspGrid<dim> Grid;
   Grid grid({1.0,1.0}, {cells,cells});
 
-  // make a finite element space
-  using FS = Dune::PDELab::DGQkSpace<Grid,NumberType,degree,elemtype,solvertype>;
-  FS fs(grid.leafGridView());
+  // make problem parameters
+  typedef GenericAdvectionProblem<typename Grid::LeafGridView,NumberType> Problem;
+  Problem problem;
 
-  // run index test
+  // prepare test suite
   Dune::TestSuite test;
-  checkConsistentCommnunication(grid,test,fs);
 
-  // run advanced test
-  checkFullProblem<solvertype, degree>(grid,test,fs);
+  {
+    std::cout << "Check with DG Space" << std::endl;
+    // make a finite element space
+    using FS = Dune::PDELab::DGQkSpace<Grid,NumberType,degree,elemtype,solvertype>;
+    FS fs(grid.leafGridView());
+
+    // run index test
+    checkConsistentCommnunication(grid,test,fs);
+
+    // run advanced test
+    checkFullProblem<solvertype, degree>(grid,test,fs,problem);
+  }
+
+  {
+    std::cout << "Check with Lagrange Space" << std::endl;
+
+    // make a finite element space
+    typedef Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<Problem> BCType;
+    BCType bctype(grid.leafGridView(),problem);
+    using FS = Dune::PDELab::CGSpace<Grid,NumberType,degree,BCType,elemtype,meshtype,solvertype>;
+    FS fs(grid,bctype);
+
+    // run index test
+    checkConsistentCommnunication(grid,test,fs);
+
+    // run advanced test
+    // checkFullProblem<solvertype, degree>(grid,test,fs,problem);
+  }
 
   // done
   return test.exit();
