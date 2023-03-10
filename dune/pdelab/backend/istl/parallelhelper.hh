@@ -264,10 +264,10 @@ namespace Dune {
                   // we own all interior DOFs, so no need to skip
                   break;
                 case BorderEntity:
+                case OverlapEntity:
                   // Assign DOFs to processor with minimum rank
                   // -> skip if our rank is larger than remote rank
-                  if (myRank_ > rank) break;
-                case OverlapEntity:
+                  if (myRank_ < rank) break;
                 case FrontEntity:
                 case GhostEntity:
                   // add all indices belonging to current entity to skip list
