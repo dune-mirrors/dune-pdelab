@@ -96,28 +96,47 @@ namespace Dune {
       protected:
         void sendBackSendMaps()
         {
+          /*
+            We send back the indices to tell the sender side about the
+            correct order in which we expect the data.
+
+            To avoid dead locks in parallel we use asynchroneous
+            `comm.isend` operations. To allow the receiving side to
+            resize the buffer to the correct size, we use the
+            synchroneous `comm.rrecv` which automatically does a
+            resize of the receive buffer.
+           */
           typedef MPIPack BufferType;
           typedef MPIFuture< BufferType > FutureType;
 
           std::map< int, FutureType > recvFutures, sendFutures;
 
-          for( const auto& link : pattern_ )
+          // std::cout << "sendBackSendMaps" << std::endl;
+          for( const auto& [dest, link] : pattern_ )
           {
-            auto dest = link.first;
-            auto& sendIndexMap_ = link.second.sendIndices;
+            //auto dest = link.first;
+            //auto& sendIndexMap_ = link.second.sendIndices;
+            auto& sendIndexMap_ = link.sendIndices;
             BufferType buffer( comm_ );
             buffer << sendIndexMap_; // [ dest ];
-            //sendFutures.insert( std::make_pair( dest, comm_.isend(std::move(buffer), dest, 123) ) );
-            comm_.send(buffer, dest, 124);
+            // std::cout << comm_.rank() << " send to " << dest << std::endl;
+            sendFutures.insert( std::make_pair( dest, comm_.isend(std::move(buffer), dest, 124) ) );
           }
 
-          for( auto& link : pattern_ )
+          for( auto& [source,link] : pattern_ )
           {
-            auto source = link.first;
-            //recvFutures.insert( std::make_pair( source, comm_.irecv( BufferType(comm_), source, 123 ) ) );
+            //std::cout << comm_.rank() << " recv from " << source << std::endl;
+            // recvFutures.insert( std::make_pair( source, comm_.irecv( BufferType(comm_), source, 124 ) ) );
             auto buffer = comm_.rrecv( BufferType(comm_), source, 124 );
-            auto& indices = link.second.sendIndices;
+            auto& indices = link.sendIndices;
             buffer >> indices;
+            //std::cout << comm_.rank() << " done" << std::endl;
+          }
+
+          // std::cout << comm_.rank() << " wait send operations" << std::endl;
+          for( auto&& [dest,f] : sendFutures )
+          {
+            f.wait();
           }
         }
 
