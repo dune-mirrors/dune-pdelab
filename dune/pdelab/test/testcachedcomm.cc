@@ -278,7 +278,6 @@ int main(int argc, char **argv)
 
   // define parameters
   const unsigned int dim = 2;
-  const unsigned int degree = 1;
   const Dune::PDELab::MeshType meshtype = Dune::PDELab::MeshType::conforming;
   const Dune::GeometryType::BasicType elemtype = Dune::GeometryType::cube;
   const Dune::SolverCategory::Category solvertype = Dune::SolverCategory::overlapping;
@@ -298,7 +297,9 @@ int main(int argc, char **argv)
   {
     if (rank==0)
       std::cout << "## Check with DG Space" << std::endl;
+
     // make a finite element space
+    const unsigned int degree = 1;
     using FS = Dune::PDELab::DGQkSpace<Grid,NumberType,degree,elemtype,solvertype>;
     FS fs(grid.leafGridView());
 
@@ -311,9 +312,28 @@ int main(int argc, char **argv)
 
   {
     if (rank==0)
-      std::cout << "## Check with Lagrange Space" << std::endl;
+      std::cout << "## Check with Lagrange Space (k=1)" << std::endl;
 
     // make a finite element space
+    const unsigned int degree = 1;
+    typedef Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<Problem> BCType;
+    BCType bctype(grid.leafGridView(),problem);
+    using FS = Dune::PDELab::CGSpace<Grid,NumberType,degree,BCType,elemtype,meshtype,solvertype>;
+    FS fs(grid,bctype);
+
+    // run index test
+    checkConsistentCommnunication(grid,test,fs);
+
+    // run advanced test
+    checkFullProblem<solvertype, degree>(grid,test,fs,problem);
+  }
+
+  {
+    if (rank==0)
+      std::cout << "## Check with Lagrange Space (k=2)" << std::endl;
+
+    // make a finite element space
+    const unsigned int degree = 2;
     typedef Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<Problem> BCType;
     BCType bctype(grid.leafGridView(),problem);
     using FS = Dune::PDELab::CGSpace<Grid,NumberType,degree,BCType,elemtype,meshtype,solvertype>;
