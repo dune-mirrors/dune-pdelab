@@ -18,13 +18,14 @@
 template<typename Grid, typename FS>
 void checkConsistentCommnunication(const Grid& grid, Dune::TestSuite & test, FS & fs)
 {
-  std::cout << "checkConsistentCommnunication ... " << std::endl;
-
   using namespace Dune::PDELab;
   using V = typename FS::DOF;
   // setup piece wise constant FEM
 
   auto comm = grid.comm();
+
+  if (comm.rank()==0)
+    std::cout << "#### checkConsistentCommnunication ... " << std::endl;
 
   using GFS = typename FS::GFS;
   using CC = typename FS::CC;
@@ -66,7 +67,8 @@ void checkConsistentCommnunication(const Grid& grid, Dune::TestSuite & test, FS 
 
   /* check pattern entries */
   auto & torus = grid.torus();
-  std::cout << "torus " << torus.dims()[0] << " " << torus.dims()[1] << std::endl;
+  if (comm.rank()==0)
+    std::cout << "torus " << torus.dims()[0] << " " << torus.dims()[1] << std::endl;
   for (auto && link : all_all_pattern)
   {
     std::cout << comm.rank()
@@ -75,15 +77,6 @@ void checkConsistentCommnunication(const Grid& grid, Dune::TestSuite & test, FS 
               << " / "
               << torus.rank_to_coord(link.first)[0]  << " " << torus.rank_to_coord(link.first)[1]  << std::endl;
   }
-  // assert(all_all_pattern.size() == 1);
-  // comm.barrier();
-  // std::cout << "-----------------------\n";
-  // for (auto && entry : all_all_pattern.begin()->second.sendIndices)
-  //   std::cout << comm.rank() << "\t" << "to   " << all_all_pattern.begin()->first << " ... " << entry << std::endl;
-  // comm.barrier();
-  // std::cout << "-----------------------\n";
-  // for (auto && entry : all_all_pattern.begin()->second.recvIndices)
-  //   std::cout << comm.rank() << "\t" << "from " << all_all_pattern.begin()->first << " ... " << entry << std::endl;
 
   /* and try to communicate global indices */
   try {
@@ -95,24 +88,24 @@ void checkConsistentCommnunication(const Grid& grid, Dune::TestSuite & test, FS 
 #warning this needs to be improved ...
         using A = std::decay_t<decltype(a)>;
         if constexpr (std::is_convertible<A,Dune::bigunsignedint<55>>{}) {
-          test.check(b == a, "consistend global indices in cached communication")
+          test.check(b == a, "consistent global indices in cached communication")
             << gfs.gridView().comm().rank() << " expected " << b << " got " << a;
         }
         else{
           // this should never be called, but currently the compiler can possibly
           // instantiate this block
-          test.check(false, "consistend global indices in cached communication")
+          test.check(false, "consistent global indices in cached communication")
             << " expected " << className(b) << " got " << className(a);
-          unsigned int X = 666;
-          throw X;
+          // unsigned int X = 666;
+          // throw X;
         }
       }
       );
   }
   catch (unsigned int i)
   {
-    return;
   }
+  comm.barrier();
 }
 
 // Poisson problem definition
@@ -195,7 +188,7 @@ public:
 
 // Solve problem
 template <typename Grid, typename FS, typename Problem, Dune::SolverCategory::Category solvertype, int degree>
-void solveProblem(const Grid& grid, FS& fs, typename FS::DOF& x, Problem& problem, std::string basename)
+void solveProblem(const Grid& grid, FS& fs, typename FS::DOF& x, Problem& problem, std::string basename, double reduction, int maxiter)
 {
   // initialize DOF vector it with boundary condition
   typedef Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<Problem> BCType;
@@ -215,10 +208,11 @@ void solveProblem(const Grid& grid, FS& fs, typename FS::DOF& x, Problem& proble
   ASSEMBLER assembler(fs,lop,27);
 
   // make linear solver and solve problem
-  typedef typename Dune::PDELab::ISTLSolverBackend_IterativeDefault<FS,ASSEMBLER,solvertype> SBE;
-  SBE sbe(fs,assembler,2,1);
+  using SBE = typename Dune::PDELab::ISTLSolverBackend_IterativeDefault<FS,ASSEMBLER,solvertype>;
+  SBE sbe(fs,assembler,maxiter,1);
+
   typedef typename Dune::PDELab::StationaryLinearProblemSolver<typename ASSEMBLER::GO,typename SBE::LS,typename FS::DOF> SLP;
-  SLP slp(*assembler,*sbe,x,1e-6);
+  SLP slp(*assembler,*sbe,x,reduction);
   slp.apply();
 
   // output grid to VTK file
@@ -232,21 +226,30 @@ void solveProblem(const Grid& grid, FS& fs, typename FS::DOF& x, Problem& proble
 template<Dune::SolverCategory::Category solvertype, int degree, typename Grid, typename FS, typename Problem>
 void checkFullProblem(const Grid& grid, Dune::TestSuite & test, FS & fs, Problem & problem)
 {
-  std::cout << "checkFullProblem ... " << std::endl;
+  auto comm = grid.comm();
+
+  if (comm.rank()==0)
+    std::cout << "#### checkFullProblem ... " << std::endl;
 
   // DOF vector
   typedef typename FS::DOF X;
   X x(fs.getGFS(),0.0);
   X x2(fs.getGFS(),0.0);
 
-  // solve problem
-  std::cout << "Running (parallel) solve with grid communication\n";
-  Dune::PDELab::ISTL::ParallelHelper<typename FS::GFS>::useCaches = false;
-  solveProblem<Grid,FS,Problem,solvertype,degree>(grid,fs,x,problem,"dg-grid-comm");
+  // prescribed reduction
+  double reduction = 1e-10;
+  int maxiter = 500;
 
-  std::cout << "Running (parallel) solve with cached communication\n";
+  // solve problem
+  if (comm.rank()==0)
+    std::cout << "---- Running (parallel) solve with grid communication\n";
+  Dune::PDELab::ISTL::ParallelHelper<typename FS::GFS>::useCaches = false;
+  solveProblem<Grid,FS,Problem,solvertype,degree>(grid,fs,x,problem,"dg-grid-comm",reduction,maxiter);
+
+  if (comm.rank()==0)
+    std::cout << "---- Running (parallel) solve with cached communication\n";
   Dune::PDELab::ISTL::ParallelHelper<typename FS::GFS>::useCaches = true;
-  solveProblem<Grid,FS,Problem,solvertype,degree>(grid,fs,x2,problem,"dg-cached-comm");
+  solveProblem<Grid,FS,Problem,solvertype,degree>(grid,fs,x2,problem,"dg-cached-comm",reduction,maxiter);
 
   // calculate l2 error squared between the two functions
   using DGF = typename FS::DGF;
@@ -258,9 +261,8 @@ void checkFullProblem(const Grid& grid, Dune::TestSuite & test, FS & fs, Problem
   Dune::PDELab::integrateGridFunction(differencesquared,l2errorsquared,10);
 
   // global sum of local error
-  auto comm = fs.getGFS().gridView().comm();
   l2errorsquared = comm.sum(l2errorsquared);
-  test.check(l2errorsquared < 1e-14)
+  test.check(l2errorsquared < std::max(reduction,1e-15))
     << "solution with cached comm differs from solution with grid comm: "
     << "L2 error squared = " << l2errorsquared;
 }
@@ -268,7 +270,8 @@ void checkFullProblem(const Grid& grid, Dune::TestSuite & test, FS & fs, Problem
 int main(int argc, char **argv)
 {
   // initialize MPI, finalize is done automatically on exit
-  Dune::MPIHelper::instance(argc,argv);
+  auto & mpi = Dune::MPIHelper::instance(argc,argv);
+  int rank = mpi.rank();
 
   // command line args
   int cells=10; if (argc>=2) sscanf(argv[1],"%d",&cells);
@@ -293,7 +296,8 @@ int main(int argc, char **argv)
   Dune::TestSuite test;
 
   {
-    std::cout << "Check with DG Space" << std::endl;
+    if (rank==0)
+      std::cout << "## Check with DG Space" << std::endl;
     // make a finite element space
     using FS = Dune::PDELab::DGQkSpace<Grid,NumberType,degree,elemtype,solvertype>;
     FS fs(grid.leafGridView());
@@ -306,7 +310,8 @@ int main(int argc, char **argv)
   }
 
   {
-    std::cout << "Check with Lagrange Space" << std::endl;
+    if (rank==0)
+      std::cout << "## Check with Lagrange Space" << std::endl;
 
     // make a finite element space
     typedef Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<Problem> BCType;
