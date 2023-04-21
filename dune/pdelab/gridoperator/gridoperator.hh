@@ -153,11 +153,21 @@ namespace Dune{
       template<typename F, typename X>
       void interpolate (const X& xold, F& f, X& x) const
       {
-        // Interpolate f into grid function space and set corresponding coefficients
-        Dune::PDELab::interpolate(f,global_assembler.trialGridFunctionSpace(),x);
+        if (&xold!=&x)
+        {
+          // Interpolate f into grid function space and set corresponding coefficients
+          Dune::PDELab::interpolate(f,global_assembler.trialGridFunctionSpace(),x);
 
-        // Copy non-constrained dofs from old time step
-        Dune::PDELab::copy_nonconstrained_dofs(local_assembler.trialConstraints(),xold,x);
+          // Copy non-constrained dofs from old time step
+          Dune::PDELab::copy_nonconstrained_dofs(local_assembler.trialConstraints(),xold,x);
+        }
+        else
+        {
+          // create a temporary because interpolate rewrites xold
+          X tmp = xold;
+          Dune::PDELab::interpolate(f,global_assembler.trialGridFunctionSpace(),x);
+          Dune::PDELab::copy_nonconstrained_dofs(local_assembler.trialConstraints(),tmp,x);
+        }
       }
 
       //! Fill pattern of jacobian matrix

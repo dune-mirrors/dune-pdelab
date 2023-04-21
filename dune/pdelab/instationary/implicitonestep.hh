@@ -349,7 +349,11 @@ namespace Dune {
               }
 
             // set boundary conditions and initial value
-            igos.interpolate(r,*x[r-1],f,*x[r]);
+            // use xnew as initial guess in first stage
+            if (r==1)
+              igos.interpolate(r,xnew,f,*x[r]);
+            else
+              igos.interpolate(r,*x[r-1],f,*x[r]);
 
             // solve stage
             try {
