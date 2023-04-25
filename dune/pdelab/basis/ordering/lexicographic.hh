@@ -557,9 +557,8 @@ public:
 
     if constexpr (OrderingNode::containerBlocked()) {
       if constexpr (common_child_container) {
-          using ChildBlock = std::common_type_t<decltype(ChildOrdering::template makeVectorContainer<Traits>())...>;
-          // return Traits::template makeArray<ChildBlock, sizeof...(ChildOrdering)>(); // help! FieldVector<BlockVector<>> is a bad idea for the solvers :()
-          return Traits::template makeVector<ChildBlock>();
+        using ChildBlock = std::common_type_t<decltype(ChildOrdering::template makeVectorContainer<Traits>())...>;
+        return Traits::template makeArray<ChildBlock, sizeof...(ChildOrdering)>();
       } else {
         return Traits::template makeTuple<decltype(ChildOrdering::template makeVectorContainer<Traits>())...>();
       }

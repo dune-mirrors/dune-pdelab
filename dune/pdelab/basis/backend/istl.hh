@@ -1,5 +1,5 @@
-#ifndef DUNE_PDELAB_BASIS_ISTL_BACKEND_HH
-#define DUNE_PDELAB_BASIS_ISTL_BACKEND_HH
+#ifndef DUNE_PDELAB_BASIS_BACKEND_ISTL_HH
+#define DUNE_PDELAB_BASIS_BACKEND_ISTL_HH
 
 #include <dune/istl/bvector.hh>
 
@@ -73,4 +73,4 @@ namespace Dune::PDELab::inline Experimental {
 
 } // namespace Dune::PDELab::inline Experimental
 
-#endif // DUNE_PDELAB_BASIS_ISTL_BACKEND_HH
+#endif // DUNE_PDELAB_BASIS_BACKEND_ISTL_HH

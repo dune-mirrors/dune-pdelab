@@ -14,6 +14,7 @@
 #include <dune/pdelab/basis/prebasis/concept.hh>
 #include <dune/pdelab/basis/ordering.hh>
 #include <dune/pdelab/basis/merging_strategy.hh>
+#include <dune/pdelab/basis/backend/index_tree.hh>
 
 #include <dune/pdelab/basis/constraints/container.hh>
 
@@ -59,6 +60,8 @@ namespace Dune::PDELab::inline Experimental {
 
     template<class Backend>
     using Container = std::decay_t<decltype(Ordering::template makeVectorContainer<Backend>())>;
+
+    using IndexTree = Container<IndexTreeBackend>;
 
     using size_type = std::size_t;
     // using EntitySetPartition = ESP;
@@ -472,6 +475,10 @@ namespace Dune::PDELab::inline Experimental {
       containerResize(container, *this);
       forEachContainerEntry(container, []<class T>(T& v){v = T{0};});
       return container;
+    }
+
+    [[nodiscard]] IndexTree indexTree() const {
+      return IndexTree{};
     }
 
     [[nodiscard]] friend bool operator==(const Basis& lhs, const Basis& rhs) noexcept {

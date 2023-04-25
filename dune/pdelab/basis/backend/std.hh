@@ -1,5 +1,5 @@
-#ifndef DUNE_PDELAB_BASIS_STD_BACKEND_HH
-#define DUNE_PDELAB_BASIS_STD_BACKEND_HH
+#ifndef DUNE_PDELAB_BASIS_BACKEND_STD_HH
+#define DUNE_PDELAB_BASIS_BACKEND_STD_HH
 
 #include <dune/common/typetraits.hh>
 #include <dune/common/tuplevector.hh>
@@ -20,6 +20,7 @@ namespace Dune::PDELab {
 
     template<class T, std::size_t k>
     static auto makeArray() {
+      // HELP! std::array::size() is not static and is not reconginzed for merging tuples!
       return std::array<T, k>{};
     }
 
@@ -74,7 +75,7 @@ namespace Dune::PDELab {
 
   // makes std container with the range of the finite element
   static constexpr STDRangeBackend std_range_field_backend{};
-}
- // namespace Dune::PDELab::inline Experimental
 
-#endif // DUNE_PDELAB_BASIS_STD_BACKEND_HH
+} // namespace Dune::PDELab::inline Experimental
+
+#endif // DUNE_PDELAB_BASIS_BACKEND_STD_HH
