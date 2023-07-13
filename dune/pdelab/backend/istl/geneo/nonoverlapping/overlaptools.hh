@@ -981,7 +981,7 @@ namespace Dune {
     return std::make_pair(M,M2);
   }
 
-  /** Take a matrix on the original index set and return one on the extended index set
+  /* Take a matrix on the original index set and return one on the extended index set
    * The input matrix is in additive form assembled on the interior elements only.
    * The returned matrix is in consistent form with Dirichlet boundary conditions.
    */
@@ -1141,7 +1141,7 @@ namespace Dune {
         // std::cout << i << std::endl;
         // std::cout << interior_bnd_dofs[0] << std::endl;
       } else {
-        distance[i] = 2*(overlapsize-PoU_restriction)+1.0;
+        distance[i] = 2.*(0.0+overlapsize-PoU_restriction)+1.0;
       }
     }
 

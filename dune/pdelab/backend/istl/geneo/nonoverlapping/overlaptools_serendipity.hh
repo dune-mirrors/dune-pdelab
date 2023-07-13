@@ -18,552 +18,9 @@
 #include "overlaptools.hh"
 
 namespace Dune {
-  // nested name space for classes local to this file
-  // namespace OverlapTools {
 
-
-  //   // data handle to construct owner partitioning on the degrees of freedom
-  //   template<typename ScalarVector>
-  //   class MakeOwnerDataHandle
-  //   {
-  //     const ScalarVector& distance;
-  //     int rank;
-  //     int p;
-  //     ScalarVector& owner;
-
-  //   public:
-  //     // export type of items to be sent around
-  //     using DataType = int;
-
-  //     // constructor
-  //     MakeOwnerDataHandle (const ScalarVector& distance_,  // gives distance from the boundary for each dof; owners must have distance >0
-  //                          int rank_, // my rank
-  //                          int p_, // total number of procs
-  //                          ScalarVector& owner_ // value 1 indicates this index is owned by that rank, otherwise it is 0
-  //                          )
-  //       : distance(distance_), rank(rank_), p(p_), owner(owner_)
-  //     {
-  //       owner = 1.0;
-  //     }
-
-  //     // enable variable size
-  //     bool fixedsize()
-  //     {
-  //       return true;
-  //     }
-
-  //     // return size for given (local) index
-  //     std::size_t size (int i)
-  //     {
-  //       return 1; // we need a variable communicator to pass and out in our data
-  //     }
-
-  //     // gather to buffer
-  //     template<class B>
-  //     void gather (B& buffer, int i)
-  //     {
-  //       if (distance[i]>0.0)
-  //         buffer.write(rank); // send my number if I could possibly own it
-  //       else
-  //         {
-  //           buffer.write(p); // send a number that is larger than any rank
-  //           owner[i] = 0.0; // we will never own it
-  //         }
-  //     }
-
-  //     template<class B>
-  //     void scatter(B& buffer, int i, int count)
-  //     {
-  //       DataType otherrank;
-  //       buffer.read(otherrank);
-  //       if (distance[i]>0.0 && otherrank<rank)
-  //         owner[i] = 0.0; // the other owns it since its rank is smaller
-  //     }
-  //   };
-
-
-  //   // data handle to find out degrees of freedom on the boundary with other subdomains
-  //   template<typename ParallelIndexSet, typename Matrix, typename Vector>
-  //   class CountNonlocalEdgesDataHandle
-  //   {
-  //     const Matrix& M;
-  //     const ParallelIndexSet& pis;
-  //     using GlobalId = typename ParallelIndexSet::GlobalIndex;
-  //     std::vector<GlobalId> globalid;
-  //     Vector& z;
-
-  //   public:
-  //     // export type of items to be sent around
-  //     using DataType = GlobalId;
-
-  //     // constructor
-  //     CountNonlocalEdgesDataHandle (const Matrix& M_,  // the fully constructed matrix in the overlapping subdomains
-  //                                   const ParallelIndexSet& pis_, // our parallel index set
-  //                                   Vector& z_ // every entry will contain the number of graph edges that are NOT present in this rank
-  //                                   )
-  //       : M(M_), pis(pis_), globalid(pis_.size()), z(z_)
-  //     {
-  //       // construct map from local index to global id on all indices
-  //       auto endit = pis.end();
-  //       for (auto it=pis.begin(); it!=endit; ++it)
-  //         globalid[it->local().local()] = it->global();
-
-  //       // initialize z with zero
-  //       z = 0.0;
-  //     }
-
-  //     // enable variable size
-  //     bool fixedsize()
-  //     {
-  //       return false;
-  //     }
-
-  //     // return size for given (local) index
-  //     std::size_t size (int i)
-  //     {
-  //       std::size_t count = 0; // we dont need the trick because there is at least one nonzero per row
-  //       auto MEndIt = M[i].end();
-  //       for (auto It = M[i].begin(); It!=MEndIt; ++It)
-  //         count++;
-  //       //std::cout << "sending " << count << " entries for index " << i << std::endl;
-  //       return count;
-  //     }
-
-  //     // gather to buffer
-  //     template<class B>
-  //     void gather(B& buffer, int i)
-  //     {
-  //       auto MEndIt = M[i].end();
-  //       for (auto It = M[i].begin(); It!=MEndIt; ++It)
-  //         buffer.write(globalid[It.index()]);
-  //     }
-
-  //     template<class B>
-  //     void scatter(B& buffer, int i, int count)
-  //     {
-  //       DataType gid;
-  //       for (int k=0; k<count; k++)
-  //         {
-  //           buffer.read(gid);
-  //           if (!pis.exists(gid))
-  //             z[i] += 1.0;
-  //         }
-  //     }
-  //   };
-
-
-  //   // data handle to find out degrees of freedom on the boundary with other subdomains
-  //   template<typename Matrix, typename ParallelIndexSet, typename Vector>
-  //   class AddNonlocalEntriesToDiagonal
-  //   {
-  //     using GlobalId = typename ParallelIndexSet::GlobalIndex;
-  //     using BlockType = typename Matrix::block_type;
-
-  //     Matrix& M;
-  //     const ParallelIndexSet& pis;
-  //     const Vector& owner;
-  //     std::vector<GlobalId> globalid;
-
-  //   public:
-  //     // export type of items to be sent around
-  //     using DataType = std::pair<BlockType,GlobalId>;
-
-  //     // constructor
-  //     AddNonlocalEntriesToDiagonal (Matrix& M_,  // the fully constructed matrix in the overlapping subdomains
-  //                                   const ParallelIndexSet& pis_, // our parallel index set
-  //                                   const Vector& owner_) // who owns a dof has the complete row, only owner sends
-  //       : M(M_), pis(pis_), owner(owner_), globalid(pis_.size())
-  //     {
-  //       // construct map from local index to global id on all indices
-  //       auto endit = pis.end();
-  //       for (auto it=pis.begin(); it!=endit; ++it)
-  //         globalid[it->local().local()] = it->global();
-  //     }
-
-  //     // enable variable size
-  //     bool fixedsize()
-  //     {
-  //       return false;
-  //     }
-
-  //     // return size for given (local) index
-  //     std::size_t size (int i)
-  //     {
-  //       std::size_t count = 1; // the trick, send at least one entry
-  //       if (owner[i]==0.0) return count;
-  //       auto MEndIt = M[i].end();
-  //       for (auto It = M[i].begin(); It!=MEndIt; ++It)
-  //         count++;
-  //       return count;
-  //     }
-
-  //     // gather to buffer
-  //     template<class B>
-  //     void gather(B& buffer, int i)
-  //     {
-  //       buffer.write(std::make_pair(BlockType(),GlobalId())); // write a default value
-  //       if (owner[i]==0.0) return;
-  //       auto MEndIt = M[i].end();
-  //       for (auto It = M[i].begin(); It!=MEndIt; ++It)
-  //         buffer.write(std::make_pair(*It,globalid[It.index()]));
-  //     }
-
-  //     template<class B>
-  //     void scatter(B& buffer, int i, int count)
-  //     {
-  //       DataType entry;
-  //       buffer.read(entry); // skip default entry
-  //       for (int k=1; k<count; k++)
-  //         {
-  //           buffer.read(entry);
-  //           if (!pis.exists(entry.second)) // I don't have this matrix entry;
-  //             M[i][i] += entry.first;
-  //         }
-  //     }
-  //   };
-
-
-  //   // data handle to insert matrix entries in the overlap region
-  //   template<typename Matrix, typename ParallelIndexSet>
-  //   class MatrixConstructDataHandle
-  //   {
-  //     using LocalIndex = typename Matrix::size_type;
-  //     using GlobalId = typename ParallelIndexSet::GlobalIndex;
-  //     Matrix& M;       // the new matrix on the overlapping index set
-  //     const Matrix& A; // the original input matrix
-  //     std::shared_ptr<ParallelIndexSet> pis;
-  //     const std::vector<LocalIndex>& new2old_localindex;
-  //     const std::vector<LocalIndex>& old2new_localindex;
-  //     const std::vector<GlobalId>& globalid;
-
-  //     using BlockType = typename Matrix::block_type;
-
-  //   public:
-  //     // export type of items to be sent around
-  //     using DataType = std::pair<BlockType,GlobalId>;
-
-  //     // constructor
-  //     // TODO: Support multiple input matrices
-  //     MatrixConstructDataHandle (Matrix& M_, // the new matrix
-  //                                const Matrix& A_, // the input matrix in additive form
-  //                                std::shared_ptr<ParallelIndexSet> pis_,
-  //                                const std::vector<LocalIndex>& new2old_localindex_,
-  //                                const std::vector<LocalIndex>& old2new_localindex_,
-  //                                const std::vector<GlobalId>& globalid_)
-  //       : M(M_), A(A_), pis(pis_), new2old_localindex(new2old_localindex_), old2new_localindex(old2new_localindex_), globalid(globalid_)
-  //     {}
-
-  //     // enable variable size
-  //     bool fixedsize()
-  //     {
-  //       return false;
-  //     }
-
-  //     // return size for given (local) index
-  //     std::size_t sizeWithRank (int i, int proc) // i is a new local index
-  //     {
-  //       std::size_t count = 1; // always send one
-  //       if ((unsigned)i>=new2old_localindex.size()) return count; // not our business since this index is not in the original range
-  //       auto I = new2old_localindex[i]; // I is the local index in the input index set
-  //       auto MEndIt = A[I].end();
-  //       for (auto It = A[I].begin(); It!=MEndIt; ++It) // iterate over row and count entries
-  //         if (old2new_localindex[It.index()]<new2old_localindex.size()) // column index is also non ghost
-  //           count++;
-  //       //std::cout << "sending " << count << " entries for index " << i << std::endl;
-  //       return count;
-  //     }
-
-  //     // gather to buffer
-  //     template<class B>
-  //     void gatherWithRank(B& buffer, int i, int proc) // TODO: Pick local matrix depending on remote rank
-  //     {
-  //       //std::cout << "proc: " << proc << std::endl;
-  //       buffer.write(std::make_pair(BlockType(),GlobalId())); // write a default value
-  //       if ((unsigned)i>=new2old_localindex.size()) return; // not our business since this index is not in the original range
-  //       auto I = new2old_localindex[i];
-  //       auto MEndIt = A[I].end();
-  //       for (auto It = A[I].begin(); It!=MEndIt; ++It) // iterate over row and count entries
-  //         if (old2new_localindex[It.index()]<new2old_localindex.size())
-  //           {
-  //             buffer.write(std::make_pair(*It,globalid[It.index()])); // yes globalid is the right thing since column index is in input index set
-  //             //std::cout << "gather " << globalid[I] << " " << globalid[It.index()] << std::endl;
-  //           }
-  //     }
-
-  //     template<class B>
-  //     void scatter(B& buffer, int i, int count)
-  //     {
-  //       DataType pair;
-  //       buffer.read(pair); // throw away the first one
-  //       for (int k=1; k<count; k++)
-  //         {
-  //           buffer.read(pair);
-  //           if (pis->exists(pair.second))
-  //             {
-  //               M.entry(i,pis->at(pair.second).local().local()) += pair.first;
-  //               //std::cout << "scatter " << pair.second << std::endl;
-  //             }
-  //         }
-  //     }
-  //   };
-
-  //   // data handle to insert matrix entries in the overlap region
-  //   template<typename Matrix, typename ParallelIndexSet>
-  //   class LambdaMultiMatrixConstructDataHandle
-  //   {
-  //     using LocalIndex = typename Matrix::size_type;
-  //     using GlobalId = typename ParallelIndexSet::GlobalIndex;
-  //     Matrix& M;       // the new matrix on the overlapping index set
-  //     Matrix& M2;
-  //     std::function<std::shared_ptr<Matrix>(int)> MatrixLambda; // the original input matrix
-  //     std::shared_ptr<Matrix> A = nullptr;
-  //     std::shared_ptr<ParallelIndexSet> pis;
-  //     const std::vector<LocalIndex>& new2old_localindex;
-  //     const std::vector<LocalIndex>& old2new_localindex;
-  //     const std::vector<GlobalId>& globalid;
-
-  //     using BlockType = typename Matrix::block_type;
-
-  //     int previousRemoteProc = -1;
-  //     int loadedMatrixProc = -1;
-
-  //   public:
-  //     // export type of items to be sent around
-  //     using DataType = std::pair<BlockType,GlobalId>;
-
-  //     // constructor
-  //     LambdaMultiMatrixConstructDataHandle (Matrix& M_, Matrix& M2_, // the new matrix
-  //                                     std::function<std::shared_ptr<Matrix>(int)> MatrixLambda_, // the input matrix in additive form
-  //                                     std::shared_ptr<ParallelIndexSet> pis_,
-  //                                     const std::vector<LocalIndex>& new2old_localindex_,
-  //                                     const std::vector<LocalIndex>& old2new_localindex_,
-  //                                     const std::vector<GlobalId>& globalid_)
-  //     : M(M_), M2(M2_), MatrixLambda(MatrixLambda_), pis(pis_), new2old_localindex(new2old_localindex_), old2new_localindex(old2new_localindex_), globalid(globalid_)
-  //     {}
-
-  //     // enable variable size
-  //     bool fixedsize()
-  //     {
-  //       return false;
-  //     }
-
-  //     // return size for given (local) index
-  //     std::size_t sizeWithRank (int i, int proc) // i is a new local index
-  //     {
-  //       // Doesn't matter which matrix we send here (we assume identical pattern), so just make sure one is ready
-  //       if (loadedMatrixProc == -1) {
-  //           // std::cout << "Assembling for " << proc << std::endl;
-  //         A = MatrixLambda(proc);
-  //         loadedMatrixProc = proc;
-  //       }
-
-  //       std::size_t count = 1; // always send one
-  //       if ((unsigned)i>=new2old_localindex.size()) return count; // not our business since this index is not in the original range
-
-  //       auto I = new2old_localindex[i]; // I is the local index in the input index set
-  //       auto MEndIt = (*A)[I].end(); // Can simply use first matrix here, as we assume equal sparsity patterns
-  //       for (auto It = (*A)[I].begin(); It!=MEndIt; ++It) // iterate over row and count entries
-  //         if (old2new_localindex[It.index()]<new2old_localindex.size()) // column index is also non ghost
-  //           count++;
-
-  //       return count;
-  //     }
-
-  //     // gather to buffer
-  //     template<class B>
-  //     void gatherWithRank(B& buffer, int i, int proc)
-  //     {
-  //       if (loadedMatrixProc != proc) {
-  //         // std::cout << "Assembling for " << proc << std::endl;
-  //         A = MatrixLambda(proc);
-  //         loadedMatrixProc = proc;
-  //       }
-
-  //       buffer.write(std::make_pair(BlockType(),GlobalId())); // write a default value
-  //       if ((unsigned)i>=new2old_localindex.size()) return; // not our business since this index is not in the original range
-  //       auto I = new2old_localindex[i];
-  //       auto MEndIt = (*A)[I].end();
-  //       for (auto It = (*A)[I].begin(); It!=MEndIt; ++It) // iterate over row and count entries
-  //         if (old2new_localindex[It.index()]<new2old_localindex.size())
-  //         {
-  //           buffer.write(std::make_pair(*It,globalid[It.index()])); // yes globalid is the right thing since column index is in input index set
-  //         }
-  //     }
-
-  //     template<class B>
-  //     void scatter(B& buffer, int i, int count)
-  //     {
-  //       DataType pair;
-  //       buffer.read(pair); // throw away the first one
-  //       for (int k=1; k<count; k++)
-  //       {
-  //         buffer.read(pair);
-  //         if (pis->exists(pair.second))
-  //         {
-  //           M.entry(i,pis->at(pair.second).local().local()) += pair.first;
-  //           M2.entry(i,pis->at(pair.second).local().local()) += pair.first;
-  //         }
-  //       }
-  //     }
-  //   };
-
-  //   // data handle to insert matrix entries in the overlap region
-  //   template<typename Matrix, typename ParallelIndexSet>
-  //   class MultiMatrixConstructDataHandle
-  //   {
-  //     using LocalIndex = typename Matrix::size_type;
-  //     using GlobalId = typename ParallelIndexSet::GlobalIndex;
-  //     Matrix& M;       // the new matrix on the overlapping index set
-  //     Matrix& M2;
-  //     std::map<int,std::shared_ptr<Matrix>> A; // the original input matrix
-  //     std::shared_ptr<ParallelIndexSet> pis;
-  //     const std::vector<LocalIndex>& new2old_localindex;
-  //     const std::vector<LocalIndex>& old2new_localindex;
-  //     const std::vector<GlobalId>& globalid;
-
-  //     using BlockType = typename Matrix::block_type;
-
-  //   public:
-  //     // export type of items to be sent around
-  //     using DataType = std::pair<BlockType,GlobalId>;
-
-  //     // constructor
-  //     MultiMatrixConstructDataHandle (Matrix& M_, Matrix& M2_, // the new matrix
-  //                                std::map<int,std::shared_ptr<Matrix>> A_, // the input matrix in additive form
-  //                                std::shared_ptr<ParallelIndexSet> pis_,
-  //                                const std::vector<LocalIndex>& new2old_localindex_,
-  //                                const std::vector<LocalIndex>& old2new_localindex_,
-  //                                const std::vector<GlobalId>& globalid_)
-  //     : M(M_), M2(M2_), A(A_), pis(pis_), new2old_localindex(new2old_localindex_), old2new_localindex(old2new_localindex_), globalid(globalid_)
-  //     {}
-
-  //     // enable variable size
-  //     bool fixedsize()
-  //     {
-  //       return false;
-  //     }
-
-  //     // return size for given (local) index
-  //     std::size_t sizeWithRank (int i, int proc) // i is a new local index
-  //     {
-  //       std::size_t count = 1; // always send one
-  //       if (i>=new2old_localindex.size()) return count; // not our business since this index is not in the original range
-  //       auto I = new2old_localindex[i]; // I is the local index in the input index set
-  //       auto MEndIt = (*A[proc])[I].end(); // Can simply use first matrix here, as we assume equal sparsity patterns
-  //       for (auto It = (*A[proc])[I].begin(); It!=MEndIt; ++It) // iterate over row and count entries
-  //         if (old2new_localindex[It.index()]<new2old_localindex.size()) // column index is also non ghost
-  //           count++;
-  //       //std::cout << "sending " << count << " entries for index " << i << " to rank " << proc << std::endl;
-  //       return count;
-  //     }
-
-  //     void gatherWithProcTag() { // TODO: Replace by better solution...
-
-  //     }
-
-  //     // gather to buffer
-  //     template<class B>
-  //     void gatherWithRank(B& buffer, int i, int proc)
-  //     {
-  //       //std::size_t count = 1; // always send one
-  //       //std::cout << "proc: " << proc << std::endl;
-  //       buffer.write(std::make_pair(BlockType(),GlobalId())); // write a default value
-  //       if (i>=new2old_localindex.size()) return; // not our business since this index is not in the original range
-  //       auto I = new2old_localindex[i];
-  //       auto MEndIt = (*A[proc])[I].end();
-  //       for (auto It = (*A[proc])[I].begin(); It!=MEndIt; ++It) // iterate over row and count entries
-  //         if (old2new_localindex[It.index()]<new2old_localindex.size())
-  //         {
-  //           buffer.write(std::make_pair(*It,globalid[It.index()])); // yes globalid is the right thing since column index is in input index set
-  //           //count++;
-  //           //std::cout << "gather " << globalid[I] << " " << globalid[It.index()] << std::endl;
-  //         }
-  //       //std::cout << "sent " << count << " entries for index " << i << " to rank " << proc << std::endl;
-  //     }
-
-  //     template<class B>
-  //     void scatter(B& buffer, int i, int count)
-  //     {
-  //       DataType pair;
-  //       buffer.read(pair); // throw away the first one
-  //       for (int k=1; k<count; k++)
-  //       {
-  //         buffer.read(pair);
-  //         if (pis->exists(pair.second))
-  //         {
-  //           M.entry(i,pis->at(pair.second).local().local()) += pair.first;
-  //           M2.entry(i,pis->at(pair.second).local().local()) += pair.first;
-  //           //std::cout << "scatter " << pair.second << std::endl;
-  //         }
-  //       }
-  //     }
-  //   };
-
-  //   /**
-  //    * \brief communication data handle for finding out neighbors
-  //    *
-  //    * Simple version that only finds out ranks with overlap in the border entities
-  //    *
-  //    */
-  //   template<typename GV>
-  //   class UpdateNeighborsDataHandle
-  //     : public Dune::CommDataHandleIF<UpdateNeighborsDataHandle<GV>,int>
-  //   {
-  //     const GV gv;
-  //     const typename GV::IndexSet& indexset;
-  //     std::vector<std::set<int>>& origins;
-
-  //   public:
-  //     typedef int DataType;
-
-  //     UpdateNeighborsDataHandle (const GV& gv_, std::vector<std::set<int>>& origins_)
-  //       : gv(gv_), indexset(gv.indexSet()), origins(origins_)
-  //     {}
-
-  //     bool contains (int dim, int codim) const
-  //     {
-  //       return (codim==dim);
-  //     }
-
-  //     bool fixedSize (int dim, int codim) const
-  //     {
-  //       return false;
-  //     }
-
-  //     template<class EntityType>
-  //     size_t size (const EntityType& e) const
-  //     {
-  //       auto i = indexset.index(e);
-  //       return origins[i].size();
-  //     }
-
-  //     template<class MessageBufferImp, class EntityType>
-  //     void gather (MessageBufferImp& buff, const EntityType& e) const
-  //     {
-  //       auto& myset = origins[indexset.index(e)];
-  //       for (auto it=myset.begin(); it!=myset.end(); ++it)
-  //         buff.write(*it);
-  //     }
-
-  //     template<class MessageBufferImp, class EntityType>
-  //     void scatter (MessageBufferImp& buff, const EntityType& e, size_t n)
-  //     {
-  //       auto& myset = origins[indexset.index(e)];
-  //       DataType x;
-  //       for (size_t i=0; i<n; ++i)
-  //         {
-  //           buff.read(x);
-  //           myset.insert(x);
-  //         }
-  //     }
-  //   };
-
-  // } // end namespace OverlapTools
-
-
-    // Attribute type for communication and transfering partition type from the grid
-  enum EPISAttribute {interior=0,border=1,overlap=2,front=3,ghost=4};
-
+  // Attribute type for communication and transfering partition type from the grid
+  // enum EPISAttribute {interior=0,border=1,overlap=2,front=3,ghost=4};
 
   /** A class extending a given index set by adding overlap with respect to a matrix graph
    *
@@ -572,7 +29,7 @@ namespace Dune {
    * \tparam Matrix                      ISTL sparse matrix type
    */
   template<typename CollectiveCommunication, typename GlobalId, typename Matrix>
-  class ExtendedParallelIndexSet
+  class ExtendedParallelIndexSetSerendipity
   {
   public:
     // make enum type for attributes public
@@ -706,7 +163,7 @@ namespace Dune {
   public:
 
     //! \brief Constructor.
-    ExtendedParallelIndexSet (const CollectiveCommunication& comm_,    // collective communication object
+    ExtendedParallelIndexSetSerendipity (const CollectiveCommunication& comm_,    // collective communication object
                               const std::vector<int>& neighbors,       // ranks with whom we possibly ever share degrees of freedom
                               const Matrix& A,                         // matrix assembled on interior elements and with dirichlet rows replaced
                               const std::vector<EPISAttribute>& partitiontype,   // vector giving partitiontype for each degree of freedom
@@ -718,9 +175,12 @@ namespace Dune {
     {
       // compute dist of every dof to the boundary (or border dofs) up to a certain depth
       // this is needed later to make all indices public that are potentially in the overlap
-      std::vector<int> dist(N_orig);
+
+      std::vector<int> dist(N_orig); // Number of DoF here different from partitiontype.size --> number of node
+
       for (size_t i=0; i<N_orig; i++)
         dist[i] = (partitiontype[i]==EPISAttribute::border) ? 0 : (overlapsize+1);
+
       for (int round=0; round<overlapsize; round++)
         for (size_t i=0; i<N_orig; i++)
           {
@@ -863,430 +323,13 @@ namespace Dune {
   };
 
 
-  template<typename ExtendedParallelIndexSet, typename Matrix, typename GlobalId>
-  std::shared_ptr<Matrix> copyAndExtendMatrix (const ExtendedParallelIndexSet& epis, const Matrix& A,
-                                               int avg, const std::vector<GlobalId>& globalid) {
-    return copyAndExtendMatrix<ExtendedParallelIndexSet, Matrix, GlobalId>(epis, A, A, avg, globalid);
-  }
-
-
-  /** Take a matrix on the original index set and return one on the extended index set
-   * The input matrix is in additive form assembled on the interior elements only.
-   * The returned matrix is in consistent form with Dirichlet boundary conditions.
-   */
-  template<typename ExtendedParallelIndexSet, typename Matrix, typename GlobalId>
-  std::shared_ptr<Matrix> copyAndExtendMatrix (const ExtendedParallelIndexSet& epis, const Matrix& A_local, const Matrix& A,
-                                               int avg, const std::vector<GlobalId>& globalid)
-  {
-    // build up communication interface using all atributes (thankfully ghosts are out of the way :-))
-    Dune::AllSet<EPISAttribute> allAttribute;
-    Dune::Interface allinterface;
-    allinterface.build(*epis.remoteIndices(),allAttribute,allAttribute); // all to all communication
-    DuneWithRank::VariableSizeCommunicator<> varcommunicator(allinterface);
-    //std::cout << "interface is built" << std::endl;
-
-    // make a copy M of the matrix A_local where rows/columns corresponding to ghosts are omitted
-    //std::cout << rank << ": copy matrix" << std::endl;
-    auto M = std::shared_ptr<Matrix>(new Matrix(epis.extendedSize(),epis.extendedSize(),avg,0.1,Matrix::implicit));
-    auto new2old_localindex = epis.extendedToOriginalLocalIndex();
-    auto old2new_localindex = epis.originalToExtendedLocalIndex();
-    for (auto rIt=A_local.begin(); rIt!=A_local.end(); ++rIt) // loop over entries of A
-      for (auto cIt=rIt->begin(); cIt!=rIt->end(); ++cIt)
-        {
-          auto i = old2new_localindex[rIt.index()];
-          auto j = old2new_localindex[cIt.index()];
-          if ( i<new2old_localindex.size() && j<new2old_localindex.size() )
-            M->entry(i,j) = *cIt;
-        }
-    // do not compress yet; we need to add entries from the other processors!
-    // now we need to make M a submatrix centered on the diagonal
-    // add entries of M from other processors
-    //std::cout << rank << ": communicate matrix" << std::endl;
-    using ParallelIndexSet = typename ExtendedParallelIndexSet::ParallelIndexSet;
-    OverlapTools::MatrixConstructDataHandle<Matrix,ParallelIndexSet> matconsdh(*M,A,epis.parallelIndexSet(),new2old_localindex,
-                                                                               old2new_localindex,globalid);
-    varcommunicator.forward(matconsdh);
-    //std::cout << rank << ": matrix communication finished" << std::endl;
-    M->compress();
-    //std::cout << rank << ": matrix done" << std::endl;
-    return M;
-  }
-
-
-  template<typename ExtendedParallelIndexSet, typename Matrix, typename GlobalId>
-  std::pair<std::shared_ptr<Matrix>,std::shared_ptr<Matrix>> lambdaMultiCopyAndExtendMatrix (const ExtendedParallelIndexSet& epis, const Matrix& A_local, const Matrix& A2_local, std::function<std::shared_ptr<Matrix>(int)> MatrixLambda,
-                                               int avg, const std::vector<GlobalId>& globalid)
-  {
-    // build up communication interface using all atributes (thankfully ghosts are out of the way :-))
-    Dune::AllSet<EPISAttribute> allAttribute;
-    Dune::Interface allinterface;
-    allinterface.build(*epis.remoteIndices(),allAttribute,allAttribute); // all to all communication
-    DuneWithRank::VariableSizeCommunicator<> varcommunicator(allinterface);
-    //std::cout << "interface is built" << std::endl;
-
-    // make a copy M of the matrix A_local where rows/columns corresponding to ghosts are omitted
-    //std::cout << rank << ": copy matrix" << std::endl;
-    std::shared_ptr<Matrix> M = std::shared_ptr<Matrix>(new Matrix(epis.extendedSize(),epis.extendedSize(),avg,0.1,Matrix::implicit));
-    std::shared_ptr<Matrix> M2 = std::shared_ptr<Matrix>(new Matrix(epis.extendedSize(),epis.extendedSize(),avg,0.1,Matrix::implicit));
-    auto new2old_localindex = epis.extendedToOriginalLocalIndex();
-    auto old2new_localindex = epis.originalToExtendedLocalIndex();
-    for (auto rIt=A_local.begin(); rIt!=A_local.end(); ++rIt) // loop over entries of A
-    {
-      for (auto cIt=rIt->begin(); cIt!=rIt->end(); ++cIt)
-      {
-        auto i = old2new_localindex[rIt.index()];
-        auto j = old2new_localindex[cIt.index()];
-        if ( i<new2old_localindex.size() && j<new2old_localindex.size() ) {
-          M->entry(i,j) = *cIt;
-        }
-      }
-    }
-    for (auto rIt=A2_local.begin(); rIt!=A2_local.end(); ++rIt) // loop over entries of A
-    {
-      for (auto cIt=rIt->begin(); cIt!=rIt->end(); ++cIt)
-      {
-        auto i = old2new_localindex[rIt.index()];
-        auto j = old2new_localindex[cIt.index()];
-        if ( i<new2old_localindex.size() && j<new2old_localindex.size() ) {
-          M2->entry(i,j) = *cIt;
-        }
-      }
-    }
-    // do not compress yet; we need to add entries from the other processors!
-    // now we need to make M a submatrix centered on the diagonal
-    // add entries of M from other processors
-    //std::cout << rank << ": communicate matrix" << std::endl;
-    using ParallelIndexSet = typename ExtendedParallelIndexSet::ParallelIndexSet;
-    OverlapTools::LambdaMultiMatrixConstructDataHandle<Matrix,ParallelIndexSet> matconsdh(*M,*M2,MatrixLambda,epis.parallelIndexSet(),new2old_localindex,
-                                                                                old2new_localindex,globalid);
-    varcommunicator.forward(matconsdh);
-    //std::cout << rank << ": matrix communication finished" << std::endl;
-    auto stats = M->compress();
-    stats = M2->compress();
-    //std::cout << rank << ": matrix done" << std::endl;
-    return std::make_pair(M,M2);
-  }
-
-  /* Take a matrix on the original index set and return one on the extended index set
-   * The input matrix is in additive form assembled on the interior elements only.
-   * The returned matrix is in consistent form with Dirichlet boundary conditions.
-   */
-  template<typename ExtendedParallelIndexSet, typename Matrix, typename GlobalId>
-  std::pair<std::shared_ptr<Matrix>,std::shared_ptr<Matrix>> multiCopyAndExtendMatrix (const ExtendedParallelIndexSet& epis, const Matrix& A_local, const Matrix& A2_local, std::map<int,std::shared_ptr<Matrix>> A,
-                                               int avg, const std::vector<GlobalId>& globalid)
-  {
-    // build up communication interface using all atributes (thankfully ghosts are out of the way :-))
-    Dune::AllSet<EPISAttribute> allAttribute;
-    Dune::Interface allinterface;
-    allinterface.build(*epis.remoteIndices(),allAttribute,allAttribute); // all to all communication
-    DuneWithRank::VariableSizeCommunicator<> varcommunicator(allinterface);
-    //std::cout << "interface is built" << std::endl;
-
-    // make a copy M of the matrix A_local where rows/columns corresponding to ghosts are omitted
-    //std::cout << rank << ": copy matrix" << std::endl;
-    std::shared_ptr<Matrix> M = std::shared_ptr<Matrix>(new Matrix(epis.extendedSize(),epis.extendedSize(),avg,0.1,Matrix::implicit));
-    std::shared_ptr<Matrix> M2 = std::shared_ptr<Matrix>(new Matrix(epis.extendedSize(),epis.extendedSize(),avg,0.1,Matrix::implicit));
-    auto new2old_localindex = epis.extendedToOriginalLocalIndex();
-    auto old2new_localindex = epis.originalToExtendedLocalIndex();
-    for (auto rIt=A_local.begin(); rIt!=A_local.end(); ++rIt) // loop over entries of A
-    {
-      for (auto cIt=rIt->begin(); cIt!=rIt->end(); ++cIt)
-      {
-        auto i = old2new_localindex[rIt.index()];
-        auto j = old2new_localindex[cIt.index()];
-        if ( i<new2old_localindex.size() && j<new2old_localindex.size() ) {
-          M->entry(i,j) = *cIt;
-        }
-      }
-    }
-    for (auto rIt=A2_local.begin(); rIt!=A2_local.end(); ++rIt) // loop over entries of A
-    {
-      for (auto cIt=rIt->begin(); cIt!=rIt->end(); ++cIt)
-      {
-        auto i = old2new_localindex[rIt.index()];
-        auto j = old2new_localindex[cIt.index()];
-        if ( i<new2old_localindex.size() && j<new2old_localindex.size() ) {
-          M2->entry(i,j) = *cIt;
-        }
-      }
-    }
-    // do not compress yet; we need to add entries from the other processors!
-    // now we need to make M a submatrix centered on the diagonal
-    // add entries of M from other processors
-    //std::cout << rank << ": communicate matrix" << std::endl;
-    using ParallelIndexSet = typename ExtendedParallelIndexSet::ParallelIndexSet;
-    OverlapTools::MultiMatrixConstructDataHandle<Matrix,ParallelIndexSet> matconsdh(*M,*M2,A,epis.parallelIndexSet(),new2old_localindex,
-                                                                                old2new_localindex,globalid);
-    varcommunicator.forward(matconsdh);
-    //std::cout << rank << ": matrix communication finished" << std::endl;
-    auto stats = M->compress();
-    stats = M2->compress();
-    //std::cout << rank << ": matrix done" << std::endl;
-    return std::make_pair(M,M2);
-  }
-
-  /** Take the matrix on the overlapping index set and subtract all entries from the diagonal that are not stored in this rank
-   */
-  template<typename ExtendedParallelIndexSet, typename Matrix, typename ScalarVector>
-  void addNonlocalEntriesToDiagonal (const ExtendedParallelIndexSet& epis, Matrix& M, const ScalarVector& owner)
-  {
-    // build up communication interface using all atributes (thankfully ghosts are out of the way :-))
-    Dune::AllSet<EPISAttribute> allAttribute;
-    Dune::Interface allinterface;
-    allinterface.build(*epis.remoteIndices(),allAttribute,allAttribute); // all to all communication
-    DuneWithRank::VariableSizeCommunicator<> varcommunicator(allinterface);
-
-    using ParallelIndexSet = typename ExtendedParallelIndexSet::ParallelIndexSet;
-    OverlapTools::AddNonlocalEntriesToDiagonal<Matrix,ParallelIndexSet,ScalarVector> adddh(M,*epis.parallelIndexSet(),owner);
-    varcommunicator.forward(adddh);
-  }
-
-
-  template<typename ExtendedParallelIndexSet, typename Matrix, typename Vector>
-  std::shared_ptr<Vector>
-  makePartitionOfUnity (const ExtendedParallelIndexSet& epis, const Matrix& M, int overlapsize)
-  {
-    using FieldType = typename Matrix::field_type;
-    using ScalarVector = Dune::BlockVector<Dune::FieldVector<FieldType,1>>;
-    using ParallelIndexSet = typename ExtendedParallelIndexSet::ParallelIndexSet;
-
-    // communicator
-    Dune::AllSet<EPISAttribute> allAttribute;
-    Dune::Interface allinterface;
-    allinterface.build(*epis.remoteIndices(),allAttribute,allAttribute); // all to all communication
-    DuneWithRank::VariableSizeCommunicator<> varcommunicator(allinterface);
-    DuneWithRank::BufferedCommunicator communicator;
-    communicator.build<ScalarVector>(allinterface);
-
-    // now lets determine an improved partition of unity ....
-    // first find entries which have nonlocal edges; these are on the boundary
-    ScalarVector distance(M.N());
-    OverlapTools::CountNonlocalEdgesDataHandle<ParallelIndexSet,Matrix,ScalarVector> nonlocaledgesdh(M,*epis.parallelIndexSet(),distance);
-    varcommunicator.forward(nonlocaledgesdh);
-
-    // now compute distance of each vertex to the boundary up to distance 2*overlapsize
-    for (typename ScalarVector::size_type i=0; i<distance.N(); i++)
-      if (distance[i]!=0.0)
-        distance[i] = 0.0; // this is a boundary dof
-      else
-        distance[i] = 2*overlapsize+1.0;
-
-    for (int round=0; round<2*overlapsize; round++)
-      for (typename ScalarVector::size_type i=0; i<distance.N(); i++)
-        {
-          auto cIt = M[i].begin();
-          auto cEndIt = M[i].end();
-          for (; cIt!=cEndIt; ++cIt)
-            distance[i] = std::min(distance[i],distance[cIt.index()]+1.0);
-        }
-
-    // now we may compute the partition of unity as in the stability proof of additive Schwarz
-    ScalarVector sumdistance(distance);
-    for (typename ScalarVector::size_type i=0; i<sumdistance.N(); i++)
-      //sumdistance[i] += 1.0; // add 1 as actually the first vertex is already inside
-      sumdistance[i] += .0; // add 1 as actually the first vertex is already inside
-    communicator.forward<OverlapTools::AddGatherScatter<ScalarVector>>(sumdistance,sumdistance);
-    auto pu = std::shared_ptr<Vector>(new Vector(M.N()));
-    for (typename Vector::size_type i=0; i<pu->N(); i++){
-      (*pu)[i] = (distance[i]+.0)/sumdistance[i];
-    }
-    return pu;
-  }
-
-  template<typename ExtendedParallelIndexSet, typename Matrix, typename Vector>
-  std::tuple<std::shared_ptr<Vector>, std::vector<int>>
-  makePartitionOfUnityRestricted (const ExtendedParallelIndexSet& epis, const Matrix& M, int overlapsize, int PoU_restriction=0)
-  {
-    using FieldType = typename Matrix::field_type;
-    using ScalarVector = Dune::BlockVector<Dune::FieldVector<FieldType,1>>;
-    using ParallelIndexSet = typename ExtendedParallelIndexSet::ParallelIndexSet;
-
-    // communicator
-    Dune::AllSet<EPISAttribute> allAttribute;
-    Dune::Interface allinterface;
-    allinterface.build(*epis.remoteIndices(),allAttribute,allAttribute); // all to all communication
-    DuneWithRank::VariableSizeCommunicator<> varcommunicator(allinterface);
-    DuneWithRank::BufferedCommunicator communicator;
-    communicator.build<ScalarVector>(allinterface);
-
-    // now lets determine an improved partition of unity ....
-    // first find entries which have nonlocal edges; these are on the boundary
-    ScalarVector distance(M.N());
-    OverlapTools::CountNonlocalEdgesDataHandle<ParallelIndexSet,Matrix,ScalarVector> nonlocaledgesdh(M,*epis.parallelIndexSet(),distance);
-    varcommunicator.forward(nonlocaledgesdh);
-
-    std::vector<int> interior_bnd_dofs;
-    interior_bnd_dofs.resize(0);
-
-    /*now compute distance of each vertex to the boundary up to distance 2*overlapsize*/
-    for (typename ScalarVector::size_type i=0; i<distance.N(); i++){
-      if (distance[i]!=0.0) {
-        distance[i] = 0.0; // this is a boundary dof
-        interior_bnd_dofs.push_back(i);
-
-        // std::cout << i << std::endl;
-        // std::cout << interior_bnd_dofs[0] << std::endl;
-      } else {
-        distance[i] = 2.*(0.0+overlapsize-PoU_restriction)+1.0;
-      }
-    }
-
-    for (int round=0; round<PoU_restriction; round++){ // First diffuse 0 on neighbour boundaries
-      for (typename ScalarVector::size_type i=0; i<distance.N(); i++)
-        {
-          auto cIt = M[i].begin();
-          auto cEndIt = M[i].end();
-          for (; cIt!=cEndIt; ++cIt)
-            distance[i] = std::min(distance[i],distance[cIt.index()]);
-        }
-    }
-    for (int round=PoU_restriction; round<2*overlapsize-PoU_restriction; round++){ // Then make the Part of Unity
-      for (typename ScalarVector::size_type i=0; i<distance.N(); i++)
-        {
-          auto cIt = M[i].begin();
-          auto cEndIt = M[i].end();
-          for (; cIt!=cEndIt; ++cIt)
-            distance[i] = std::min(distance[i],distance[cIt.index()]+1.0);
-        }
-    }
-
-    // now we may compute the partition of unity as in the stability proof of additive Schwarz
-    ScalarVector sumdistance(distance);
-    for (typename ScalarVector::size_type i=0; i<sumdistance.N(); i++)
-      // sumdistance[i] += 1.0; // add 1 as actually the first vertex is already inside
-      sumdistance[i] += .0; // add 1 as actually the first vertex is already inside
-    communicator.forward<OverlapTools::AddGatherScatter<ScalarVector>>(sumdistance,sumdistance);
-    auto pu = std::shared_ptr<Vector>(new Vector(M.N()));
-    for (typename Vector::size_type i=0; i<pu->N(); i++){
-      (*pu)[i] = (distance[i]+.0)/sumdistance[i];
-    }
-
-    // std::cout << "pu->size() : " << pu->size() << std::endl;
-
-    return std::make_tuple(pu, interior_bnd_dofs);
-  }
-
-  template<typename ExtendedParallelIndexSet, typename Matrix>
-  std::shared_ptr<Dune::BlockVector<Dune::FieldVector<typename Matrix::field_type,1>>>
-  makeOwner (const ExtendedParallelIndexSet& epis, const Matrix& M, int overlapsize)
-  {
-    using FieldType = typename Matrix::field_type;
-    using ScalarVector = Dune::BlockVector<Dune::FieldVector<FieldType,1>>;
-    using ParallelIndexSet = typename ExtendedParallelIndexSet::ParallelIndexSet;
-
-    // communicator
-    Dune::AllSet<EPISAttribute> allAttribute;
-    Dune::Interface allinterface;
-    allinterface.build(*epis.remoteIndices(),allAttribute,allAttribute); // all to all communication
-    DuneWithRank::VariableSizeCommunicator<> varcommunicator(allinterface);
-
-    DuneWithRank::BufferedCommunicator communicator;
-    communicator.build<ScalarVector>(allinterface);
-
-    // now lets determine an improved partition of unity ....
-    // first find entries which have nonlocal edges; these are on the boundary
-    ScalarVector distance(M.N());
-    OverlapTools::CountNonlocalEdgesDataHandle<ParallelIndexSet,Matrix,ScalarVector> nonlocaledgesdh(M,*epis.parallelIndexSet(),distance);
-    varcommunicator.forward(nonlocaledgesdh);
-    // now compute distance of each vertex to the boundary up to distance 2*overlapsize
-    for (typename ScalarVector::size_type i=0; i<distance.N(); i++)
-      if (distance[i]!=0.0)
-        distance[i] = 0.0; // this is a boundary dof
-      else
-        distance[i] = 2*overlapsize+1.0;
-    for (int round=0; round<2*overlapsize; round++)
-      for (typename ScalarVector::size_type i=0; i<distance.N(); i++)
-        {
-          auto cIt = M[i].begin();
-          auto cEndIt = M[i].end();
-          for (; cIt!=cEndIt; ++cIt)
-            distance[i] = std::min(distance[i],distance[cIt.index()]+1.0);
-        }
-
-    // build up an owner mask. Owners must be at least distance 1 from the boundary
-    auto owner = std::shared_ptr<ScalarVector>(new ScalarVector(M.N()));
-    OverlapTools::MakeOwnerDataHandle ownerdh(distance,epis.collectiveCommunication().rank(),epis.collectiveCommunication().size(),*owner);
-    varcommunicator.forward(ownerdh);
-
-    return owner;
-  }
-} // namespace Dune
-
-// The following depends at least on Dune Grid
-namespace Dune {
-  namespace PDELab {
-
-    /** find all ranks with whom we possible share neighbors in the overlap given
-     */
-
-
-    /////// TODO need to depend on the gfs instead of the GV ////////
-    /////// Maybe not ////////
-
-    template<typename GV>
-    std::vector<int> findNeighboringRanks (const GV& gv, int overlap)
-    {
-      auto& indexset = gv.indexSet();
-      const int dimension = GV::dimension;
-
-      // find out true set of neighbors in distance overlapsize
-      std::vector<std::set<int>> origins1(indexset.size(dimension)), origins2(indexset.size(dimension));
-      for (int i=0; i<origins1.size(); ++i) origins1[i].insert(gv.comm().rank()); // I know my indices initially
-      OverlapTools::UpdateNeighborsDataHandle<GV> unbdhx(gv,origins1);
-      if (gv.comm().size()>1)
-        gv.communicate(unbdhx,Dune::InteriorBorder_InteriorBorder_Interface,Dune::ForwardCommunication); // do one update with neighbors
-      std::vector<std::set<int>>* current = &origins1; // pointers for double buffering
-      std::vector<std::set<int>>* update = &origins2;
-      for (int round=0; round<2*overlap; ++round)
-        {
-          // propagate ranks by one layer of elements
-          *update = *current;
-          for (const auto& e : elements(gv,Dune::Partitions::interior))
-            for (int I=0; I<e.geometry().corners(); I++)
-              {
-                auto i = indexset.subIndex(e,I,dimension);
-                for (int J=0; J<e.geometry().corners(); J++)
-                  if (J!=I)
-                    {
-                      auto j = indexset.subIndex(e,J,dimension);
-                      (*update)[i].insert((*current)[j].begin(),(*current)[j].end()); // union of two sets
-                    }
-              }
-
-          // update border vertices
-          OverlapTools::UpdateNeighborsDataHandle<GV> unbdh(gv,*update);
-          if (gv.comm().size()>1)
-            gv.communicate(unbdh,Dune::InteriorBorder_InteriorBorder_Interface,Dune::ForwardCommunication); // do one update with neighbors
-
-          // swap pointers
-          auto temp = update; update = current; current = temp;
-        }
-
-      // now unite all sets
-      std::set<int> allmyneighborsset;
-      for (int i=0; i<(*current).size(); ++i)
-        allmyneighborsset.insert((*current)[i].begin(),(*current)[i].end());
-      // ... and convert to vector
-      std::vector<int> allmyneighborsvec;
-      for (auto it=allmyneighborsset.begin(); it!=allmyneighborsset.end(); ++it)
-        if (*it!=gv.comm().rank())
-          allmyneighborsvec.push_back(*it);
-
-      return allmyneighborsvec;
-    }
-
-  } // namespace PDELab
-} // namespace Dune
-
-
-
-namespace Dune {
-  template<typename GridView, typename Vector, typename Matrix>
-  class NonoverlappingOverlapAdapter {
+// namespace Dune {
+  template<typename GridView, typename GFS, typename Vector, typename Matrix>
+  class NonoverlappingOverlapAdapterSerendipity {
 
     using GlobalId = typename GridView::Grid::GlobalIdSet::IdType;
     using CollectiveCommunication = typename GridView::CollectiveCommunication;
-    using EPIS = Dune::ExtendedParallelIndexSet<CollectiveCommunication,GlobalId,Matrix>;
+    using EPIS = Dune::ExtendedParallelIndexSetSerendipity<CollectiveCommunication,GlobalId,Matrix>;
     using LocalIndex = typename Vector::size_type;
     using FieldType = typename Vector::field_type;
     using ScalarVector = Dune::BlockVector<Dune::FieldVector<FieldType,1>>;
@@ -1297,17 +340,19 @@ namespace Dune {
     using RemoteIndices = Dune::RemoteIndices<ParallelIndexSet>;
 
   public:
-    NonoverlappingOverlapAdapter(const GridView& gv,       // ranks with whom we share degrees of freedom
+    NonoverlappingOverlapAdapterSerendipity(const GridView& gv,       // ranks with whom we share degrees of freedom
+                                 const GFS& gfs,          // Matrix used to determine matrix graph
                                  const Matrix& A,          // Matrix used to determine matrix graph
-                                 int avg,                                // average number of matrix entries
+                                 int avg,                  // average number of matrix entries
                                  int overlap)
     : gv_(gv),
+    gfs_(gfs),
     //A_(A),
     avg_(avg),
-    globalid_(buildGlobalIdVector(gv)), // TODO: Avoid copy?
+    globalid_(buildGlobalIdVector(gv, gfs)), // TODO: Avoid copy?
     overlap_(overlap),
     epis_(gv.comm(),Dune::PDELab::findNeighboringRanks(gv,overlap_),
-          A,buildPartitionTypeVector(gv),globalid_,overlap_,false)
+          A, buildPartitionTypeVector(gv, gfs),globalid_,overlap_,false)
     {
       new2old_localindex_ = epis_.extendedToOriginalLocalIndex(); // TODO: avoid copy?
     }
@@ -1364,44 +409,100 @@ namespace Dune {
     }
 
     std::vector<typename GridView::Grid::GlobalIdSet::IdType> get_globalid() {
-      auto& indexset = gv_.indexSet();
-      auto& globalidset = gv_.grid().globalIdSet();
-      using GlobalID = typename GridView::Grid::GlobalIdSet::IdType;
-      std::vector<GlobalID> globalid(indexset.size(GridView::Grid::dimension));
-      for (const auto& v : vertices(gv_,Dune::Partitions::all))
-        globalid[indexset.index(v)] = globalidset.id(v);
-      return globalid;
+      // auto& indexset = gv_.indexSet();
+      // auto& globalidset = gv_.grid().globalIdSet();
+      // using GlobalID = typename GridView::Grid::GlobalIdSet::IdType;
+      // std::vector<GlobalID> globalid(indexset.size(GridView::Grid::dimension));
+      // for (const auto& v : vertices(gv_,Dune::Partitions::all))
+      //   globalid[indexset.index(v)] = globalidset.id(v);
+      // return globalid;
+
+      return buildGlobalIdVector(gv_, gfs_);
     }
 
   private:
 
-    std::vector<EPISAttribute> buildPartitionTypeVector(const GridView& gv) {
-      auto& indexset = gv.indexSet();
-      std::vector<Dune::EPISAttribute> partitiontype(indexset.size(GridView::Grid::dimension));
+    std::vector<EPISAttribute> buildPartitionTypeVector(const GridView& gv, const GFS& gfs) {
 
-      for (const auto& v : vertices(gv,Dune::Partitions::all))
-      {
-        if (v.partitionType()==Dune::InteriorEntity) partitiontype[indexset.index(v)] = Dune::EPISAttribute::interior;
-        if (v.partitionType()==Dune::BorderEntity) partitiontype[indexset.index(v)] = Dune::EPISAttribute::border;
-        if (v.partitionType()==Dune::OverlapEntity) partitiontype[indexset.index(v)] = Dune::EPISAttribute::overlap;
-        if (v.partitionType()==Dune::GhostEntity) partitiontype[indexset.index(v)] = Dune::EPISAttribute::ghost;
+      auto& indexset = gv.indexSet();
+      std::vector<Dune::EPISAttribute> partitiontype(indexset.size(GridView::Grid::dimension)+\
+                                                     indexset.size(GridView::Grid::dimension-1)); // codim3: vertices + codim2: edges
+
+
+      using ES = typename GFS::Traits::EntitySet;
+      ES es = gfs.entitySet();
+      using LFS = Dune::PDELab::LocalFunctionSpace<GFS>;
+      typedef typename LFS::template Child<0>::Type LFSE;
+      LFS lfs(gfs);
+      LFSE lfs_e = lfs.template child<0>();
+
+      for (const auto& e : elements(gv,Dune::Partitions::all)){
+        lfs_e.bind(e);
+        auto& coeffs = lfs_e.finiteElement().localCoefficients();
+        for (std::size_t i = 0; i < coeffs.size(); ++i) {
+          auto uniquesubindex = es.indexSet().uniqueSubIndex(e, coeffs.localKey(i).subEntity(), coeffs.localKey(i).codim());
+          // auto subId = globalidset.subId(e, coeffs.localKey(i).subEntity(), coeffs.localKey(i).codim());
+
+          // auto dof = e.subEntity(coeffs.localKey(i).subEntity(), coeffs.localKey(i).codim());
+          // auto dof = e.subEntities(coeffs.localKey(i).subEntity(), coeffs.localKey(i).codim());
+          static const int coeff_codim = coeffs.localKey(i).codim();
+
+
+          if (coeffs.localKey(i).codim() == 3) { // vertices
+            auto dof_ptype = e.template subEntity<3>(coeffs.localKey(i).subEntity()).partitionType();
+            if (dof_ptype==Dune::InteriorEntity) partitiontype[uniquesubindex] = Dune::EPISAttribute::interior;
+            if (dof_ptype==Dune::BorderEntity) partitiontype[uniquesubindex] = Dune::EPISAttribute::border;
+            if (dof_ptype==Dune::OverlapEntity) partitiontype[uniquesubindex] = Dune::EPISAttribute::overlap;
+            if (dof_ptype==Dune::GhostEntity) partitiontype[uniquesubindex] = Dune::EPISAttribute::ghost;
+          } else if (coeffs.localKey(i).codim() == 2) { // edges
+            auto dof_ptype = e.template subEntity<2>(coeffs.localKey(i).subEntity()).partitionType();
+            if (dof_ptype==Dune::InteriorEntity) partitiontype[uniquesubindex] = Dune::EPISAttribute::interior;
+            if (dof_ptype==Dune::BorderEntity) partitiontype[uniquesubindex] = Dune::EPISAttribute::border;
+            if (dof_ptype==Dune::OverlapEntity) partitiontype[uniquesubindex] = Dune::EPISAttribute::overlap;
+            if (dof_ptype==Dune::GhostEntity) partitiontype[uniquesubindex] = Dune::EPISAttribute::ghost;
+          }
+
+        }
       }
       return partitiontype;
     }
 
-    // To be replaced
-    //template<typename GridView>
-    std::vector<typename GridView::Grid::GlobalIdSet::IdType> buildGlobalIdVector(const GridView& gv) {
+    std::vector<typename GridView::Grid::GlobalIdSet::IdType> buildGlobalIdVector(const GridView& gv, const GFS& gfs) {
       auto& indexset = gv.indexSet();
       auto& globalidset = gv.grid().globalIdSet();
       using GlobalID = typename GridView::Grid::GlobalIdSet::IdType;
-      std::vector<GlobalID> globalid(indexset.size(GridView::Grid::dimension));
-      for (const auto& v : vertices(gv,Dune::Partitions::all))
-        globalid[indexset.index(v)] = globalidset.id(v);
+
+      std::vector<GlobalID> globalid(indexset.size(GridView::Grid::dimension)+\
+                                     indexset.size(GridView::Grid::dimension-1)); // codim3: vertices + codim2: edges
+
+      using ES = typename GFS::Traits::EntitySet;
+      ES es = gfs.entitySet();
+      using LFS = Dune::PDELab::LocalFunctionSpace<GFS>;
+      typedef typename LFS::template Child<0>::Type LFSE;
+      LFS lfs(gfs);
+      LFSE lfs_e = lfs.template child<0>();
+
+      for (const auto& e : elements(gv,Dune::Partitions::all)){
+        lfs_e.bind(e);
+        auto& coeffs = lfs_e.finiteElement().localCoefficients();
+        for (std::size_t i = 0; i < coeffs.size(); ++i) {
+          auto uniquesubindex = es.indexSet().uniqueSubIndex(e, coeffs.localKey(i).subEntity(), coeffs.localKey(i).codim());
+          auto subId = globalidset.subId(e, coeffs.localKey(i).subEntity(), coeffs.localKey(i).codim());
+          globalid[uniquesubindex] = subId;
+        }
+      }
+
+      // if(gv.comm().rank()==0){
+      //   for (int i=0; i<globalid.size(); i++) {
+      //     std::cout << "globalid["<<i<<"] = " <<  globalid[i] << std::endl;
+      //   }
+      // }
+
       return globalid;
     }
 
     const GridView& gv_;
+    const GFS& gfs_;
     const int avg_;
     const std::vector<GlobalId> globalid_;
     const int overlap_;
@@ -1410,19 +511,19 @@ namespace Dune {
     std::vector<LocalIndex> new2old_localindex_;
   };
 
-  template<typename GridView, typename Matrix, typename Vector>
-  std::shared_ptr<Vector> makePartitionOfUnity(NonoverlappingOverlapAdapter<GridView, Vector, Matrix>& adapter, const Matrix& A) {
+  template<typename GridView, typename GFS, typename Matrix, typename Vector>
+  std::shared_ptr<Vector> makePartitionOfUnity(NonoverlappingOverlapAdapterSerendipity<GridView, GFS, Vector, Matrix>& adapter, const Matrix& A) {
     using GlobalId = typename GridView::Grid::GlobalIdSet::IdType;
     using CollectiveCommunication = typename GridView::CollectiveCommunication;
-    using EPIS = Dune::ExtendedParallelIndexSet<CollectiveCommunication,GlobalId,Matrix>;
+    using EPIS = Dune::ExtendedParallelIndexSetSerendipity<CollectiveCommunication,GlobalId,Matrix>;
     return Dune::makePartitionOfUnity<EPIS, Matrix, Vector>(adapter.getEpis(), A, adapter.getEpis().overlapSize());
   }
 
-  template<typename GridView, typename Matrix, typename Vector>
-  std::tuple<std::shared_ptr<Vector>, std::vector<int>> makePartitionOfUnityRestricted(NonoverlappingOverlapAdapter<GridView, Vector, Matrix>& adapter, const Matrix& A, int extra=0) {
+  template<typename GridView, typename GFS, typename Matrix, typename Vector>
+  std::tuple<std::shared_ptr<Vector>, std::vector<int>> makePartitionOfUnityRestricted(NonoverlappingOverlapAdapterSerendipity<GridView, GFS, Vector, Matrix>& adapter, const Matrix& A, int extra=0) {
     using GlobalId = typename GridView::Grid::GlobalIdSet::IdType;
     using CollectiveCommunication = typename GridView::CollectiveCommunication;
-    using EPIS = Dune::ExtendedParallelIndexSet<CollectiveCommunication,GlobalId,Matrix>;
+    using EPIS = Dune::ExtendedParallelIndexSetSerendipity<CollectiveCommunication,GlobalId,Matrix>;
     return Dune::makePartitionOfUnityRestricted<EPIS, Matrix, Vector>(adapter.getEpis(), A, adapter.getEpis().overlapSize(), extra);
   }
 }

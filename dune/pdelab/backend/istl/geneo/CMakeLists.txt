@@ -21,6 +21,7 @@ install(FILES
   novlp_geneo_preconditioner.hh
   novlp_operators.hh
   overlaptools.hh
+  overlaptools_serendipity.hh
   schwarznonoverlapping.hh
   subdomainprojectedcoarsespace.hh
   two_level_schwarz.hh
