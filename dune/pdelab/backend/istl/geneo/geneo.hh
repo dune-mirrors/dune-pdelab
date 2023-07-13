@@ -8,6 +8,7 @@
 #include <dune/pdelab/backend/istl/geneo/subdomainprojectedcoarsespace.hh>
 #include <dune/pdelab/backend/istl/geneo/nonoverlapping/subdomainprojectedcoarsespace.hh>
 #include <dune/pdelab/backend/istl/geneo/nonoverlapping/subdomainprojectedcoarsespaceheldbyrank0.hh>
+#include <dune/pdelab/backend/istl/geneo/nonoverlapping/subdomainprojectedcoarsespaceSerendipityheldbyrank0.hh>
 #include <dune/pdelab/backend/istl/geneo/nonoverlapping/subdomainprojectedcoarsespaceSerendipity.hh>
 
 #include <dune/pdelab/backend/istl/geneo/partitionofunity.hh>
