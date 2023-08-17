@@ -83,6 +83,7 @@ namespace Impl
       placeUpper.clear();
       boundLower.clear();
       boundUpper.clear();
+      size_t maxIndex = 0;
       if (systemsize==1)
       {
         bool hasLower = parameterTree.hasKey("LowerBound");
@@ -135,16 +136,23 @@ namespace Impl
           {
             placeLower.push_back(i);
             boundLower.push_back(parameterTree.get<Real>("LowerBound"+std::to_string(i)));
+            maxIndex = i;
           }
           if (hasUpper)
           {
             placeUpper.push_back(i);
             boundUpper.push_back(parameterTree.get<Real>("UpperBound"+std::to_string(i)));
+            maxIndex = i;
           }
           if (hasLower && hasUpper)
             if (boundLower[boundLower.size()-1] > boundUpper[boundUpper.size()-1])
               DUNE_THROW(LineSearchError,"BoundedLineSearch parameters error: Unknown "+std::to_string(i)+" has LowerBound higher than UpperBound.");
         }
+        nr_proj.resize(maxIndex+1);
+        max_proj.resize(nr_proj.size());
+        max_corr.resize(nr_proj.size());
+        reset_proj();
+        reset_maxproj();
       }
       // optional check, "NumberOfRestraints" stores the number of restraints.
       // Good for detecting typos, since ParameterTree does not recognize faulty arguments.
@@ -209,12 +217,52 @@ namespace Impl
       }
     }
 
+    void inc_proj(size_t at) const
+    {
+      ++nr_proj.at(at);
+    }
+    void reset_proj () const
+    {
+      for (auto& v : nr_proj)
+        v = 0;
+    }
+    void set_corr (size_t at, const Real& corr) const
+    {
+      max_corr.at(at) = std::max(max_corr.at(at),corr);
+    }
+    void reset_maxproj () const
+    {
+      for (auto& v : max_proj)
+        v = 0;
+      for (auto& v : max_corr)
+        v = 0.;
+    }
+    const std::vector<size_t>& get_proj() const
+    {
+      return max_proj;
+    }
+    const std::vector<Real>& get_corr() const
+    {
+      return max_corr;
+    }
+    const void updateMaxProj() const
+    {
+      assert(max_proj.size()==nr_proj.size());
+      for (size_t i=0; i<max_proj.size(); ++i)
+      {
+        max_proj[i] = std::max(max_proj[i],nr_proj[i]);
+      }
+    }
+
   private:
     std::vector<std::size_t> placeLower; // stores positions of bounds
     std::vector<std::size_t> placeUpper; // stores positions of bounds
     std::size_t systemsize = 0; // if setBoundedParameters is not used (which definitely should), this leads to zero division
     std::vector<Real> boundLower; // stores lower bounds
     std::vector<Real> boundUpper; // stores upper bounds
+    mutable std::vector<size_t> nr_proj; // number of used projections
+    mutable std::vector<size_t> max_proj; // tracked maximum number of projections over several Newton iterations
+    mutable std::vector<Real> max_corr; // tracked maximum size of correction over several Newton iterations
   }; // BoundedLineSearchParametersInterface
 
   /* \brief CorrectSolution
@@ -261,6 +309,8 @@ namespace Impl
       auto& boundLower = pc.getBoundLower();
       auto& boundUpper = pc.getBoundUpper();
       using Dune::PDELab::Backend::native;
+      pc.reset_proj();
+      double epsilon = 1e-15;
 
       // Traverse the vector and set the values inside the bounds.
       if (placeLower.size()>0 && placeUpper.size()>0)
@@ -268,10 +318,20 @@ namespace Impl
         {
           for (std::size_t i=0; i<placeLower.size(); ++i)
             if (block[placeLower[i]] < boundLower[i])
+            {
+              if (block[placeLower[i]]<boundLower[i]-epsilon)
+                pc.inc_proj(placeLower[i]);
+              pc.set_corr(placeLower[i],boundLower[i]-block[placeLower[i]]);
               block[placeLower[i]] = boundLower[i];
+            }
           for (std::size_t i=0; i<placeUpper.size(); ++i)
             if (block[placeUpper[i]] > boundUpper[i])
+            {
+              if (block[placeUpper[i]]>boundUpper[i]+epsilon)
+                pc.inc_proj(placeUpper[i]);
+              pc.set_corr(placeUpper[i],block[placeUpper[i]]-boundUpper[i]);
               block[placeUpper[i]] = boundUpper[i];
+            }
         }
       else
       {
@@ -279,13 +339,24 @@ namespace Impl
           for (auto& block : native(solution))
             for (std::size_t i=0; i<placeLower.size(); ++i)
               if (block[placeLower[i]] < boundLower[i])
+              {
+                if (block[placeLower[i]]<boundLower[i]-epsilon)
+                  pc.inc_proj(placeLower[i]);
+                pc.set_corr(placeLower[i],boundLower[i]-block[placeLower[i]]);
                 block[placeLower[i]] = boundLower[i];
+              }
         if (placeUpper.size()>0)
           for (auto& block : native(solution))
             for (std::size_t i=0; i<placeUpper.size(); ++i)
               if (block[placeUpper[i]] > boundUpper[i])
+              {
+                if (block[placeUpper[i]]>boundUpper[i]+epsilon)
+                  pc.inc_proj(placeUpper[i]);
+                pc.set_corr(placeUpper[i],block[placeUpper[i]]-boundUpper[i]);
                 block[placeUpper[i]] = boundUpper[i];
+              }
       }
+      pc.updateMaxProj();
     } // end operator()
 
   private:
@@ -522,6 +593,11 @@ public:
   {
     std::cout << "LineSearch.Type........... Bounded LineSearchNone" << std::endl;
     param.printParameters();
+  }
+
+  virtual const ParameterClass& getParam() const
+  {
+    return param;
   }
 
 private:
