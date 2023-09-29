@@ -34,10 +34,10 @@ target_link_libraries(dunepdelab-test
     $<$<BOOL:${COVERAGE_REPORT}>:gcov>
 )
 
-target_compile_features(dunepdelab-test
-  INTERFACE
-    cxx_std_20
-)
+list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_20 cxx_has_std_20)
+if (cxx_has_std_20 GREATER_EQUAL 0)
+  target_compile_features(dunepdelab-test INTERFACE cxx_std_20)
+endif()
 
 # include tests executables
 add_subdirectory(fem)
