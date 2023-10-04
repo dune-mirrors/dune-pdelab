@@ -24,7 +24,7 @@ if (NOT TARGET Perfetto::SDK)
     target_include_directories(perfetto-sdk
       PUBLIC
         $<BUILD_INTERFACE:${perfetto_SOURCE_DIR}/sdk>
-        $<INSTALL_INTERFACE:dune/external/perfetto-sdk>)
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/dune/external/perfetto-sdk/sdk>)
 
     if(NOT TARGET Perfetto::SDK)
       add_library(Perfetto::SDK ALIAS perfetto-sdk)
