@@ -165,6 +165,7 @@ namespace Dune {
         } else {
           auto it = std::upper_bound(this->_child_block_offsets.begin(), this->_child_block_offsets.end(), suffix.back());
           std::size_t child = std::distance(this->_child_block_offsets.begin(), std::prev(it));
+          suffix.back() -= this->_child_block_offsets[child];
           return this->child(child).containerSize(suffix);
         }
       }
