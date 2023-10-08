@@ -810,7 +810,7 @@ namespace Dune {
                     if (dof_count != 0) {
                       Hybrid::forEach(Dune::range(localOrdering().degree()), [&](auto i) {
                         auto size = localOrdering().child(i).size(gt_index,entity_index);
-                        _block_count += _container_blocked ? (size != 0) : size;
+                        _block_count += (_container_blocked || localOrdering().containerBlocked()) ? (size != 0) : size;
                       });
                     }
                     // commit block offest and dof count
