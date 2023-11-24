@@ -311,8 +311,12 @@ namespace Dune {
      * @param A Nonoverlapping matrix assembled with Neumann boundaries
      * @return A tuple containing the GenEO matrices extended by virtual overlap and the corresponding partition of unity
      */
-    template<class GO, typename GV, class Matrix, class Vector>
-    std::tuple<std::shared_ptr<Matrix>, std::shared_ptr<Vector>, std::vector<int>> setupGenEOMatricesNL(const GO& go, NonoverlappingOverlapAdapter<GV, Vector, Matrix>& adapter, const typename GO::Jacobian& A, const typename GO::Domain& u, bool need_enforced_dirichlet_on_PoU=1, int PoU_restriction=0) {
+    template<typename MODEL, class GO, typename GV, class Matrix, class Vector>
+    std::tuple<std::shared_ptr<Matrix>, std::shared_ptr<Vector>, std::vector<int>> setupGenEOMatricesNL(
+        MODEL& myModel, const GO& go, NonoverlappingOverlapAdapter<GV, Vector,
+        Matrix>& adapter, const typename GO::Jacobian& A, const typename GO::Domain& u,
+        bool need_enforced_dirichlet_on_PoU=1, int PoU_restriction=0
+      ) {
 
       using Dune::PDELab::Backend::native;
       Dune::Timer timer_detailed(true);
@@ -366,13 +370,14 @@ namespace Dune {
       go.jacobian(u, A_ovlp);
 
       M newmat(go);
+      auto part_unity_restricted_ = std::make_shared<Vector>(native(A).N());
       // Provide neighbors with matrices assembled exclusively on respective overlap area
       std::pair<std::shared_ptr<Matrix>, std::shared_ptr<Matrix>> extended_matrices = adapter.lambdaMultiExtendMatrix(native(A), native(A_ovlp), [&](int i){
         std::shared_ptr<Vector> neighbor_part_unity = remotePartUnities.getVectorForRank(i);
 
-        adapter.restrictVector(*neighbor_part_unity, *part_unity_restricted);
+        adapter.restrictVector(*neighbor_part_unity, *part_unity_restricted_);
 
-        std::shared_ptr<EntitySetExcluder<Vector, GV>> es_local_pou_excluder = std::make_shared<EntitySetPartUnityExcluder<Vector, GV, GFS>> (gfs, part_unity_restricted);
+        std::shared_ptr<EntitySetExcluder<Vector, GV>> es_local_pou_excluder = std::make_shared<EntitySetPartUnityExcluder<Vector, GV, GFS>> (gfs, part_unity_restricted_);
         gfs.entitySet().setExcluder(es_local_pou_excluder);
 
         for (auto rIt=native(newmat).begin(); rIt!=native(newmat).end(); ++rIt)
@@ -381,6 +386,7 @@ namespace Dune {
           }
 
         go.jacobian(u,newmat);
+        myModel.CorrectDirichletStiffness(gv, gfs, newmat, *part_unity_R);
 
         return stackobject_to_shared_ptr(native(newmat));
       });
