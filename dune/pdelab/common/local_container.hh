@@ -121,16 +121,18 @@ public:
   }
 
   void fetch_add(Concept::LocalBasis auto& lspace, std::convertible_to<bool> auto is_correction) noexcept {
-#if !(__cpp_lib_atomic_ref || __has_include(<boost/atomic/atomic_ref.hpp>))
-    DUNE_THROW(NotImplemented, "To enable this feature std::atomic_ref or boost::atomic_ref is required");
-#elif __cpp_lib_atomic_ref
-    using std::atomic_ref;
-#else
-    using boost::atomic_ref;
-#endif
     forEachEntryStore(lspace, is_correction,
       [](auto& lhs, auto rhs){lhs += rhs;},
-      [](auto& lhs, auto rhs){atomic_ref(lhs).fetch_add(rhs, std::memory_order::relaxed);}
+      [](auto& lhs, auto rhs){
+#if !(__cpp_lib_atomic_ref || __has_include(<boost/atomic/atomic_ref.hpp>))
+        DUNE_THROW(NotImplemented, "To enable this feature std::atomic_ref or boost::atomic_ref is required");
+#elif __cpp_lib_atomic_ref
+        using std::atomic_ref;
+#else
+        using boost::atomic_ref;
+#endif
+        atomic_ref(lhs).fetch_add(rhs, std::memory_order::relaxed);
+      }
     );
   }
 
@@ -139,16 +141,18 @@ public:
   }
 
   void store(Concept::LocalBasis auto& lspace, std::convertible_to<bool> auto is_correction) noexcept {
-#if !(__cpp_lib_atomic_ref || __has_include(<boost/atomic/atomic_ref.hpp>))
-    DUNE_THROW(NotImplemented, "To enable this feature std::atomic_ref or boost::atomic_ref is required");
-#elif __cpp_lib_atomic_ref
-    using std::atomic_ref;
-#else
-    using boost::atomic_ref;
-#endif
     forEachEntryStore(lspace, is_correction,
       [](auto& lhs, auto rhs){lhs = rhs;},
-      [](auto& lhs, auto rhs){atomic_ref(lhs).store(rhs, std::memory_order::relaxed);}
+      [](auto& lhs, auto rhs){
+#if !(__cpp_lib_atomic_ref || __has_include(<boost/atomic/atomic_ref.hpp>))
+        DUNE_THROW(NotImplemented, "To enable this feature std::atomic_ref or boost::atomic_ref is required");
+#elif __cpp_lib_atomic_ref
+        using std::atomic_ref;
+#else
+        using boost::atomic_ref;
+#endif
+        atomic_ref(lhs).store(rhs, std::memory_order::relaxed);
+      }
     );
   }
 
