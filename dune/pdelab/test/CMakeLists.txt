@@ -41,6 +41,9 @@ target_compile_features(dunepdelab-test
     cxx_std_20
 )
 
+# All libraries unders this directory use pdelab
+link_libraries(dunepdelab-test)
+
 add_subdirectory(common)
 add_subdirectory(basis)
 add_subdirectory(operator)
@@ -60,9 +63,11 @@ dune_add_test(SOURCES testconvectiondiffusiondg.cc
 dune_add_test(SOURCES testnewton.cc
               CMAKE_GUARD SUPERLU_FOUND)
 
-dune_add_test(SOURCES testoldnewton.cc)
+dune_add_test(SOURCES testoldnewton.cc
+              CMAKE_GUARD SUPERLU_FOUND)
 
-dune_add_test(SOURCES testinstationary.cc)
+dune_add_test(SOURCES testinstationary.cc
+              CMAKE_GUARD SUPERLU_FOUND)
 
 dune_add_test(SOURCES testanalytic.cc)
 

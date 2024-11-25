@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 # set up project
-project("dune-pdelab" C CXX)
+project(dune-pdelab C CXX)
 
 # configuration options
 option(DUNE_PDELAB_ENABLE_TRACING "Enable tracing with Perfetto")
@@ -27,8 +27,9 @@ dune_project()
 # Disable the upstream testing magic, that builds tests during "make test"
 set(DUNE_TEST_MAGIC OFF)
 
-# create main library target and set up its properties
+# Create a target for dune-pdelab with a Dune::PDELab alias
 dune_add_library(dunepdelab EXPORT_NAME PDELab)
+dune_target_enable_all_packages(dunepdelab)
 
 target_link_libraries(dunepdelab
   PUBLIC

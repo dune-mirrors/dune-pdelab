@@ -53,7 +53,7 @@ namespace Dune {
 
       using IntersectionIterator = typename GV::Traits::IntersectionIterator;
 
-      using CollectiveCommunication = typename GV::Traits::CollectiveCommunication;
+      using Communication = typename GV::Traits::Communication;
 
       using size_type = std::size_t;
       using dim_type = int;
@@ -130,7 +130,7 @@ namespace Dune {
       using Element = typename Traits::Element;
       using Intersection = typename Traits::Intersection;
       using IntersectionIterator = typename Traits::IntersectionIterator;
-      using CollectiveCommunication = typename Traits::CollectiveCommunication;
+      using Communication = typename Traits::Communication;
       using CodimMask = typename Traits::CodimMask;
       using CoordinateField = typename Traits::CoordinateField;
       using size_type = typename Traits::size_type;
@@ -236,7 +236,7 @@ namespace Dune {
         return gridView().iend(entity);
       }
 
-      const CollectiveCommunication& comm() const
+      const Communication& comm() const
       {
         return gridView().comm();
       }

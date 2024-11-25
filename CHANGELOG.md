@@ -15,6 +15,14 @@ Changes
 PDELab git master (will be PDELab 2.9)
 --------------------------------------
 
+-   The class `ParititionViewEntitySet` used within grid function spaces to represent sets of
+    entites now models the grid view concept defined by `Dune::Concept::GridView`.
+
+-   Remove dependency on the deprecated `std::iterator`
+
+-   Fixed the initial guess in OneStepMethod for constrained vectors.
+
+-   Fixed the interpolate function behavior when input and output vector are references to the same object.
 
 PDELab 2.8
 ----------

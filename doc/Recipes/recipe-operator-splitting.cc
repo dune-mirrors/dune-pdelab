@@ -1130,11 +1130,11 @@ void driver (const GV& gv, const FEM& fem, Param& param)
 
 
 template <int dim>
-class YaspPartition : public Dune::YLoadBalance<dim>
+class YaspPartition : public Dune::Yasp::Partitioning<dim>
 {
 public:
   using iTuple = std::array<int,dim>;
-  void loadbalance (const iTuple& size, int P, iTuple& dims) const
+  void partition (const iTuple& size, int P, iTuple& dims, int /*overlap*/) const override
   {
     // greedy algorithm for splitting P into product of dim numbers, closest to \sqrt[dim]{P}
     for (int j=0; j<dim; ++j)
@@ -1179,7 +1179,7 @@ int main(int argc, char** argv)
   int overlap=1;
   int refinement = 1;
   YaspPartition<dim> yp;
-  std::shared_ptr<Grid> gridp = std::shared_ptr<Grid>(new Grid(L,N,periodic,overlap,Dune::MPIHelper::getCollectiveCommunication(),&yp));
+  std::shared_ptr<Grid> gridp = std::shared_ptr<Grid>(new Grid(L,N,periodic,overlap,Dune::MPIHelper::getCommunication(),&yp));
   gridp->refineOptions(false); // keep overlap in cells
   gridp->globalRefine(refinement);
   using GV = Grid::LeafGridView;
