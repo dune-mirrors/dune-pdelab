@@ -35,8 +35,19 @@ include:
 before_script:
   - *dune_setup
 
-debian:11--gcc:
-  <<: *common
+
+# test tutorials as well
+pdelab-tutorials:
+  stage: downstream
+  trigger:
+    project: pdelab/dune-pdelab-tutorials
+    strategy: depend
+  rules:
+    - when: manual
+      # allow_failure: true
+
+debian:11 gcc-10-20:
+  extends: .common
   image: registry.dune-project.org/docker/ci/debian:11
   before_script:
     - *dune_setup
@@ -68,14 +79,3 @@ debian:11--gcc:
   # gcovr reports results (`--print-summary` option above). With this line we extract the
   # result (% of covered lines) to report them in gitlab
   coverage: /^\s*lines:\s*\d+.\d+\%/
-
-debian:11--clang:
-  <<: *common
-  image: registry.dune-project.org/docker/ci/debian:11
-  before_script:
-    - *dune_setup
-  variables:
-    DUNECI_TOOLCHAIN: clang-11-20
-  artifacts:
-    reports:
-      junit: junit/*.xml
