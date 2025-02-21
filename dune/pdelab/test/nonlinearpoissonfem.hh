@@ -125,7 +125,7 @@ public:
   template<typename EG, typename LFSU, typename X,
            typename LFSV, typename R>
   void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x,
-                     const LFSV& lfsv, R& r) const
+                     const LFSV&  /*lfsv*/, R& r) const
   {
     // types & dimension
     const int dim = EG::Entity::dimension;

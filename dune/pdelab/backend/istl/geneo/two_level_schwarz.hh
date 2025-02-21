@@ -53,7 +53,7 @@ namespace Dune {
 
           \copydoc Preconditioner::pre(X&,Y&)
         */
-        virtual void pre (X& x, Y& b)
+        virtual void pre (X&  /*x*/, Y&  /*b*/)
         { }
 
         /*!
@@ -103,7 +103,7 @@ namespace Dune {
 
           \copydoc Preconditioner::post(X&)
         */
-        virtual void post (X& x) {
+        virtual void post (X&  /*x*/) {
           if (verbosity_ > 0) std::cout << "Coarse time CT=" << coarse_time_ << std::endl;
           if (verbosity_ > 0) std::cout << "Coarse time per apply CTA=" << coarse_time_ / apply_calls_ << std::endl;
         }

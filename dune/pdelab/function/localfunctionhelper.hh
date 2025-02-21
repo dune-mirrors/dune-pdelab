@@ -17,7 +17,7 @@ namespace Imp
   {
     PowerCompositeBindVisitor(const Entity & e) : e_(e) {}
     template<typename LeafNode, typename TreePath>
-    void leaf(LeafNode& node, TreePath treePath) const
+    void leaf(LeafNode& node, TreePath  /*treePath*/) const
     {
       node.bind(e_);
     }
@@ -28,7 +28,7 @@ namespace Imp
     : public TypeTree::TreeVisitor, public TypeTree::DynamicTraversal
   {
     template<typename LeafNode, typename TreePath>
-    void leaf(LeafNode& node, TreePath treePath) const
+    void leaf(LeafNode& node, TreePath  /*treePath*/) const
     {
       node.unbind();
     }

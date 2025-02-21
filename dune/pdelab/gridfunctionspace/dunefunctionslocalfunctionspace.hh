@@ -74,7 +74,7 @@ namespace Dune {
 
         using size_type = std::size_t;
 
-        LocalFunctionSpace(std::shared_ptr<const GFS> gfs, TreePath tree_path = TreePath(), size_type offset = 0)
+        LocalFunctionSpace(std::shared_ptr<const GFS> gfs, TreePath tree_path = TreePath(), size_type  /*offset*/ = 0)
           : _gfs(gfs)
           , _local_view(gfs->basis().localView())
           , _tree_path(tree_path)

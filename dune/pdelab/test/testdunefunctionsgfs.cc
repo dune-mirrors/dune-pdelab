@@ -34,13 +34,13 @@ class PoissonProblem
 {
 public:
   template<typename Element, typename Coord>
-  auto f(const Element& element, const Coord& x) const
+  auto f(const Element&  /*element*/, const Coord&  /*x*/) const
   {
     return 1.0;
   }
 
   template<typename Element, typename Coord>
-  auto bctype(const Element& element, const Coord& x) const
+  auto bctype(const Element&  /*element*/, const Coord&  /*x*/) const
   {
     return PDELab::ConvectionDiffusionBoundaryConditions::Dirichlet;
   }

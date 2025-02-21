@@ -51,28 +51,28 @@ public:
 
   //! tensor diffusion coefficient
   typename Traits::PermTensorType
-  A (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+  A (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
   {
     return I;
   }
 
   //! velocity field
   typename Traits::RangeType
-  b (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+  b (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
   {
     return v;
   }
 
   //! sink term
   typename Traits::RangeFieldType
-  c (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+  c (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
   {
     return 0.0;
   }
 
   //! source term
   typename Traits::RangeFieldType
-  f (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+  f (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
   {
     return 0.0;
   }
@@ -104,14 +104,14 @@ public:
 
   //! flux boundary condition
   typename Traits::RangeFieldType
-  j (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& x) const
+  j (const typename Traits::IntersectionType&  /*is*/, const typename Traits::IntersectionDomainType&  /*x*/) const
   {
     return 0.0;
   }
 
   //! outflow boundary condition
   typename Traits::RangeFieldType
-  o (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& x) const
+  o (const typename Traits::IntersectionType&  /*is*/, const typename Traits::IntersectionDomainType&  /*x*/) const
   {
     return 0.0;
   }

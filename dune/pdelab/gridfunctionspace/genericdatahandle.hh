@@ -42,13 +42,13 @@ namespace Dune {
       typedef E OriginalDataType;
 
       template<typename GFS>
-      bool contains(const GFS& gfs, int dim, int codim) const
+      bool contains(const GFS& gfs, int  /*dim*/, int codim) const
       {
         return gfs.dataHandleContains(codim);
       }
 
       template<typename GFS>
-      bool fixedSize(const GFS& gfs, int dim, int codim) const
+      bool fixedSize(const GFS& gfs, int  /*dim*/, int codim) const
       {
         return gfs.dataHandleFixedSize(codim);
       }
@@ -88,13 +88,13 @@ namespace Dune {
       using DataType = std::conditional_t<wrap_buffer,char,E>;
 
       template<typename GFS>
-      bool contains(const GFS& gfs, int dim, int codim) const
+      bool contains(const GFS& gfs, int  /*dim*/, int codim) const
       {
         return gfs.dataHandleContains(codim);
       }
 
       template<typename GFS>
-      bool fixedSize(const GFS& gfs, int dim, int codim) const
+      bool fixedSize(const GFS&  /*gfs*/, int  /*dim*/, int  /*codim*/) const
       {
         return true;
       }
@@ -317,7 +317,7 @@ namespace Dune {
       typedef std::size_t size_type;
 
       template<typename MessageBuffer, typename Entity, typename LocalView>
-      bool gather(MessageBuffer& buff, const Entity& e, const LocalView& local_view) const
+      bool gather(MessageBuffer& buff, const Entity&  /*e*/, const LocalView& local_view) const
       {
         for (std::size_t i = 0; i < local_view.size(); ++i)
           _gather_scatter.gather(buff,local_view[i]);
@@ -541,7 +541,7 @@ namespace Dune {
       typedef std::size_t size_type;
 
       template<typename MessageBuffer, typename Entity, typename LocalView>
-      bool gather(MessageBuffer& buff, const Entity& e, const LocalView& local_view) const
+      bool gather(MessageBuffer& buff, const Entity&  /*e*/, const LocalView& local_view) const
       {
         for (std::size_t i = 0; i < local_view.size(); ++i)
           _gather_scatter.gather(buff,local_view.cache().containerIndex(i),local_view[i]);
@@ -813,7 +813,7 @@ namespace Dune {
     public:
 
       template<typename MessageBuffer, typename Entity, typename LocalView>
-      bool gather(MessageBuffer& buff, const Entity& e, LocalView& local_view) const
+      bool gather(MessageBuffer& buff, const Entity& e, LocalView&  /*local_view*/) const
       {
         // Figure out where we are...
         const bool ghost = e.partitionType()!=Dune::InteriorEntity && e.partitionType()!=Dune::BorderEntity;
@@ -825,7 +825,7 @@ namespace Dune {
       }
 
       template<typename MessageBuffer, typename Entity, typename LocalView>
-      bool scatter(MessageBuffer& buff, std::size_t n, const Entity& e, LocalView& local_view) const
+      bool scatter(MessageBuffer& buff, std::size_t  /*n*/, const Entity& e, LocalView& local_view) const
       {
         // Figure out where we are - we have to do this again on the receiving side due to the asymmetric
         // communication interface!
@@ -905,7 +905,7 @@ namespace Dune {
     public:
 
       template<typename MessageBuffer, typename Entity, typename LocalView>
-      bool gather(MessageBuffer& buff, const Entity& e, LocalView& local_view) const
+      bool gather(MessageBuffer& buff, const Entity&  /*e*/, LocalView&  /*local_view*/) const
       {
         // We only gather from interior and border entities, so we can throw in our ownership
         // claim without any further checks.
@@ -915,7 +915,7 @@ namespace Dune {
       }
 
       template<typename MessageBuffer, typename Entity, typename LocalView>
-      bool scatter(MessageBuffer& buff, std::size_t n, const Entity& e, LocalView& local_view) const
+      bool scatter(MessageBuffer& buff, std::size_t  /*n*/, const Entity& e, LocalView& local_view) const
       {
         // Value used for DOFs with currently unknown rank.
         const RankIndex unknown_rank = std::numeric_limits<RankIndex>::max();
@@ -1024,14 +1024,14 @@ namespace Dune {
     {
 
       template<typename MessageBuffer, typename Entity, typename LocalView>
-      bool gather(MessageBuffer& buff, const Entity& e, LocalView& local_view) const
+      bool gather(MessageBuffer& buff, const Entity&  /*e*/, LocalView& local_view) const
       {
         buff.write(local_view.size() > 0);
         return false;
       }
 
       template<typename MessageBuffer, typename Entity, typename LocalView>
-      bool scatter(MessageBuffer& buff, std::size_t n, const Entity& e, LocalView& local_view) const
+      bool scatter(MessageBuffer& buff, std::size_t  /*n*/, const Entity&  /*e*/, LocalView& local_view) const
       {
         bool remote_entity_has_dofs;
         buff.read(remote_entity_has_dofs);
@@ -1118,32 +1118,32 @@ namespace Dune {
         , _neighbors(neighbors)
       {}
 
-      bool contains(int dim, int codim) const
+      bool contains(int  /*dim*/, int codim) const
       {
         // Only create neighbor relations for codims used by the GFS.
         return _gfs.dataHandleContains(codim);
       }
 
-      bool fixedSize(int dim, int codim) const
+      bool fixedSize(int  /*dim*/, int  /*codim*/) const
       {
         // We always send a single value, the MPI rank.
         return true;
       }
 
       template<typename Entity>
-      size_type size(Entity& e) const
+      size_type size(Entity&  /*e*/) const
       {
         return 1;
       }
 
       template<typename MessageBuffer, typename Entity>
-      void gather(MessageBuffer& buff, const Entity& e) const
+      void gather(MessageBuffer& buff, const Entity&  /*e*/) const
       {
         buff.write(_rank);
       }
 
       template<typename MessageBuffer, typename Entity>
-      void scatter(MessageBuffer& buff, const Entity& e, size_type n)
+      void scatter(MessageBuffer& buff, const Entity&  /*e*/, size_type  /*n*/)
       {
         RankIndex rank;
         buff.read(rank);

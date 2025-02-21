@@ -23,7 +23,7 @@ public:
 
   // Boundary condition type
   template<typename Element, typename Coord>
-  auto bctype(const Element& element, const Coord& x) const
+  auto bctype(const Element&  /*element*/, const Coord&  /*x*/) const
   {
     return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Dirichlet;
   }

@@ -127,7 +127,7 @@ namespace Dune {
         _statistics_stale = true;
       }
 
-      void start(std::string task, std::ostream& s)
+      void start(std::string task, std::ostream&  /*s*/)
       {
         start(task);
       }

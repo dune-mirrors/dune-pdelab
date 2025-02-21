@@ -149,14 +149,14 @@ namespace Dune{
       //! global assembler.
       //! @{
       template<typename EG, typename LFSUC, typename LFSVC>
-      void onBindLFSUV(const EG & eg, const LFSUC & lfsu_cache, const LFSVC & lfsv_cache)
+      void onBindLFSUV(const EG &  /*eg*/, const LFSUC & lfsu_cache, const LFSVC & lfsv_cache)
       {
         global_s_s_view.bind(lfsu_cache);
         global_a_ss_view.bind(lfsv_cache,lfsu_cache);
       }
 
       template<typename IG, typename LFSUC, typename LFSVC>
-      void onBindLFSUVOutside(const IG & ig,
+      void onBindLFSUVOutside(const IG &  /*ig*/,
                               const LFSUC & lfsu_s_cache, const LFSVC & lfsv_s_cache,
                               const LFSUC & lfsu_n_cache, const LFSVC & lfsv_n_cache)
       {
@@ -172,15 +172,15 @@ namespace Dune{
       //! discarded
       //! @{
       template<typename EG, typename LFSUC, typename LFSVC>
-      void onUnbindLFSUV(const EG & eg, const LFSUC & lfsu_cache, const LFSVC & lfsv_cache)
+      void onUnbindLFSUV(const EG &  /*eg*/, const LFSUC &  /*lfsu_cache*/, const LFSVC &  /*lfsv_cache*/)
       {
         global_a_ss_view.unbind();
       }
 
       template<typename IG, typename LFSUC, typename LFSVC>
-      void onUnbindLFSUVOutside(const IG & ig,
-                                const LFSUC & lfsu_s_cache, const LFSVC & lfsv_s_cache,
-                                const LFSUC & lfsu_n_cache, const LFSVC & lfsv_n_cache)
+      void onUnbindLFSUVOutside(const IG &  /*ig*/,
+                                const LFSUC &  /*lfsu_s_cache*/, const LFSVC &  /*lfsv_s_cache*/,
+                                const LFSUC &  /*lfsu_n_cache*/, const LFSVC &  /*lfsv_n_cache*/)
       {
         global_a_sn_view.unbind();
         global_a_ns_view.unbind();
@@ -192,13 +192,13 @@ namespace Dune{
       //! Methods for loading of the local function's coefficients
       //! @{
       template<typename LFSUC>
-      void loadCoefficientsLFSUInside(const LFSUC & lfsu_cache)
+      void loadCoefficientsLFSUInside(const LFSUC &  /*lfsu_cache*/)
       {}
       template<typename LFSUC>
-      void loadCoefficientsLFSUOutside(const LFSUC & lfsu_n_cache)
+      void loadCoefficientsLFSUOutside(const LFSUC &  /*lfsu_n_cache*/)
       {}
       template<typename LFSUC>
-      void loadCoefficientsLFSUCoupling(const LFSUC & lfsu_c_cache)
+      void loadCoefficientsLFSUCoupling(const LFSUC &  /*lfsu_c_cache*/)
       {
         DUNE_THROW(Dune::NotImplemented,"No coupling lfsu_cache available for ");
       }
@@ -206,7 +206,7 @@ namespace Dune{
 
       //! Notifier functions, called immediately before and after assembling
       //! @{
-      void postAssembly(const GFSU& gfsu, const GFSV& gfsv)
+      void postAssembly(const GFSU&  /*gfsu*/, const GFSV& gfsv)
       {
         Jacobian& jacobian = global_a_ss_view.container();
         global_s_s_view.detach();
@@ -282,19 +282,19 @@ namespace Dune{
       }
 
       template<typename IG, typename LFSUC, typename LFSVC>
-      static void assembleUVEnrichedCoupling(const IG & ig,
-                                             const LFSUC & lfsu_s_cache, const LFSVC & lfsv_s_cache,
-                                             const LFSUC & lfsu_n_cache, const LFSVC & lfsv_n_cache,
-                                             const LFSUC & lfsu_coupling_cache, const LFSVC & lfsv_coupling_cache)
+      static void assembleUVEnrichedCoupling(const IG &  /*ig*/,
+                                             const LFSUC &  /*lfsu_s_cache*/, const LFSVC &  /*lfsv_s_cache*/,
+                                             const LFSUC &  /*lfsu_n_cache*/, const LFSVC &  /*lfsv_n_cache*/,
+                                             const LFSUC &  /*lfsu_coupling_cache*/, const LFSVC &  /*lfsv_coupling_cache*/)
       {
         DUNE_THROW(Dune::NotImplemented,"Assembling of coupling spaces is not implemented for ");
       }
 
       template<typename IG, typename LFSVC>
-      static void assembleVEnrichedCoupling(const IG & ig,
-                                            const LFSVC & lfsv_s_cache,
-                                            const LFSVC & lfsv_n_cache,
-                                            const LFSVC & lfsv_coupling_cache)
+      static void assembleVEnrichedCoupling(const IG &  /*ig*/,
+                                            const LFSVC &  /*lfsv_s_cache*/,
+                                            const LFSVC &  /*lfsv_n_cache*/,
+                                            const LFSVC &  /*lfsv_coupling_cache*/)
       {
         DUNE_THROW(Dune::NotImplemented,"Assembling of coupling spaces is not implemented for ");
       }

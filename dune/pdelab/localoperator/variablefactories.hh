@@ -28,7 +28,7 @@ namespace Dune {
     //! return a zero value of RangeFieldType of the basis
     template<typename LFS>
     typename LFS::Traits::FiniteElementType::Traits::LocalBasisType::Traits::RangeFieldType
-    makeZeroBasisFieldValue (const LFS& lfs)
+    makeZeroBasisFieldValue (const LFS&  /*lfs*/)
     {
       typename LFS::Traits::FiniteElementType::Traits::LocalBasisType::Traits::RangeFieldType x(0.0);
       return x;
@@ -37,7 +37,7 @@ namespace Dune {
     //! return a zero value of RangeType of the basis
     template<typename LFS>
     typename LFS::Traits::FiniteElementType::Traits::LocalBasisType::Traits::RangeType
-    makeZeroBasisValue (const LFS& lfs)
+    makeZeroBasisValue (const LFS&  /*lfs*/)
     {
       typename LFS::Traits::FiniteElementType::Traits::LocalBasisType::Traits::RangeType x(0.0);
       return x;
@@ -46,7 +46,7 @@ namespace Dune {
     //! return a zero value of JacobianType of the basis
     template<typename LFS>
     typename LFS::Traits::FiniteElementType::Traits::LocalBasisType::Traits::JacobianType
-    makeZeroJacobianValue (const LFS& lfs)
+    makeZeroJacobianValue (const LFS&  /*lfs*/)
     {
       typename LFS::Traits::FiniteElementType::Traits::LocalBasisType::Traits::JacobianType x(0.0);
       return x;

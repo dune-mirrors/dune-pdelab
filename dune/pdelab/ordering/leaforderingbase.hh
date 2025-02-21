@@ -205,8 +205,8 @@ namespace Dune {
       template<typename CIOutIterator>
       typename Traits::SizeType
       extract_entity_indices(const typename Traits::DOFIndex::EntityIndex& ei,
-                             typename Traits::SizeType child_index,
-                             CIOutIterator ci_out, const CIOutIterator ci_end) const
+                             typename Traits::SizeType  /*child_index*/,
+                             CIOutIterator ci_out, const CIOutIterator  /*ci_end*/) const
       {
         typedef typename Traits::SizeType size_type;
 

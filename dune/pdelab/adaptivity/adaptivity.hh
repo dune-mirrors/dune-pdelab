@@ -88,7 +88,7 @@ namespace Dune {
         typedef typename Dune::QuadratureRule<DF,dim>::const_iterator QRIterator;
 
         template<typename GFS, typename TreePath>
-        void leaf(const GFS& gfs, TreePath treePath)
+        void leaf(const GFS& gfs, TreePath  /*treePath*/)
         {
           auto& fem = gfs.finiteElementMap();
           auto& fe = fem.find(_element);
@@ -223,7 +223,7 @@ namespace Dune {
       using DF = typename EntitySet::Traits::CoordinateField;
 
       template<typename LFSLeaf, typename TreePath>
-      void leaf(const LFSLeaf& leaf_lfs, TreePath treePath)
+      void leaf(const LFSLeaf& leaf_lfs, TreePath  /*treePath*/)
       {
 
         auto& fem = leaf_lfs.gridFunctionSpace().finiteElementMap();
@@ -428,7 +428,7 @@ namespace Dune {
 
 
       template<typename LeafLFS, typename TreePath>
-      void leaf(const LeafLFS& leaf_lfs, TreePath treePath)
+      void leaf(const LeafLFS& leaf_lfs, TreePath  /*treePath*/)
       {
         using FiniteElement = typename LeafLFS::Traits::FiniteElementType;
 
@@ -546,7 +546,7 @@ namespace Dune {
        * @param[in]  u           The solution that will be saved
        * @param[out] transferMap The map containing the solution during adaptation
        */
-      void backupData(Grid& grid, GFSU& gfsu, Projection& projection, U& u, MapType& transfer_map)
+      void backupData(Grid&  /*grid*/, GFSU& gfsu, Projection& projection, U& u, MapType& transfer_map)
       {
         typedef backup_visitor<GFSU,U,MapType> Visitor;
 
@@ -562,7 +562,7 @@ namespace Dune {
        * @param[out] u           The solution after adaptation
        * @param[in]  transferMap The map that contains the information for the rebuild of u
        */
-      void replayData(Grid& grid, GFSU& gfsu, Projection& projection, U& u, const MapType& transfer_map)
+      void replayData(Grid& grid, GFSU& gfsu, Projection&  /*projection*/, U& u, const MapType& transfer_map)
       {
         const IDSet& id_set = grid.localIdSet();
 
@@ -1266,7 +1266,7 @@ namespace Dune {
       }
 
       template<typename GM, typename X>
-      void evaluate_estimators (GM& grid, double time, double dt, const X& eta_space,  const X& eta_time, double energy_timeslab)
+      void evaluate_estimators (GM& grid, double  /*time*/, double dt, const X& eta_space,  const X& eta_time, double energy_timeslab)
       {
         using std::sqrt;
         accept=false;

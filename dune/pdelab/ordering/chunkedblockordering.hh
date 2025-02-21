@@ -192,8 +192,8 @@ namespace Dune {
 
       template<typename CIOutIterator>
       typename Traits::SizeType
-      extract_entity_indices(const typename Traits::DOFIndex::EntityIndex& ei,
-                             typename Traits::SizeType child_index,
+      extract_entity_indices(const typename Traits::DOFIndex::EntityIndex&  /*ei*/,
+                             typename Traits::SizeType  /*child_index*/,
                              CIOutIterator ci_out, const CIOutIterator ci_end) const
       {
         for (; ci_out != ci_end; ++ci_out)
@@ -257,12 +257,12 @@ namespace Dune {
           typedef ChunkedBlockOrdering<Undecorated> transformed_type;
           typedef std::shared_ptr<transformed_type> transformed_storage_type;
 
-          static transformed_type transform(const GFS& gfs, const Transformation& t, std::shared_ptr<Undecorated> undecorated)
+          static transformed_type transform(const GFS& gfs, const Transformation&  /*t*/, std::shared_ptr<Undecorated> undecorated)
           {
             return transformed_type(make_tuple(undecorated),gfs.orderingTag().template chunked<Tag::level>());
           }
 
-          static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs_pointer, const Transformation& t, std::shared_ptr<Undecorated> undecorated)
+          static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs_pointer, const Transformation&  /*t*/, std::shared_ptr<Undecorated> undecorated)
           {
             return std::make_shared<transformed_type>(make_tuple(undecorated),gfs_pointer->orderingTag().template chunked<Tag::level>());
           }

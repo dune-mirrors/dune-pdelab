@@ -32,7 +32,7 @@ namespace Dune {
 
       public:
 
-        PkLocalFiniteElementMapBase(const GV& gv)
+        PkLocalFiniteElementMapBase(const GV&  /*gv*/)
         {}
 
         static constexpr bool fixedSize()

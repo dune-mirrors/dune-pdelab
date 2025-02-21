@@ -266,7 +266,7 @@ namespace Dune {
 
       private:
 
-        bool transfer_dof(size_type i, typename BorderPattern::const_iterator it) const
+        bool transfer_dof(size_type  /*i*/, typename BorderPattern::const_iterator it) const
         {
           // not a border DOF
           if (it == _border_pattern.end())
@@ -303,7 +303,7 @@ namespace Dune {
         //! Export type of data for message buffer
         typedef PatternMPIData DataType;
 
-        bool contains (int dim, int codim) const
+        bool contains (int  /*dim*/, int codim) const
         {
           return
             codim > 0 &&
@@ -311,7 +311,7 @@ namespace Dune {
              _gfsv.dataHandleContains(codim));
         }
 
-        bool fixedSize (int dim, int codim) const
+        bool fixedSize (int  /*dim*/, int  /*codim*/) const
         {
           return false;
         }
@@ -403,7 +403,7 @@ namespace Dune {
         //! Export type of data for message buffer
         typedef ValueMPIData DataType;
 
-        bool contains(int dim, int codim) const
+        bool contains(int  /*dim*/, int codim) const
         {
           return
             codim > 0 &&
@@ -411,7 +411,7 @@ namespace Dune {
              _gfsv.dataHandleContains(codim));
         }
 
-        bool fixedSize(int dim, int codim) const
+        bool fixedSize(int  /*dim*/, int  /*codim*/) const
         {
           return false;
         }
@@ -551,10 +551,10 @@ namespace Dune {
       NoDataBorderDOFExchanger()
       {}
 
-      NoDataBorderDOFExchanger(const GridOperator& grid_operator)
+      NoDataBorderDOFExchanger(const GridOperator&  /*grid_operator*/)
       {}
 
-      void accumulateBorderEntries(const GridOperator& grid_operator, typename GridOperator::Traits::Jacobian& matrix)
+      void accumulateBorderEntries(const GridOperator&  /*grid_operator*/, typename GridOperator::Traits::Jacobian&  /*matrix*/)
       {}
 
       CommunicationCache& communicationCache()
@@ -567,7 +567,7 @@ namespace Dune {
         return *this;
       }
 
-      void update(const GridOperator& grid_operator)
+      void update(const GridOperator&  /*grid_operator*/)
       {}
 
     };
@@ -583,7 +583,7 @@ namespace Dune {
       OverlappingBorderDOFExchanger()
       {}
 
-      OverlappingBorderDOFExchanger(const GridOperator& grid_operator)
+      OverlappingBorderDOFExchanger(const GridOperator&  /*grid_operator*/)
       {}
 
     };

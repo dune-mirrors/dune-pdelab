@@ -41,7 +41,7 @@ namespace Dune {
       {
 
         template<typename LFS, typename Child, typename TreePath, typename ChildIndex>
-        void beforeChild(const LFS& lfs, Child& child, TreePath treePath, ChildIndex childIndex) const
+        void beforeChild(const LFS& lfs, Child& child, TreePath  /*treePath*/, ChildIndex  /*childIndex*/) const
         {
           child._dof_indices = lfs._dof_indices;
         }
@@ -63,7 +63,7 @@ namespace Dune {
         }
 
         template<typename Node, typename TreePath>
-        void leaf(Node& node, TreePath treePath)
+        void leaf(Node& node, TreePath  /*treePath*/)
         {
           node.offset = offset;
           node.n = 0;
@@ -85,19 +85,19 @@ namespace Dune {
       {
 
         template<typename Node, typename TreePath>
-        void pre(Node& node, TreePath treePath)
+        void pre(Node& node, TreePath  /*treePath*/)
         {
           node.offset = offset;
         }
 
         template<typename Node, typename TreePath>
-        void post(Node& node, TreePath treePath)
+        void post(Node& node, TreePath  /*treePath*/)
         {
           node.n = offset - node.offset;
         }
 
         template<typename Node, typename TreePath>
-        void leaf(Node& node, TreePath treePath)
+        void leaf(Node& node, TreePath  /*treePath*/)
         {
           node.offset = offset;
           node.unbindFiniteElement();
@@ -132,14 +132,14 @@ namespace Dune {
       {
 
         template<typename Node, typename TreePath>
-        void leaf(Node& node, TreePath treePath)
+        void leaf(Node& node, TreePath  /*treePath*/)
         {
           // setup DOFIndices for this finite element
           node.dofIndices(e,node._dof_indices->begin()+node.offset,node._dof_indices->begin()+node.offset+node.n,std::integral_constant<bool,fast>{});
         }
 
         template<typename Node, typename Child, typename TreePath, typename ChildIndex>
-        void afterChild(const Node& node, const Child& child, TreePath treePath, ChildIndex childIndex)
+        void afterChild(const Node& node, const Child& child, TreePath  /*treePath*/, ChildIndex childIndex)
         {
           // Just skip the entire function space structure handling in fast mode
           // This **really** breaks any attempt at using the DOFIndex for anything other
@@ -406,7 +406,7 @@ namespace Dune {
       //! \brief initialize with grid function space
       template<typename Transformation>
       PowerLocalFunctionSpaceNode (std::shared_ptr<const GFS> gfs,
-                                   const Transformation& t,
+                                   const Transformation&  /*t*/,
                                    const std::array<std::shared_ptr<ChildLFS>,k>& children)
         : BaseT(gfs)
         , TreeNode(children)
@@ -414,7 +414,7 @@ namespace Dune {
 
       template<typename Transformation>
       PowerLocalFunctionSpaceNode (const GFS& gfs,
-                                   const Transformation& t,
+                                   const Transformation&  /*t*/,
                                    const std::array<std::shared_ptr<ChildLFS>,k>& children)
         : BaseT(stackobject_to_shared_ptr(gfs))
         , TreeNode(children)
@@ -484,7 +484,7 @@ namespace Dune {
 
       template<typename Transformation>
       CompositeLocalFunctionSpaceNode (std::shared_ptr<const GFS> gfs,
-                                       const Transformation& t,
+                                       const Transformation&  /*t*/,
                                        std::shared_ptr<Children>... children)
         : BaseT(gfs)
         , NodeType(children...)
@@ -492,7 +492,7 @@ namespace Dune {
 
       template<typename Transformation>
       CompositeLocalFunctionSpaceNode (const GFS& gfs,
-                                       const Transformation& t,
+                                       const Transformation&  /*t*/,
                                        std::shared_ptr<Children>... children)
         : BaseT(stackobject_to_shared_ptr(gfs))
         , NodeType(children...)
@@ -583,13 +583,13 @@ namespace Dune {
 
       //! \brief initialize with grid function space
       template<typename Transformation>
-      LeafLocalFunctionSpaceNode (std::shared_ptr<const GFS> gfs, const Transformation& t)
+      LeafLocalFunctionSpaceNode (std::shared_ptr<const GFS> gfs, const Transformation&  /*t*/)
         : BaseT(gfs)
       {
       }
 
       template<typename Transformation>
-      LeafLocalFunctionSpaceNode (const GFS& gfs, const Transformation& t)
+      LeafLocalFunctionSpaceNode (const GFS& gfs, const Transformation&  /*t*/)
         : BaseT(stackobject_to_shared_ptr(gfs))
       {
       }

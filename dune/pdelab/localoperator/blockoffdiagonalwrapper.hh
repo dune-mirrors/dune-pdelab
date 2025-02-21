@@ -154,8 +154,8 @@ namespace Dune {
       void jacobian_skeleton (const IG& ig,
                               const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
                               const LFSU& lfsu_n, const X& x_n, const LFSV& lfsv_n,
-                              MAT& mat_ss, MAT& mat_sn,
-                              MAT& mat_ns, MAT& mat_nn) const
+                              MAT&  /*mat_ss*/, MAT&  /*mat_sn*/,
+                              MAT& mat_ns, MAT&  /*mat_nn*/) const
       {
         // Since we do two sided assembly (visiting each intersection twice) we
         // have options. We could assemble either mat_sn or mat_ns. Both lead

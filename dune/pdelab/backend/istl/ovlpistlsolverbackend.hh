@@ -222,7 +222,7 @@ namespace Dune {
       /*!
         \brief Prepare the preconditioner.
       */
-      virtual void pre (X& x, Y& b) override {}
+      virtual void pre (X&  /*x*/, Y&  /*b*/) override {}
 
       /*!
         \brief Apply the precondioner.
@@ -247,7 +247,7 @@ namespace Dune {
       /*!
         \brief Clean up.
       */
-      virtual void post (X& x) override {}
+      virtual void post (X&  /*x*/) override {}
 
     private:
       const GFS& gfs;
@@ -283,7 +283,7 @@ namespace Dune {
       /*!
         \brief Prepare the preconditioner.
       */
-      virtual void pre (X& x, Y& b) override {}
+      virtual void pre (X&  /*x*/, Y&  /*b*/) override {}
 
       /*!
         \brief Apply the precondioner.
@@ -308,7 +308,7 @@ namespace Dune {
       /*!
         \brief Clean up.
       */
-      virtual void post (X& x) override {}
+      virtual void post (X&  /*x*/) override {}
 
     private:
       const GFS& gfs;
@@ -344,7 +344,7 @@ namespace Dune {
       /*!
         \brief Prepare the preconditioner.
       */
-      virtual void pre (X& x, Y& b) override {}
+      virtual void pre (X&  /*x*/, Y&  /*b*/) override {}
 
       /*!
         \brief Apply the precondioner.
@@ -371,7 +371,7 @@ namespace Dune {
       /*!
         \brief Clean up.
       */
-      virtual void post (X& x) override {}
+      virtual void post (X&  /*x*/) override {}
 
     private:
       const GFS& gfs;
@@ -1027,7 +1027,7 @@ namespace Dune {
         \param[in] v the given vector
       */
       template<class V>
-      typename V::ElementType norm(const V& v) const
+      typename V::ElementType norm(const V&  /*v*/) const
       {
         static_assert
           (AlwaysFalse<V>::value,

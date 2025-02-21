@@ -194,7 +194,7 @@ namespace Dune {
 
       template<typename RI, typename CI, typename Block>
       typename Block::field_type&
-      access_matrix_element(tags::field_matrix_1_1, Block& b, const RI& ri, const CI& ci, int i, int j)
+      access_matrix_element(tags::field_matrix_1_1, Block& b, const RI&  /*ri*/, const CI&  /*ci*/, int i, int j)
       {
         assert(i == -1);
         assert(j == -1);
@@ -212,7 +212,7 @@ namespace Dune {
 
       template<typename RI, typename CI, typename Block>
       typename Block::field_type&
-      access_matrix_element(tags::field_matrix_1_m, Block& b, const RI& ri, const CI& ci, int i, int j)
+      access_matrix_element(tags::field_matrix_1_m, Block& b, const RI&  /*ri*/, const CI& ci, int i, int j)
       {
         assert(i == -1);
         assert(j == 0);
@@ -221,7 +221,7 @@ namespace Dune {
 
       template<typename RI, typename CI, typename Block>
       typename Block::field_type&
-      access_matrix_element(tags::field_matrix_n_1, Block& b, const RI& ri, const CI& ci, int i, int j)
+      access_matrix_element(tags::field_matrix_n_1, Block& b, const RI& ri, const CI&  /*ci*/, int i, int j)
       {
         assert(i == 0);
         assert(j == -1);
@@ -238,7 +238,7 @@ namespace Dune {
 
       template<typename RI, typename CI, typename Block>
       const typename Block::field_type&
-      access_matrix_element(tags::field_matrix_1_1, const Block& b, const RI& ri, const CI& ci, int i, int j)
+      access_matrix_element(tags::field_matrix_1_1, const Block& b, const RI&  /*ri*/, const CI&  /*ci*/, int i, int j)
       {
         assert(i == -1);
         assert(j == -1);
@@ -256,7 +256,7 @@ namespace Dune {
 
       template<typename RI, typename CI, typename Block>
       const typename Block::field_type&
-      access_matrix_element(tags::field_matrix_1_m, const Block& b, const RI& ri, const CI& ci, int i, int j)
+      access_matrix_element(tags::field_matrix_1_m, const Block& b, const RI&  /*ri*/, const CI& ci, int i, int j)
       {
         assert(i == -1);
         assert(j == 0);
@@ -265,7 +265,7 @@ namespace Dune {
 
       template<typename RI, typename CI, typename Block>
       const typename Block::field_type&
-      access_matrix_element(tags::field_matrix_n_1, const Block& b, const RI& ri, const CI& ci, int i, int j)
+      access_matrix_element(tags::field_matrix_n_1, const Block& b, const RI& ri, const CI&  /*ci*/, int i, int j)
       {
         assert(i == 0);
         assert(j == -1);
@@ -282,7 +282,7 @@ namespace Dune {
 
 
       template<typename RI, typename Block>
-      void clear_matrix_row(tags::field_matrix_1_any, Block& b, const RI& ri, int i)
+      void clear_matrix_row(tags::field_matrix_1_any, Block& b, const RI&  /*ri*/, int i)
       {
         assert(i == -1);
         b[0] = 0;
@@ -306,20 +306,20 @@ namespace Dune {
 
 
       template<typename RI, typename Block>
-      void clear_matrix_row_block(tags::field_matrix_1_1, Block& b, const RI& ri, int i)
+      void clear_matrix_row_block(tags::field_matrix_1_1, Block& b, const RI&  /*ri*/, int i)
       {
         assert(i == -1);
         b = 0;
       }
 
       template<typename RI, typename Block>
-      void clear_matrix_row_block(tags::field_matrix_1_any, Block& b, const RI& ri, int i)
+      void clear_matrix_row_block(tags::field_matrix_1_any, Block&  /*b*/, const RI&  /*ri*/, int  /*i*/)
       {
         DUNE_THROW(Dune::Exception,"Should never get here!");
       }
 
       template<typename RI, typename Block>
-      void clear_matrix_row_block(tags::field_matrix_n_any, Block& b, const RI& ri, int i)
+      void clear_matrix_row_block(tags::field_matrix_n_any, Block& b, const RI&  /*ri*/, int i)
       {
         assert(i == 0);
         b = 0;
@@ -337,7 +337,7 @@ namespace Dune {
 
 
       template<typename T, typename RI, typename CI, typename Block>
-      void write_matrix_element_if_exists(const T& v, tags::field_matrix_1_1, Block& b, const RI& ri, const CI& ci, int i, int j)
+      void write_matrix_element_if_exists(const T& v, tags::field_matrix_1_1, Block& b, const RI&  /*ri*/, const CI&  /*ci*/, int i, int j)
       {
         assert(i == -1);
         assert(j == -1);
@@ -353,7 +353,7 @@ namespace Dune {
       }
 
       template<typename T, typename RI, typename CI, typename Block>
-      void write_matrix_element_if_exists(const T& v, tags::field_matrix_1_m, Block& b, const RI& ri, const CI& ci, int i, int j)
+      void write_matrix_element_if_exists(const T& v, tags::field_matrix_1_m, Block& b, const RI&  /*ri*/, const CI& ci, int i, int j)
       {
         assert(i == -1);
         assert(j == 0);
@@ -361,7 +361,7 @@ namespace Dune {
       }
 
       template<typename T, typename RI, typename CI, typename Block>
-      void write_matrix_element_if_exists(const T& v, tags::field_matrix_n_1, Block& b, const RI& ri, const CI& ci, int i, int j)
+      void write_matrix_element_if_exists(const T& v, tags::field_matrix_n_1, Block& b, const RI& ri, const CI&  /*ci*/, int i, int j)
       {
         assert(i == 0);
         assert(j == -1);
@@ -379,7 +379,7 @@ namespace Dune {
 
 
       template<typename T, typename RI, typename CI, typename Block>
-      void write_matrix_element_if_exists_to_block(const T& v, tags::field_matrix_1_1, Block& b, const RI& ri, const CI& ci, int i, int j)
+      void write_matrix_element_if_exists_to_block(const T& v, tags::field_matrix_1_1, Block& b, const RI&  /*ri*/, const CI&  /*ci*/, int i, int j)
       {
         assert(i == -1);
         assert(j == -1);
@@ -387,7 +387,7 @@ namespace Dune {
       }
 
       template<typename T, typename RI, typename CI, typename Block>
-      void write_matrix_element_if_exists_to_block(const T& v, tags::field_matrix_n_m, Block& b, const RI& ri, const CI& ci, int i, int j)
+      void write_matrix_element_if_exists_to_block(const T& v, tags::field_matrix_n_m, Block& b, const RI&  /*ri*/, const CI&  /*ci*/, int i, int j)
       {
         assert(i == 0);
         assert(j == 0);
@@ -396,13 +396,13 @@ namespace Dune {
       }
 
       template<typename T, typename RI, typename CI, typename Block>
-      void write_matrix_element_if_exists_to_block(const T& v, tags::field_matrix_1_m, Block& b, const RI& ri, const CI& ci, int i, int j)
+      void write_matrix_element_if_exists_to_block(const T&  /*v*/, tags::field_matrix_1_m, Block&  /*b*/, const RI&  /*ri*/, const CI&  /*ci*/, int  /*i*/, int  /*j*/)
       {
         DUNE_THROW(Dune::Exception,"Should never get here!");
       }
 
       template<typename T, typename RI, typename CI, typename Block>
-      void write_matrix_element_if_exists_to_block(const T& v, tags::field_matrix_n_1, Block& b, const RI& ri, const CI& ci, int i, int j)
+      void write_matrix_element_if_exists_to_block(const T&  /*v*/, tags::field_matrix_n_1, Block&  /*b*/, const RI&  /*ri*/, const CI&  /*ci*/, int  /*i*/, int  /*j*/)
       {
         DUNE_THROW(Dune::Exception,"Should never get here!");
       }

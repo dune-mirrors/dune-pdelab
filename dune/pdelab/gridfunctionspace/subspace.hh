@@ -338,7 +338,7 @@ namespace Dune {
       class GridFunctionSubSpaceOutputParameters
       {
       public:
-        void inheritDataSetType(const T & t) {}
+        void inheritDataSetType(const T &  /*t*/) {}
       };
 
 #ifndef DOXYGEN

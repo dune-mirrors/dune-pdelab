@@ -38,7 +38,7 @@ namespace Dune {
        */
 
       template<typename P, typename EG, typename LFS, typename T>
-      void volume (const P& param, const EG& eg, const LFS& lfs, T& trafo) const
+      void volume (const P&  /*param*/, const EG& eg, const LFS& lfs, T& trafo) const
       {
         typedef typename EG::Entity Entity;
         enum { dim = Entity::dimension };

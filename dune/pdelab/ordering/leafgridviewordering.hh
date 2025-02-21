@@ -231,12 +231,12 @@ namespace Dune {
       typedef GridViewOrdering transformed_type;
       typedef std::shared_ptr<transformed_type> transformed_storage_type;
 
-      static transformed_type transform(const GFS& gfs, const Transformation& t)
+      static transformed_type transform(const GFS& gfs, const Transformation&  /*t*/)
       {
         return transformed_type(make_tuple(std::make_shared<LocalOrdering>(gfs.finiteElementMapStorage(),gfs.entitySet())),gfs.backend().blocked(gfs),const_cast<GFS*>(&gfs));
       }
 
-      static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t)
+      static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation&  /*t*/)
       {
         return std::make_shared<transformed_type>(make_tuple(std::make_shared<LocalOrdering>(gfs->finiteElementMapStorage(),gfs->entitySet())),gfs->backend().blocked(*gfs),const_cast<GFS*>(gfs.get()));
       }

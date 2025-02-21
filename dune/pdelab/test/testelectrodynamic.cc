@@ -200,11 +200,11 @@ int main(int argc, char** argv) {
   MBE mbe(5); // the edge itself + two adjacent elements * two other edges
 
   // parameter functions
-  auto mu = [](const auto &elem, const auto &xl) {
+  auto mu = [](const auto & /*elem*/, const auto & /*xl*/) {
     // this value is the vaccuum permability mu_0 in N/A^2
     return 4e-7 * pi;
   };
-  auto eps = [](const auto &elem, const auto &xl) {
+  auto eps = [](const auto & /*elem*/, const auto & /*xl*/) {
     // this value is the vaccuum permittivity eps_0 in F/m
     return 8.854187817e-12;
   };

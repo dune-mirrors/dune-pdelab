@@ -70,9 +70,9 @@ namespace Dune {
       //! end of evaluate recursion
       template<unsigned int I>
       void evaluate(
-        const typename Traits::ElementType& e,
-        const typename Traits::DomainType& x,
-        std::vector<typename Traits::RangeType>& y,
+        const typename Traits::ElementType&  /*e*/,
+        const typename Traits::DomainType&  /*x*/,
+        std::vector<typename Traits::RangeType>&  /*y*/,
         std::integral_constant<unsigned int, I>,
         std::integral_constant<unsigned int, I>,
         std::integral_constant<bool, false>) const

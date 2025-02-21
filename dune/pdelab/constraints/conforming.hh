@@ -152,7 +152,7 @@ namespace Dune {
        * \tparam T   TransformationType
        */
       template<typename P, typename EG, typename LFS, typename T>
-      void volume (const P& param, const EG& eg, const LFS& lfs, T& trafo) const
+      void volume (const P&  /*param*/, const EG& eg, const LFS& lfs, T& trafo) const
       {
         typedef FiniteElementInterfaceSwitch<
           typename LFS::Traits::FiniteElementType

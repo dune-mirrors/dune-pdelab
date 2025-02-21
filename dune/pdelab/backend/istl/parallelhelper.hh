@@ -304,7 +304,7 @@ namespace Dune {
 
       template<typename GFS>
       template<typename M, typename C>
-      void ParallelHelper<GFS>::createIndexSetAndProjectForAMG(M& m, C& c)
+      void ParallelHelper<GFS>::createIndexSetAndProjectForAMG(M&  /*m*/, C& c)
       {
 
         using Backend::native;
@@ -442,7 +442,7 @@ namespace Dune {
 #endif // HAVE_MPI
 
       template<typename T>
-      void assertParallelUG(T comm)
+      void assertParallelUG(T  /*comm*/)
       {}
 
 #if HAVE_DUNE_UGGRID && PDELAB_SEQUENTIAL_UG

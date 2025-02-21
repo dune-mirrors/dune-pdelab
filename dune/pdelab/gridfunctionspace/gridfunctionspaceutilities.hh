@@ -235,7 +235,7 @@ namespace Dune {
       {}
 
       // Evaluate
-      void evaluate (const typename Traits::ElementType& e,
+      void evaluate (const typename Traits::ElementType&  /*e*/,
                      const typename Traits::DomainType& x,
                      typename Traits::RangeType& y) const
       {
@@ -1258,13 +1258,13 @@ namespace Dune {
       typedef T GFS;
     public :
 
-      VectorDiscreteGridFunctionCurl(const GFS& gfs, const X& x)
+      VectorDiscreteGridFunctionCurl(const GFS&  /*gfs*/, const X&  /*x*/)
       {
         static_assert(AlwaysFalse<typename GFS::Traits::GridViewType>::value,
                       "Curl computation can only be done in two or three dimensions");
       }
 
-      VectorDiscreteGridFunctionCurl(std::shared_ptr<const GFS> gfs, std::shared_ptr<const X> x_)
+      VectorDiscreteGridFunctionCurl(std::shared_ptr<const GFS>  /*gfs*/, std::shared_ptr<const X>  /*x_*/)
       {
         static_assert(AlwaysFalse<typename GFS::Traits::GridViewType>::value,
                       "Curl computation can only be done in two or three dimensions");

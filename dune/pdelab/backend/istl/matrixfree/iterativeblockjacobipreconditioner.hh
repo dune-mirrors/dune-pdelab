@@ -52,7 +52,7 @@ namespace Dune {
           , _diagonalWeight(diagonalWeight)
         {}
 
-        void pre (domain_type& x, range_type& b) override {}
+        void pre (domain_type&  /*x*/, range_type&  /*b*/) override {}
 
         void apply (domain_type& v, const range_type& d) override
         {
@@ -71,7 +71,7 @@ namespace Dune {
           }
         }
 
-        void post (domain_type& x) override {}
+        void post (domain_type&  /*x*/) override {}
 
       private :
         const bool _precondition;

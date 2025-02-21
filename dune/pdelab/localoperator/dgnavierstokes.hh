@@ -91,7 +91,7 @@ namespace Dune {
 
       // volume integral depending on test and ansatz functions
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
-      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
+      void alpha_volume (const EG& eg, const LFSU&  /*lfsu*/, const X& x, const LFSV& lfsv, R& r) const
       {
         // dimensions
         const unsigned int dim = EG::Geometry::mydimension;
@@ -223,7 +223,7 @@ namespace Dune {
       // jacobian of volume term
       template<typename EG, typename LFSU, typename X, typename LFSV,
                typename LocalMatrix>
-      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv,
+      void jacobian_volume (const EG& eg, const LFSU&  /*lfsu*/, const X& x, const LFSV& lfsv,
                             LocalMatrix& mat) const
       {
         // dimensions
@@ -359,8 +359,8 @@ namespace Dune {
       // each face is only visited ONCE!
       template<typename IG, typename LFSU, typename X, typename LFSV, typename R>
       void alpha_skeleton (const IG& ig,
-                           const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
-                           const LFSU& lfsu_n, const X& x_n, const LFSV& lfsv_n,
+                           const LFSU&  /*lfsu_s*/, const X& x_s, const LFSV& lfsv_s,
+                           const LFSU&  /*lfsu_n*/, const X& x_n, const LFSV& lfsv_n,
                            R& r_s, R& r_n) const
       {
         // dimensions
@@ -557,8 +557,8 @@ namespace Dune {
       template<typename IG, typename LFSU, typename X, typename LFSV,
                typename LocalMatrix>
       void jacobian_skeleton (const IG& ig,
-                              const LFSU& lfsu_s, const X&, const LFSV& lfsv_s,
-                              const LFSU& lfsu_n, const X&, const LFSV& lfsv_n,
+                              const LFSU&  /*lfsu_s*/, const X&, const LFSV& lfsv_s,
+                              const LFSU&  /*lfsu_n*/, const X&, const LFSV& lfsv_n,
                               LocalMatrix& mat_ss, LocalMatrix& mat_sn,
                               LocalMatrix& mat_ns, LocalMatrix& mat_nn) const
       {
@@ -768,7 +768,7 @@ namespace Dune {
       // boundary term
       template<typename IG, typename LFSU, typename X, typename LFSV, typename R>
       void alpha_boundary (const IG& ig,
-                           const LFSU& lfsu, const X& x, const LFSV& lfsv,
+                           const LFSU&  /*lfsu*/, const X& x, const LFSV& lfsv,
                            R& r) const
       {
         // dimensions
@@ -953,7 +953,7 @@ namespace Dune {
       template<typename IG, typename LFSU, typename X, typename LFSV,
                typename LocalMatrix>
       void jacobian_boundary (const IG& ig,
-                              const LFSU& lfsu, const X& x, const LFSV& lfsv,
+                              const LFSU&  /*lfsu*/, const X&  /*x*/, const LFSV& lfsv,
                               LocalMatrix& mat) const
       {
         // dimensions

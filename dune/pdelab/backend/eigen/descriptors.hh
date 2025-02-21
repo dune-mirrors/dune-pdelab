@@ -46,7 +46,7 @@ namespace Dune {
         };
 
         template<typename GFS>
-        bool blocked(const GFS& gfs) const
+        bool blocked(const GFS&  /*gfs*/) const
         {
           return false;
         }

@@ -224,7 +224,7 @@ sum = gf.getGridView().comm().sum(sum);
        * \note If the GridFunctionProbe is outside the grid NaN will be stored
        *       in val.
        */
-      void eval(Range& val, int rank = 0) const {
+      void eval(Range& val, int  /*rank*/ = 0) const {
         eval_all(val);
       }
 

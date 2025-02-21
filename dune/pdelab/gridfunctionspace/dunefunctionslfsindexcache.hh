@@ -184,7 +184,7 @@ namespace Dune {
       {}
 
       template<typename C>
-      LFSIndexCacheBase(const LFS& lfs, const C& c, bool enable_constraints_caching)
+      LFSIndexCacheBase(const LFS& lfs, const C&  /*c*/, bool  /*enable_constraints_caching*/)
         : _lfs(lfs)
       {}
 
@@ -203,22 +203,22 @@ namespace Dune {
         return _lfs.containerIndex(i);
       }
 
-      bool isConstrained(size_type i) const
+      bool isConstrained(size_type  /*i*/) const
       {
         return false;
       }
 
-      bool isDirichletConstraint(size_type i) const
+      bool isDirichletConstraint(size_type  /*i*/) const
       {
         return false;
       }
 
-      ConstraintsIterator constraintsBegin(size_type i) const
+      ConstraintsIterator constraintsBegin(size_type  /*i*/) const
       {
         return _constraints.begin();
       }
 
-      ConstraintsIterator constraintsEnd(size_type i) const
+      ConstraintsIterator constraintsEnd(size_type  /*i*/) const
       {
         return _constraints.end();
       }

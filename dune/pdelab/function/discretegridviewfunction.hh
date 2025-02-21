@@ -191,7 +191,7 @@ public:
     template<int dOrder>
     typename std::enable_if<(dOrder > 2),
       Range>::type
-    evaluate(const Domain& coord) const
+    evaluate(const Domain&  /*coord*/) const
     {
       if (diffOrder > 2) DUNE_THROW(NotImplemented,
         "Derivatives are only implemented up to degree 2");
@@ -340,7 +340,7 @@ public:
   }
 
   // TODO: Implement this using hierarchic search
-  Range operator() (const Domain& x) const
+  Range operator() (const Domain&  /*x*/) const
   {
     DUNE_THROW(NotImplemented,"not implemented");
   }

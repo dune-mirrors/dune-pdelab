@@ -13,7 +13,7 @@
 
 #include <dune/pdelab.hh>
 
-int main(int argc, char** argv)
+int main()
 {
 
   {

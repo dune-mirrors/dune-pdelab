@@ -24,7 +24,7 @@ namespace Dune {
       {
 
         template<typename Ordering, typename TreePath>
-        void leaf(const Ordering& ordering, TreePath tp)
+        void leaf(const Ordering& ordering, TreePath  /*tp*/)
         {
           _size += ordering.size(_entity_index);
         }
@@ -54,7 +54,7 @@ namespace Dune {
       {
 
         template<typename Ordering, typename TreePath>
-        void leaf(const Ordering& ordering, TreePath tp)
+        void leaf(const Ordering& ordering, TreePath  /*tp*/)
         {
           *(++_oit) = ordering.size(_entity_index);
         }
@@ -95,7 +95,7 @@ namespace Dune {
 
 
         template<typename Ordering, typename Child, typename TreePath, typename ChildIndex>
-        void beforeChild(const Ordering& ordering, const Child& child, TreePath tp, ChildIndex childIndex)
+        void beforeChild(const Ordering&  /*ordering*/, const Child&  /*child*/, TreePath  /*tp*/, ChildIndex  /*childIndex*/)
         {
           _stack.push(std::make_pair(_ci_it,_di_it));
         }
@@ -117,7 +117,7 @@ namespace Dune {
         }
 
         template<typename Ordering, typename Child, typename TreePath, typename ChildIndex>
-        void afterChild(const Ordering& ordering, const Child& child, TreePath tp, ChildIndex childIndex)
+        void afterChild(const Ordering& ordering, const Child&  /*child*/, TreePath  /*tp*/, ChildIndex childIndex)
         {
           // pop
           ordering.extract_entity_indices(_entity_index,
@@ -267,7 +267,7 @@ namespace Dune {
       }
 
       template<typename V, typename EntityIndex>
-      void setup_dof_indices(V& v, size_type n, const EntityIndex& ei, std::integral_constant<bool,false>) const
+      void setup_dof_indices(V&  /*v*/, size_type  /*n*/, const EntityIndex&  /*ei*/, std::integral_constant<bool,false>) const
       {}
 
       template<typename V>
@@ -277,7 +277,7 @@ namespace Dune {
       }
 
       template<typename V>
-      DummyDOFIndexIterator dof_indices_begin(V& v, std::integral_constant<bool,false>) const
+      DummyDOFIndexIterator dof_indices_begin(V&  /*v*/, std::integral_constant<bool,false>) const
       {
         return DummyDOFIndexIterator();
       }

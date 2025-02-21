@@ -62,7 +62,7 @@ namespace Dune {
 
       // volume integral depending on test and ansatz functions
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
-      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
+      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV&  /*lfsv*/, R& r) const
       {
         // Define types
         using VelocitySpace = typename LFSU::template Child<0>::Type;

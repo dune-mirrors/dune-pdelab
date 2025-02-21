@@ -328,7 +328,7 @@ namespace Dune {
           manager.adaptToIsolatedHangingNodes();
       }
 
-      void update( Grid & grid ){
+      void update( Grid &  /*grid*/ ){
         manager.analyzeView();
         manager.adaptToIsolatedHangingNodes();
       }

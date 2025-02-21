@@ -123,16 +123,16 @@ namespace Dune{
       //! assembleUVEnrichedCoupling() and assembleUVVolumePostSkeleton() calls.
       //! @{
       template<typename EG, typename LFSU, typename LFSV>
-      void onBindLFSUV(const EG& eg, const LFSU& lfsu, const LFSV& lfsv)
+      void onBindLFSUV(const EG&  /*eg*/, const LFSU&  /*lfsu*/, const LFSV&  /*lfsv*/)
       {}
       template<typename IG, typename LFSU_S, typename LFSV_S>
-      void onBindLFSUVInside(const IG & ig,
-                             const LFSU_S & lfsu_s, const LFSV_S & lfsv_s)
+      void onBindLFSUVInside(const IG &  /*ig*/,
+                             const LFSU_S &  /*lfsu_s*/, const LFSV_S &  /*lfsv_s*/)
       {}
       template<typename IG, typename LFSU_S, typename LFSV_S, typename LFSU_N, typename LFSV_N>
-      void onBindLFSUVOutside(const IG & ig,
-                              const LFSU_S & lfsu_s, const LFSV_S & lfsv_s,
-                              const LFSU_N & lfsu_n, const LFSV_N & lfsv_n)
+      void onBindLFSUVOutside(const IG &  /*ig*/,
+                              const LFSU_S &  /*lfsu_s*/, const LFSV_S &  /*lfsv_s*/,
+                              const LFSU_N &  /*lfsu_n*/, const LFSV_N &  /*lfsv_n*/)
       {}
       //! @}
 
@@ -143,13 +143,13 @@ namespace Dune{
       //! assembleUVEnrichedCoupling() and assembleUVVolumePostSkeleton() calls.
       //! @{
       template<typename LFSU>
-      void loadCoefficientsLFSUInside(const LFSU & lfsu_s)
+      void loadCoefficientsLFSUInside(const LFSU &  /*lfsu_s*/)
       {}
       template<typename LFSU>
-      void loadCoefficientsLFSUOutside(const LFSU & lfsu_n)
+      void loadCoefficientsLFSUOutside(const LFSU &  /*lfsu_n*/)
       {}
       template<typename LFSU>
-      void loadCoefficientsLFSUCoupling(const LFSU & lfsu_c)
+      void loadCoefficientsLFSUCoupling(const LFSU &  /*lfsu_c*/)
       {}
       //! @}
 

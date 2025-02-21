@@ -290,7 +290,7 @@ namespace Dune{
           EmptyTransformation
           >::value
         >::type
-      forwardtransform(X & x, const bool postrestrict = false) const
+      forwardtransform(X &  /*x*/, const bool  /*postrestrict*/ = false) const
       {}
 
 
@@ -339,7 +339,7 @@ namespace Dune{
           EmptyTransformation
           >::value
         >::type
-      backtransform(X & x, const bool prerestrict = false) const
+      backtransform(X &  /*x*/, const bool  /*prerestrict*/ = false) const
       {}
 
 
@@ -446,7 +446,7 @@ namespace Dune{
           EmptyTransformation
           >::value
       >::type
-      scatter_jacobian(M& local_container, GCView& global_container_view, bool symmetric_mode) const
+      scatter_jacobian(M& local_container, GCView& global_container_view, bool  /*symmetric_mode*/) const
       {
         // write entries without considering constraints.
         // Dirichlet-constrained rows will be fixed in a postprocessing step.
@@ -600,7 +600,7 @@ namespace Dune{
       typename std::enable_if<
         !std::is_same<RI,CI>::value
         >::type
-      add_diagonal_entry(Pattern& pattern, const RI& ri, const CI& ci) const
+      add_diagonal_entry(Pattern&  /*pattern*/, const RI&  /*ri*/, const CI&  /*ci*/) const
       {}
 
       /** \brief Adding matrix entry to pattern with respect to the
@@ -663,7 +663,7 @@ namespace Dune{
           T^T_U in constrained rows
       */
       template<typename GFSV, typename GC, typename C>
-      void set_trivial_rows(const GFSV& gfsv, GC& globalcontainer, const C& c) const
+      void set_trivial_rows(const GFSV&  /*gfsv*/, GC& globalcontainer, const C& c) const
       {
         typedef typename C::const_iterator global_row_iterator;
         for (global_row_iterator cit = c.begin(); cit != c.end(); ++cit)
@@ -671,7 +671,7 @@ namespace Dune{
       }
 
       template<typename GFSV, typename GC>
-      void set_trivial_rows(const GFSV& gfsv, GC& globalcontainer, const EmptyTransformation& c) const
+      void set_trivial_rows(const GFSV&  /*gfsv*/, GC&  /*globalcontainer*/, const EmptyTransformation&  /*c*/) const
       {
       }
 

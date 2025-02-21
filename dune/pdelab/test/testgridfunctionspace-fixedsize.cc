@@ -192,7 +192,7 @@ public:
     return codim == 0;
   }
 
-  std::size_t size(Dune::GeometryType gt) const
+  std::size_t size(Dune::GeometryType  /*gt*/) const
   {
     DUNE_THROW(Dune::PDELab::VariableElementSize, "the fem has variable element size");
   }
@@ -268,11 +268,11 @@ int main(int argc, char** argv)
     // In these two basic scenarios, PDELab should detect that the ordering actually is fixed
     // size and switch to fixed size mode after collecting the size information
     std::cout << "testing 2D all cells active" << std::endl;
-    if (!testPredicate<2>(cells, true, [](auto i) { return true; })) {
+    if (!testPredicate<2>(cells, true, [](auto  /*i*/) { return true; })) {
       return -1;
     }
     std::cout << "testing 2D all cells disabled" << std::endl;
-    if (!testPredicate<2>(cells, true, [](auto i) { return false; })) {
+    if (!testPredicate<2>(cells, true, [](auto  /*i*/) { return false; })) {
       return -1;
     }
 

@@ -42,7 +42,7 @@ namespace Dune::PDELab
     }
 
     //! prepare preconditioner
-    void pre(Domain& v, Range& d) override
+    void pre(Domain&  /*v*/, Range& d) override
     {
       if (not isLinear and _u == nullptr)
         DUNE_THROW(Dune::InvalidStateException, "You seem to apply a preconditioner to a linearized problem but haven't set the linearization point explicitly!");
@@ -83,7 +83,7 @@ namespace Dune::PDELab
         _precgo.jacobian_apply(*_u, d, v);
     }
 
-    void post(Domain& v) override {}
+    void post(Domain&  /*v*/) override {}
 
   private :
     const PrecGO& _precgo;

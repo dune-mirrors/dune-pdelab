@@ -135,7 +135,7 @@ namespace Dune {
 } // namespace Dune
 
 
-int main(int argc, char** argv)
+int main()
 {
   try{
     // run tests

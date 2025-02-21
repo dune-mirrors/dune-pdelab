@@ -49,7 +49,7 @@ namespace Dune {
         }
 
         template <typename LFSV, typename LFSU>
-        void accumulate(const LFSV& lfsv, size_type i, const LFSU& lfsu, size_type j, value_type value)
+        void accumulate(const LFSV&  /*lfsv*/, size_type i, const LFSU&  /*lfsu*/, size_type j, value_type value)
         {
           _container(i,j) += _weight * value;
         }
@@ -186,7 +186,7 @@ namespace Dune {
       }
 
       template<typename EG, typename LFSU, typename X, typename Z, typename LFSV, typename Y>
-      void jacobian_apply_volume(const EG& eg, const LFSU& lfsu, const X& x, const Z& z, const LFSV& lfsv, Y& y) const
+      void jacobian_apply_volume(const EG& eg, const LFSU& lfsu, const X&  /*x*/, const Z& z, const LFSV& lfsv, Y& y) const
       {
         // We don't need the linearization point as the preconditioner is
         // already set up
@@ -200,7 +200,7 @@ namespace Dune {
        * preparation step.
        */
       template<typename EG, typename LFSU, typename Z, typename LFSV, typename Y>
-      void jacobian_apply_volume(const EG& eg, const LFSU& lfsu, const Z& z, const LFSV& lfsv, Y& y) const
+      void jacobian_apply_volume(const EG& eg, const LFSU& lfsu, const Z& z, const LFSV&  /*lfsv*/, Y& y) const
       {
         assert(not _requireSetup);
 

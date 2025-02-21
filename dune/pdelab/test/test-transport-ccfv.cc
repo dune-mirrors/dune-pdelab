@@ -52,7 +52,7 @@ public:
 
   //! tensor permeability
   typename Traits::PermTensorType
-  A (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+  A (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
   {
     typename Traits::PermTensorType I;
     RF k = 1E-10;
@@ -69,7 +69,7 @@ public:
 
   //! velocity field
   typename Traits::RangeType
-  b (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+  b (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
   {
     typename Traits::RangeType flux;
     flux[0] = 1.0;
@@ -79,21 +79,21 @@ public:
 
   //! reaction term
   typename Traits::RangeFieldType
-  c (const typename Traits::ElementType& e, const typename Traits::DomainType& ) const
+  c (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType& ) const
   {
     return 1.0;
   }
 
   //! capacity term
   typename Traits::RangeFieldType
-  d (const typename Traits::ElementType& e, const typename Traits::DomainType& ) const
+  d (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType& ) const
   {
     return 1.0;
   }
 
   //! source term
   typename Traits::RangeFieldType
-  f (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+  f (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
   {
     return 0.0;
   }
@@ -128,14 +128,14 @@ public:
   // Good: The dependence on u allows us to implement Robin type boundary conditions.
   // Bad: This interface cannot be used for mixed finite elements where the flux is the essential b.c.
   typename Traits::RangeFieldType
-  j (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& x) const
+  j (const typename Traits::IntersectionType&  /*is*/, const typename Traits::IntersectionDomainType&  /*x*/) const
   {
     return 0.0;
   }
 
   //! outflow boundary function
   typename Traits::RangeFieldType
-  o (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& x) const
+  o (const typename Traits::IntersectionType&  /*is*/, const typename Traits::IntersectionDomainType&  /*x*/) const
   {
     return 0.0;
   }

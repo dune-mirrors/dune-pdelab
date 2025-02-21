@@ -60,7 +60,7 @@ namespace Dune {
 
       // volume integral depending on test and ansatz functions
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
-      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
+      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV&  /*lfsv*/, R& r) const
       {
         // Define types
         using RF = typename LFSU::Traits::FiniteElementType::
@@ -137,7 +137,7 @@ namespace Dune {
 
       // jacobian of volume term
       template<typename EG, typename LFSU, typename X, typename LFSV, typename M>
-      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv,
+      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X&  /*x*/, const LFSV&  /*lfsv*/,
                             M& mat) const
       {
         // Define types
@@ -205,7 +205,7 @@ namespace Dune {
       // boundary integral
       template<typename IG, typename LFSU, typename X, typename LFSV, typename R>
       void alpha_boundary (const IG& ig,
-                           const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
+                           const LFSU& lfsu_s, const X& x_s, const LFSV&  /*lfsv_s*/,
                            R& r_s) const
       {
         // Define types
@@ -277,7 +277,7 @@ namespace Dune {
       // jacobian contribution from boundary
       template<typename IG, typename LFSU, typename X, typename LFSV, typename M>
       void jacobian_boundary (const IG& ig,
-                              const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
+                              const LFSU& lfsu_s, const X&  /*x_s*/, const LFSV&  /*lfsv_s*/,
                               M& mat_s) const
       {
         // Define types
@@ -966,7 +966,7 @@ namespace Dune {
       // We put the Dirchlet evaluation also in the alpha term to save some geometry evaluations
       template<typename IG, typename LFSU, typename X, typename LFSV, typename R>
       void alpha_boundary (const IG& ig,
-                           const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
+                           const LFSU& lfsu_s, const X&  /*x_s*/, const LFSV& lfsv_s,
                            R& r_s) const
       {
         // Define types

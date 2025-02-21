@@ -54,7 +54,7 @@ public:
   {}
 
   void
-  f (const typename Traits::ElementType& e, const typename Traits::DomainType& x,
+  f (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/,
     typename Traits::RangeType & y) const
   {
     y = G_;
@@ -70,20 +70,20 @@ public:
   }
 
   void
-  u (const typename Traits::ElementType& e, const typename Traits::DomainType& x,
+  u (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/,
     typename Traits::RangeType & y) const
   {
     y = 0.0;
   }
 
   typename Traits::RangeFieldType
-  lambda (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+  lambda (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
   {
     return lambda_;
   }
 
   typename Traits::RangeFieldType
-  mu (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+  mu (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
   {
     return mu_;
   }

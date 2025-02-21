@@ -226,9 +226,9 @@ namespace Dune {
           template<typename CIOutIterator, typename DIOutIterator = DummyDOFIndexIterator>
           typename Traits::SizeType
           extract_entity_indices(const typename Traits::DOFIndex::EntityIndex& entityIndex,
-                                 typename Traits::SizeType child_index,
-                                 CIOutIterator ci_out, const CIOutIterator ci_end,
-                                 DIOutIterator dummy) const
+                                 typename Traits::SizeType  /*child_index*/,
+                                 CIOutIterator ci_out, const CIOutIterator  /*ci_end*/,
+                                 DIOutIterator  /*dummy*/) const
           {
             for (size_type i=0; i<_containerIndices[entityIndex[0]][entityIndex[1]].size(); i++)
             {
@@ -426,9 +426,9 @@ namespace Dune {
 
           template<typename CIOutIterator, typename DIOutIterator = DummyDOFIndexIterator>
           typename Traits::SizeType
-          extract_entity_indices(const typename Traits::DOFIndex::EntityIndex& ei,
-                                 typename Traits::SizeType child_index,
-                                 CIOutIterator ci_out, const CIOutIterator ci_end) const
+          extract_entity_indices(const typename Traits::DOFIndex::EntityIndex&  /*ei*/,
+                                 typename Traits::SizeType  /*child_index*/,
+                                 CIOutIterator  /*ci_out*/, const CIOutIterator  /*ci_end*/) const
           {
             return 0;
           }

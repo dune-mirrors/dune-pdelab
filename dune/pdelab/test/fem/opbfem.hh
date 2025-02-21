@@ -27,7 +27,7 @@ struct OPBFEMFactory
   };
 
   template<typename GV, typename DF, typename RF, Dune::GeometryType::BasicType basic_type>
-  static typename FEM<GV,DF,RF,basic_type>::pointer create(const GV& gv)
+  static typename FEM<GV,DF,RF,basic_type>::pointer create(const GV&  /*gv*/)
   {
 #if !HAVE_GMP
     std::cerr << "Warning: Testing OPBLocalFiniteElementMap without GMP!" << std::endl;

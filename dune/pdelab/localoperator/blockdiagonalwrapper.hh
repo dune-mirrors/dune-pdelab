@@ -136,8 +136,8 @@ namespace Dune {
       void jacobian_skeleton (const IG& ig,
                               const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
                               const LFSU& lfsu_n, const X& x_n, const LFSV& lfsv_n,
-                              MAT& mat_ss, MAT& mat_sn,
-                              MAT& mat_ns, MAT& mat_nn) const
+                              MAT& mat_ss, MAT&  /*mat_sn*/,
+                              MAT&  /*mat_ns*/, MAT&  /*mat_nn*/) const
       {
         // In the end this jacobian_skeleton only accumulates the self-self
         // part which corresponds to a diagonal block. The localoperator uses

@@ -39,13 +39,13 @@ public:
   {}
 
   //! returns true if data for this codim should be communicated
-  bool contains (int dim, int codim) const
+  bool contains (int  /*dim*/, int codim) const
   {
     return (codim==0);
   }
 
   //! returns true if size per entity of given dim and codim is a constant
-  bool fixedSize (int dim, int codim) const
+  bool fixedSize (int  /*dim*/, int  /*codim*/) const
   {
     return true;
   }
@@ -55,7 +55,7 @@ public:
     Note: Only the sender side needs to know this size.
   */
   template<class EntityType>
-  size_t size (EntityType& e) const
+  size_t size (EntityType&  /*e*/) const
   {
     return 1;
   }
@@ -72,7 +72,7 @@ public:
     n is the number of objects sent by the sender
   */
   template<class MessageBuffer, class EntityType>
-  void scatter (MessageBuffer& buff, const EntityType& e, size_t n)
+  void scatter (MessageBuffer& buff, const EntityType& e, size_t  /*n*/)
   {
     DataType x;
     buff.read(x);

@@ -24,26 +24,26 @@ public:
 
   //! Dirichlet boundary condition type function
   template<typename IG>
-  inline bool isDirichlet(const IG& intersection, const Dune::FieldVector<typename IG::ctype, GV::dimension-1>& xlocal) const
+  inline bool isDirichlet(const IG&  /*intersection*/, const Dune::FieldVector<typename IG::ctype, GV::dimension-1>&  /*xlocal*/) const
   {
     return false;
   }
 
   //! Neumann boundary condition type function
   template<typename IG>
-  inline bool isNeumann(const IG& intersection, const Dune::FieldVector<typename IG::ctype, GV::dimension-1>& xlocal) const
+  inline bool isNeumann(const IG&  /*intersection*/, const Dune::FieldVector<typename IG::ctype, GV::dimension-1>&  /*xlocal*/) const
   {
     return true;
   }
 
   //! Dirichlet boundary condition value
-  RF g (const typename Traits::ElementType& e, const typename Traits::DomainType& xlocal ) const
+  RF g (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*xlocal*/ ) const
   {
     return RF(0.,0.);
   }
 
   //! Neumann boundary condition value
-  RF j (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& xlocal, RF u) const
+  RF j (const typename Traits::IntersectionType&  /*is*/, const typename Traits::IntersectionDomainType&  /*xlocal*/, RF u) const
   {
     RF i(0., 1.);
     return -i*omega*u;

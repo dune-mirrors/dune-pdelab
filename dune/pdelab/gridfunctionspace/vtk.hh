@@ -456,7 +456,7 @@ namespace Dune {
          * This version handles an actual VectorGridFunctionSpace.
          */
         template<typename LFS, typename TreePath>
-        void add_vector_solution(const LFS& lfs, TreePath tp, VectorGridFunctionSpaceTag tag)
+        void add_vector_solution(const LFS& lfs, TreePath tp, VectorGridFunctionSpaceTag  /*tag*/)
         {
           add_to_vtk_writer(std::make_shared<DGFTreeVectorFunction<LFS,Data> >(lfs,data),tp);
         }
@@ -466,7 +466,7 @@ namespace Dune {
          * This is the default version for different types of spaces that does nothing.
          */
         template<typename LFS, typename TreePath>
-        void add_vector_solution(const LFS& lfs, TreePath tp, GridFunctionSpaceTag tag)
+        void add_vector_solution(const LFS&  /*lfs*/, TreePath  /*tp*/, GridFunctionSpaceTag  /*tag*/)
         {
           // do nothing here - not a vector space
         }
@@ -489,7 +489,7 @@ namespace Dune {
             typename vtk_writer_traits<VTKWriter>::GridView
             >::value
           >::type
-        post(const LFS& lfs, TreePath tp)
+        post(const LFS&  /*lfs*/, TreePath  /*tp*/)
         {
         }
 
@@ -501,7 +501,7 @@ namespace Dune {
             typename vtk_writer_traits<VTKWriter>::GridView
             >::value
           >::type
-        leaf(const LFS& lfs, TreePath tp)
+        leaf(const LFS&  /*lfs*/, TreePath  /*tp*/)
         {
         }
 
@@ -551,7 +551,7 @@ namespace Dune {
       struct DefaultPredicate
       {
         template<typename LFS, typename TP>
-        bool operator()(const LFS& lfs, TP tp) const
+        bool operator()(const LFS&  /*lfs*/, TP  /*tp*/) const
         {
           return true;
         }

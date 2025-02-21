@@ -164,7 +164,7 @@ public:
   typedef Dune::PDELab::AnalyticGridFunctionBase<Traits,One<GV,RF> > BaseT;
 
   One (const GV& gv) : BaseT(gv) {}
-  inline void evaluateGlobal (const typename Traits::DomainType& x,
+  inline void evaluateGlobal (const typename Traits::DomainType&  /*x*/,
 							  typename Traits::RangeType& y) const
   {
     y = 1.0;
@@ -181,7 +181,7 @@ public:
   typedef Dune::PDELab::AnalyticGridFunctionBase<Traits,Two<GV,RF> > BaseT;
 
   Two (const GV& gv) : BaseT(gv) {}
-  inline void evaluateGlobal (const typename Traits::DomainType& x,
+  inline void evaluateGlobal (const typename Traits::DomainType&  /*x*/,
 							  typename Traits::RangeType& y) const
   {
     y = 2.0;
@@ -198,7 +198,7 @@ public:
   typedef Dune::PDELab::AnalyticGridFunctionBase<Traits,Three<GV,RF> > BaseT;
 
   Three (const GV& gv) : BaseT(gv) {}
-  inline void evaluateGlobal (const typename Traits::DomainType& x,
+  inline void evaluateGlobal (const typename Traits::DomainType&  /*x*/,
 							  typename Traits::RangeType& y) const
   {
     y = 3.0;
@@ -215,7 +215,7 @@ public:
   typedef Dune::PDELab::AnalyticGridFunctionBase<Traits,Velocity<GV,RF> > BaseT;
 
   Velocity (const GV& gv) : BaseT(gv) {}
-  inline void evaluateGlobal (const typename Traits::DomainType& x,
+  inline void evaluateGlobal (const typename Traits::DomainType&  /*x*/,
 							  typename Traits::RangeType& y) const
   {
 	y[0] = 1.0;

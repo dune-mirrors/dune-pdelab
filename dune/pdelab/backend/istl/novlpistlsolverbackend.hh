@@ -213,7 +213,7 @@ namespace Dune {
       /*!
         \brief Prepare the preconditioner.
       */
-      virtual void pre (X& x, Y& b) const override {}
+      virtual void pre (X&  /*x*/, Y&  /*b*/) const override {}
 
       /*!
         \brief Apply the precondioner.
@@ -226,7 +226,7 @@ namespace Dune {
       /*!
         \brief Clean up.
       */
-      virtual void post (X& x) override {}
+      virtual void post (X&  /*x*/) override {}
 
     private:
       const GFS& gfs;
@@ -305,7 +305,7 @@ namespace Dune {
       }
 
       //! Prepare the preconditioner.
-      virtual void pre (X& x, Y& b) override {}
+      virtual void pre (X&  /*x*/, Y&  /*b*/) override {}
 
       //! Apply the precondioner.
       /*
@@ -319,7 +319,7 @@ namespace Dune {
       }
 
       //! Clean up.
-      virtual void post (X& x) override {}
+      virtual void post (X&  /*x*/) override {}
     };
 
     //! \addtogroup PDELab_novlpsolvers Nonoverlapping Solvers

@@ -45,7 +45,7 @@ public:
 
   //! boundary condition type function (true = Dirichlet)
   template<typename I, typename X>
-  bool b (const I& i, const X& x) const
+  bool b (const I&  /*i*/, const X&  /*x*/) const
   {
     return true;
   }
@@ -60,7 +60,7 @@ public:
 
   //! Neumann boundary condition
   template<typename I, typename X>
-  Number j (const I& i, const X& x) const
+  Number j (const I&  /*i*/, const X&  /*x*/) const
   {
     return 0.0;
   }

@@ -182,12 +182,12 @@ namespace Dune {
 
       typedef std::shared_ptr<transformed_type> transformed_storage_type;
 
-      static transformed_type transform(const GFS& gfs, const Transformation& t)
+      static transformed_type transform(const GFS& gfs, const Transformation&  /*t*/)
       {
         return transformed_type(gfs.finiteElementMapStorage(),gfs.entitySet(),false,&const_cast<GFS*>(gfs));
       }
 
-      static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t)
+      static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation&  /*t*/)
       {
         return std::make_shared<transformed_type>(gfs->finiteElementMapStorage(),gfs->entitySet(),false,const_cast<GFS*>(gfs.get()));
       }

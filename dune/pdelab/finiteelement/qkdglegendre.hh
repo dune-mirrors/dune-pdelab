@@ -143,33 +143,33 @@ namespace Dune
     {
     public:
       //! evaluate all polynomials at point x
-      void p (D x, std::vector<R>& value) const
+      void p (D  /*x*/, std::vector<R>& value) const
       {
         value.resize(1);
         value[0] = 1.0;
       }
 
       // ith Lagrange polynomial of degree k in one dimension
-      R p (int i, D x) const
+      R p (int  /*i*/, D  /*x*/) const
       {
         return 1.0;
       }
 
       // derivative of all polynomials
-      void dp (D x, std::vector<R>& derivative) const
+      void dp (D  /*x*/, std::vector<R>& derivative) const
       {
         derivative.resize(1);
         derivative[0] = 0.0;
       }
 
       // derivative of ith Lagrange polynomial of degree k in one dimension
-      R dp (int i, D x) const
+      R dp (int  /*i*/, D  /*x*/) const
       {
         return 0.0;
       }
 
       // value and derivative of all polynomials
-      void pdp (D x, std::vector<R>& value, std::vector<R>& derivative) const
+      void pdp (D  /*x*/, std::vector<R>& value, std::vector<R>& derivative) const
       {
         value.resize(1);
         derivative.resize(1);
@@ -197,7 +197,7 @@ namespace Dune
       }
 
       // derivative of all polynomials
-      void dp (D x, std::vector<R>& derivative) const
+      void dp (D  /*x*/, std::vector<R>& derivative) const
       {
         derivative.resize(2);
         derivative[0] = 0.0;
@@ -205,7 +205,7 @@ namespace Dune
       }
 
       // derivative of ith Lagrange polynomial of degree k in one dimension
-      R dp (int i, D x) const
+      R dp (int i, D  /*x*/) const
       {
         return (1-i)*0 + i*(2);
       }

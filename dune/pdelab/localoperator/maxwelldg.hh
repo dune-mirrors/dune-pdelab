@@ -346,7 +346,7 @@ namespace Dune {
 
       // volume integral depending on test and ansatz functions
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
-      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
+      void alpha_volume (const EG& eg, const LFSU&  /*lfsu*/, const X& x, const LFSV& lfsv, R& r) const
       {
         // Define types
         using namespace Indices;
@@ -449,8 +449,8 @@ namespace Dune {
       // each face is only visited ONCE!
       template<typename IG, typename LFSU, typename X, typename LFSV, typename R>
       void alpha_skeleton (const IG& ig,
-                           const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
-                           const LFSU& lfsu_n, const X& x_n, const LFSV& lfsv_n,
+                           const LFSU&  /*lfsu_s*/, const X& x_s, const LFSV& lfsv_s,
+                           const LFSU&  /*lfsu_n*/, const X& x_n, const LFSV& lfsv_n,
                            R& r_s, R& r_n) const
       {
         using std::max;
@@ -586,7 +586,7 @@ namespace Dune {
       // skeleton integral depending on test and ansatz functions
       template<typename IG, typename LFSU, typename X, typename LFSV, typename R>
       void alpha_boundary (const IG& ig,
-                           const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
+                           const LFSU&  /*lfsu_s*/, const X& x_s, const LFSV& lfsv_s,
                            R& r_s) const
       {
         // Define types
@@ -732,18 +732,18 @@ namespace Dune {
       }
 
       //! set time in parameter class
-      void setTime (typename T::Traits::RangeFieldType t)
+      void setTime (typename T::Traits::RangeFieldType  /*t*/)
       {
       }
 
       //! to be called once before each time step
-      void preStep (typename T::Traits::RangeFieldType time, typename T::Traits::RangeFieldType dt,
-                    int stages)
+      void preStep (typename T::Traits::RangeFieldType  /*time*/, typename T::Traits::RangeFieldType  /*dt*/,
+                    int  /*stages*/)
       {
       }
 
       //! to be called once before each stage
-      void preStage (typename T::Traits::RangeFieldType time, int r)
+      void preStage (typename T::Traits::RangeFieldType  /*time*/, int  /*r*/)
       {
       }
 
@@ -814,7 +814,7 @@ namespace Dune {
 
       // volume integral depending on test and ansatz functions
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
-      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
+      void alpha_volume (const EG& eg, const LFSU&  /*lfsu*/, const X& x, const LFSV& lfsv, R& r) const
       {
         // Define types
         using namespace Indices;
@@ -857,7 +857,7 @@ namespace Dune {
 
       // jacobian of volume term
       template<typename EG, typename LFSU, typename X, typename LFSV, typename M>
-      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv,
+      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X&  /*x*/, const LFSV& lfsv,
                             M& mat) const
       {
         // Define types

@@ -448,7 +448,7 @@ namespace Dune {
         public:
             typedef HangingNodesDirichletConstraints<Grid,HangingNodesConstraintsAssemblers::SimplexGridP1Assembler,BCType> CON;
 
-            CGCONBase (Grid& grid, const BCType& bctype, const GV& gv)
+            CGCONBase (Grid& grid, const BCType& bctype, const GV&  /*gv*/)
             {
                 conp = std::shared_ptr<CON>(new CON(grid,true,bctype));
             }
@@ -459,11 +459,11 @@ namespace Dune {
             }
 
             template<typename GFS>
-            void postGFSHook (const GFS& gfs) {}
+            void postGFSHook (const GFS&  /*gfs*/) {}
             CON& getCON() {return *conp;}
             const CON& getCON() const {return *conp;}
             template<typename GFS, typename DOF>
-            void make_consistent (const GFS& gfs, DOF& x) const {}
+            void make_consistent (const GFS&  /*gfs*/, DOF&  /*x*/) const {}
         private:
             std::shared_ptr<CON> conp;
         };
@@ -474,7 +474,7 @@ namespace Dune {
         public:
             typedef HangingNodesDirichletConstraints<Grid,HangingNodesConstraintsAssemblers::CubeGridQ1Assembler,BCType> CON;
 
-            CGCONBase (Grid& grid, const BCType& bctype, const GV& gv)
+            CGCONBase (Grid& grid, const BCType& bctype, const GV&  /*gv*/)
             {
                 conp = std::shared_ptr<CON>(new CON(grid,true,bctype));
             }
@@ -485,11 +485,11 @@ namespace Dune {
             }
 
             template<typename GFS>
-            void postGFSHook (const GFS& gfs) {}
+            void postGFSHook (const GFS&  /*gfs*/) {}
             CON& getCON() {return *conp;}
             const CON& getCON() const {return *conp;}
             template<typename GFS, typename DOF>
-            void make_consistent (const GFS& gfs, DOF& x) const {}
+            void make_consistent (const GFS&  /*gfs*/, DOF&  /*x*/) const {}
         private:
             std::shared_ptr<CON> conp;
         };
@@ -500,22 +500,22 @@ namespace Dune {
         public:
             typedef ConformingDirichletConstraints CON;
 
-            CGCONBase (Grid& grid, const BCType& bctype, const GV& gv)
+            CGCONBase (Grid&  /*grid*/, const BCType&  /*bctype*/, const GV&  /*gv*/)
             {
                 conp = std::shared_ptr<CON>(new CON());
             }
 
-            CGCONBase (Grid& grid, const BCType& bctype)
+            CGCONBase (Grid&  /*grid*/, const BCType&  /*bctype*/)
             {
                 conp = std::shared_ptr<CON>(new CON());
             }
 
             template<typename GFS>
-            void postGFSHook (const GFS& gfs) {}
+            void postGFSHook (const GFS&  /*gfs*/) {}
             CON& getCON() {return *conp;}
             const CON& getCON() const {return *conp;}
             template<typename GFS, typename DOF>
-            void make_consistent (const GFS& gfs, DOF& x) const {}
+            void make_consistent (const GFS&  /*gfs*/, DOF&  /*x*/) const {}
         private:
             std::shared_ptr<CON> conp;
         };
@@ -526,18 +526,18 @@ namespace Dune {
         public:
             typedef OverlappingConformingDirichletConstraints CON;
 
-            CGCONBase (Grid& grid, const BCType& bctype, const GV& gv)
+            CGCONBase (Grid&  /*grid*/, const BCType&  /*bctype*/, const GV&  /*gv*/)
             {
                 conp = std::shared_ptr<CON>(new CON());
             }
 
-            CGCONBase (Grid& grid, const BCType& bctype)
+            CGCONBase (Grid&  /*grid*/, const BCType&  /*bctype*/)
             {
                 conp = std::shared_ptr<CON>(new CON());
             }
 
             template<typename GFS>
-            void postGFSHook (const GFS& gfs) {}
+            void postGFSHook (const GFS&  /*gfs*/) {}
             CON& getCON() {return *conp;}
             const CON& getCON() const {return *conp;}
             template<typename GFS, typename DOF>
@@ -559,7 +559,7 @@ namespace Dune {
         {
         public:
             using CON = Dune::PDELab::ConformingDirichletConstraints;
-            CGCONBase (Grid& grid, const BCType& bctype)
+            CGCONBase (Grid&  /*grid*/, const BCType&  /*bctype*/)
             {
                 conp = std::shared_ptr<CON>(new CON);
             }
@@ -568,7 +568,7 @@ namespace Dune {
             CON& getCON() {return *conp;}
             const CON& getCON() const {return *conp;}
             template<typename GFS, typename DOF>
-            void make_consistent (const GFS& gfs, DOF& x) const {}
+            void make_consistent (const GFS&  /*gfs*/, DOF&  /*x*/) const {}
         private:
             std::shared_ptr<CON> conp;
         };
@@ -835,7 +835,7 @@ namespace Dune {
             CON& getCON() {return *conp;}
             const CON& getCON() const {return *conp;}
             template<typename GFS, typename DOF>
-            void make_consistent (const GFS& gfs, DOF& x) const {}
+            void make_consistent (const GFS&  /*gfs*/, DOF&  /*x*/) const {}
         private:
             std::shared_ptr<CON> conp;
         };
@@ -852,7 +852,7 @@ namespace Dune {
             CON& getCON() {return *conp;}
             const CON& getCON() const {return *conp;}
             template<typename GFS, typename DOF>
-            void make_consistent (const GFS& gfs, DOF& x) const {}
+            void make_consistent (const GFS&  /*gfs*/, DOF&  /*x*/) const {}
         private:
             std::shared_ptr<CON> conp;
         };
@@ -1723,7 +1723,7 @@ namespace Dune {
             // types exported
             typedef Dune::PDELab::ISTLBackend_SEQ_CG_AMG_SSOR<typename ASS::GO> LS;
 
-            ISTLSolverBackend_CG_AMG_SSOR (const FS& fs, const ASS& ass, unsigned maxiter_=5000,
+            ISTLSolverBackend_CG_AMG_SSOR (const FS&  /*fs*/, const ASS&  /*ass*/, unsigned maxiter_=5000,
                                            int verbose_=1, bool reuse_=false, bool usesuperlu_=true)
             {
                 lsp = std::shared_ptr<LS>(new LS(maxiter_,verbose_,reuse_,usesuperlu_));
@@ -1748,7 +1748,7 @@ namespace Dune {
             // types exported
             typedef Dune::PDELab::ISTLBackend_NOVLP_CG_AMG_SSOR<typename ASS::GO> LS;
 
-            ISTLSolverBackend_CG_AMG_SSOR (const FS& fs, const ASS& ass, unsigned maxiter_=5000,
+            ISTLSolverBackend_CG_AMG_SSOR (const FS& fs, const ASS&  /*ass*/, unsigned maxiter_=5000,
                                            int verbose_=1, bool reuse_=false, bool usesuperlu_=true)
             {
                 lsp = std::shared_ptr<LS>(new LS(fs.getGFS(),maxiter_,verbose_,reuse_,usesuperlu_));
@@ -1773,7 +1773,7 @@ namespace Dune {
             // types exported
             typedef Dune::PDELab::ISTLBackend_CG_AMG_SSOR<typename ASS::GO> LS;
 
-            ISTLSolverBackend_CG_AMG_SSOR (const FS& fs, const ASS& ass, unsigned maxiter_=5000,
+            ISTLSolverBackend_CG_AMG_SSOR (const FS& fs, const ASS&  /*ass*/, unsigned maxiter_=5000,
                                            int verbose_=1, bool reuse_=false, bool usesuperlu_=true)
             {
                 lsp = std::shared_ptr<LS>(new LS(fs.getGFS(),maxiter_,verbose_,reuse_,usesuperlu_));
@@ -1798,8 +1798,8 @@ namespace Dune {
             // types exported
             typedef ISTLBackend_SEQ_CG_SSOR LS;
 
-            ISTLSolverBackend_CG_SSOR (const FS& fs, const ASS& ass, unsigned maxiter_=5000,
-                                       int steps_=5, int verbose_=1)
+            ISTLSolverBackend_CG_SSOR (const FS&  /*fs*/, const ASS&  /*ass*/, unsigned maxiter_=5000,
+                                       int  /*steps_*/=5, int verbose_=1)
             {
                 lsp = std::shared_ptr<LS>(new LS(maxiter_,verbose_));
             }
@@ -1823,7 +1823,7 @@ namespace Dune {
             // types exported
             typedef ISTLBackend_NOVLP_CG_SSORk<typename ASS::GO> LS;
 
-            ISTLSolverBackend_CG_SSOR (const FS& fs, const ASS& ass, unsigned maxiter_=5000,
+            ISTLSolverBackend_CG_SSOR (const FS& fs, const ASS&  /*ass*/, unsigned maxiter_=5000,
                                        int steps_=5, int verbose_=1)
             {
                 lsp = std::shared_ptr<LS>(new LS(fs.getGFS(),maxiter_,steps_,verbose_));
@@ -1848,7 +1848,7 @@ namespace Dune {
             // types exported
             typedef ISTLBackend_OVLP_CG_SSORk<typename FS::GFS, typename FS::CC> LS;
 
-            ISTLSolverBackend_CG_SSOR (const FS& fs, const ASS& ass, unsigned maxiter_=5000,
+            ISTLSolverBackend_CG_SSOR (const FS& fs, const ASS&  /*ass*/, unsigned maxiter_=5000,
                                        int steps_=5, int verbose_=1)
             {
                 lsp = std::shared_ptr<LS>(new LS(fs.getGFS(),fs.getCC(),maxiter_,steps_,verbose_));
@@ -1875,7 +1875,7 @@ namespace Dune {
             // types exported
             typedef ISTLBackend_SEQ_BCGS_SSOR LS;
 
-            ISTLSolverBackend_IterativeDefault (const FS& fs, const ASS& ass, unsigned maxiter_=5000, int verbose_=1)
+            ISTLSolverBackend_IterativeDefault (const FS&  /*fs*/, const ASS&  /*ass*/, unsigned maxiter_=5000, int verbose_=1)
             {
                 lsp = std::shared_ptr<LS>(new LS(maxiter_,verbose_));
             }
@@ -1899,7 +1899,7 @@ namespace Dune {
             // types exported
             typedef Dune::PDELab::ISTLBackend_NOVLP_BCGS_SSORk<typename ASS::GO> LS;
 
-            ISTLSolverBackend_IterativeDefault (const FS& fs, const ASS& ass, unsigned maxiter_=5000, int verbose_=1)
+            ISTLSolverBackend_IterativeDefault (const FS&  /*fs*/, const ASS& ass, unsigned maxiter_=5000, int verbose_=1)
             {
                 lsp = std::shared_ptr<LS>(new LS(ass.getGO(),maxiter_,3,verbose_));
             }
@@ -1923,7 +1923,7 @@ namespace Dune {
             // types exported
             typedef ISTLBackend_OVLP_BCGS_SSORk<typename FS::GFS, typename FS::CC> LS;
 
-            ISTLSolverBackend_IterativeDefault (const FS& fs, const ASS& ass, unsigned maxiter_=5000, int verbose_=1)
+            ISTLSolverBackend_IterativeDefault (const FS& fs, const ASS&  /*ass*/, unsigned maxiter_=5000, int verbose_=1)
             {
                 lsp = std::shared_ptr<LS>(new LS(fs.getGFS(),fs.getCC(),maxiter_,3,verbose_));
             }
@@ -1948,7 +1948,7 @@ namespace Dune {
             // types exported
             typedef Dune::PDELab::ISTLBackend_SEQ_ExplicitDiagonal LS;
 
-            ISTLSolverBackend_ExplicitDiagonal (const FS& fs, const ASS& ass, unsigned maxiter_=5000, int verbose_=1)
+            ISTLSolverBackend_ExplicitDiagonal (const FS&  /*fs*/, const ASS&  /*ass*/, unsigned  /*maxiter_*/=5000, int  /*verbose_*/=1)
             {
                 lsp = std::shared_ptr<LS>(new LS());
             }
@@ -1973,7 +1973,7 @@ namespace Dune {
             // types exported
             typedef Dune::PDELab::ISTLBackend_OVLP_ExplicitDiagonal<typename FS::GFS> LS;
 
-            ISTLSolverBackend_ExplicitDiagonal (const FS& fs, const ASS& ass, unsigned maxiter_=5000, int verbose_=1)
+            ISTLSolverBackend_ExplicitDiagonal (const FS& fs, const ASS&  /*ass*/, unsigned  /*maxiter_*/=5000, int  /*verbose_*/=1)
             {
                 lsp = std::shared_ptr<LS>(new LS(fs.getGFS()));
             }
@@ -1998,7 +1998,7 @@ namespace Dune {
             // types exported
             typedef Dune::PDELab::ISTLBackend_NOVLP_ExplicitDiagonal<typename FS::GFS> LS;
 
-            ISTLSolverBackend_ExplicitDiagonal (const FS& fs, const ASS& ass, unsigned maxiter_=5000, int verbose_=1)
+            ISTLSolverBackend_ExplicitDiagonal (const FS& fs, const ASS&  /*ass*/, unsigned  /*maxiter_*/=5000, int  /*verbose_*/=1)
             {
                 lsp = std::shared_ptr<LS>(new LS(fs.getGFS()));
             }

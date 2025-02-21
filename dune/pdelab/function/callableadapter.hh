@@ -437,7 +437,7 @@ namespace Dune {
 #ifndef DOXYGEN
     /** \brief Create BoundaryConditionAdapter from a callable f(x) that expects a global coordinate x */
     template<typename GV, typename F>
-    auto makeBoundaryConditionFromCallable (const GV& gv, const F& f)
+    auto makeBoundaryConditionFromCallable (const GV&  /*gv*/, const F& f)
       -> typename std::enable_if<
         AlwaysTrue <
           decltype(f(std::declval<typename GV::template Codim<0>::Entity::Geometry::GlobalCoordinate>()))
@@ -451,7 +451,7 @@ namespace Dune {
     /** \brief Create BoundaryConditionAdapter from a callable f(e,x) that expects
         an entity e and a global coordinate x */
     template<typename GV, typename F>
-    auto makeBoundaryConditionFromCallable (const GV& gv, const F& f)
+    auto makeBoundaryConditionFromCallable (const GV&  /*gv*/, const F& f)
       -> typename std::enable_if<
         AlwaysTrue <
           decltype(f(std::declval<typename GV::Intersection>(),

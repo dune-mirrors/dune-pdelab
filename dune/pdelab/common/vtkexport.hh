@@ -190,7 +190,7 @@ namespace Dune {
         return 1;
       }
 
-      virtual double evaluate (int comp, const Entity& e, const Dune::FieldVector<DF,n>& xi) const override
+      virtual double evaluate (int  /*comp*/, const Entity& e, const Dune::FieldVector<DF,n>&  /*xi*/) const override
       {
         return fem.getOrder(e);
       }

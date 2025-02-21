@@ -96,7 +96,7 @@ namespace Dune {
 
         template<typename CIOutIterator, typename DIOutIterator = DummyDOFIndexIterator>
         typename Traits::SizeType
-        extract_entity_indices(const typename Traits::DOFIndex::EntityIndex& ei,
+        extract_entity_indices(const typename Traits::DOFIndex::EntityIndex&  /*ei*/,
                                typename Traits::SizeType child_index,
                                CIOutIterator ci_out, const CIOutIterator ci_end) const
         {
@@ -267,13 +267,13 @@ namespace Dune {
       };
 
       template<typename TC>
-      static typename result<TC>::type transform(const GFS& gfs, const Transformation& t, const std::array<std::shared_ptr<TC>,TypeTree::StaticDegree<GFS>::value>& children)
+      static typename result<TC>::type transform(const GFS& gfs, const Transformation&  /*t*/, const std::array<std::shared_ptr<TC>,TypeTree::StaticDegree<GFS>::value>& children)
       {
         return typename result<TC>::type(gfs.backend().blocked(gfs),gfs.orderingTag(),children,const_cast<GFS*>(&gfs));
       }
 
       template<typename TC>
-      static typename result<TC>::storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t, const std::array<std::shared_ptr<TC>,TypeTree::StaticDegree<GFS>::value>& children)
+      static typename result<TC>::storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation&  /*t*/, const std::array<std::shared_ptr<TC>,TypeTree::StaticDegree<GFS>::value>& children)
       {
         return std::make_shared<typename result<TC>::type>(gfs->backend().blocked(*gfs),gfs->orderingTag(),children,const_cast<GFS*>(gfs.get()));
       }
@@ -355,13 +355,13 @@ namespace Dune {
       };
 
       template<typename... TC>
-      static typename result<TC...>::type transform(const GFS& gfs, const Transformation& t, std::shared_ptr<TC>... children)
+      static typename result<TC...>::type transform(const GFS& gfs, const Transformation&  /*t*/, std::shared_ptr<TC>... children)
       {
         return typename result<TC...>::type(gfs.backend().blocked(gfs),gfs.orderingTag(),const_cast<GFS*>(&gfs),children...);
       }
 
       template<typename... TC>
-      static typename result<TC...>::storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t, std::shared_ptr<TC>... children)
+      static typename result<TC...>::storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation&  /*t*/, std::shared_ptr<TC>... children)
       {
         return std::make_shared<typename result<TC...>::type>(gfs->backend().blocked(*gfs),gfs.orderingTag(),const_cast<GFS*>(gfs.get()),children...);
       }

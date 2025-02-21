@@ -260,7 +260,7 @@ namespace Dune {
       template<typename IG, typename LFSU, typename X, typename LFSV, typename Y>
       void jacobian_apply_boundary(
         const IG& ig,
-        const LFSU& lfsu_s, const X& x_s, const X& z_s,
+        const LFSU& lfsu_s, const X& x_s, const X&  /*z_s*/,
         const LFSV& lfsv_s, Y& y_s) const
       {
         using R = typename Y::value_type;

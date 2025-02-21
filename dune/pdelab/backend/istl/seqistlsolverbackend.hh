@@ -570,7 +570,7 @@ namespace Dune {
         \param[in] maxiter Maximum number of allowed steps (ignored)
         \param[in] verbose_ print messages if true
       */
-      ISTLBackend_SEQ_SuperLU (int maxiter, int verbose_)
+      ISTLBackend_SEQ_SuperLU (int  /*maxiter*/, int verbose_)
         : verbose(verbose_)
       {}
 
@@ -582,7 +582,7 @@ namespace Dune {
         \param[in] reduction to be achieved
       */
       template<class M, class V, class W>
-      void apply(M& A, V& z, W& r, typename Dune::template FieldTraits<typename W::ElementType >::real_type reduction)
+      void apply(M& A, V& z, W& r, typename Dune::template FieldTraits<typename W::ElementType >::real_type  /*reduction*/)
       {
         using Backend::Native;
         using Backend::native;
@@ -624,7 +624,7 @@ namespace Dune {
         \param[in] maxiter Maximum number of allowed steps (ignored)
         \param[in] verbose_ print messages if true
       */
-      ISTLBackend_SEQ_UMFPack (int maxiter, int verbose_)
+      ISTLBackend_SEQ_UMFPack (int  /*maxiter*/, int verbose_)
         : verbose(verbose_)
       {}
 
@@ -636,7 +636,7 @@ namespace Dune {
         \param[in] reduction to be achieved
       */
       template<class M, class V, class W>
-      void apply(M& A, V& z, W& r, typename Dune::template FieldTraits<typename W::ElementType >::real_type reduction)
+      void apply(M& A, V& z, W& r, typename Dune::template FieldTraits<typename W::ElementType >::real_type  /*reduction*/)
       {
         using Backend::native;
         using ISTLM = Backend::Native<M>;

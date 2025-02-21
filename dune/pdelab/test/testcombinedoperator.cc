@@ -47,7 +47,7 @@ public:
     Scalar (double value) : _v(value) {}
 
     template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
-    void alpha_volume(const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
+    void alpha_volume(const EG&  /*eg*/, const LFSU& lfsu, const X&  /*x*/, const LFSV& lfsv, R& r) const
     {
         using size_type = typename LFSU::Traits::SizeType;
         for (size_type i=0; i<lfsu.size(); i++)

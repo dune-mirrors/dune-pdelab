@@ -31,7 +31,7 @@ namespace Dune {
       {
 
         template<typename GFS, typename Child, typename TreePath, typename ChildIndex>
-        void afterChild(const GFS& gfs, Child& child, TreePath, ChildIndex) const
+        void afterChild(const GFS&  /*gfs*/, Child& child, TreePath, ChildIndex) const
         {
           if (child._initialized && child._is_root_space)
             {
@@ -87,7 +87,7 @@ namespace Dune {
         typedef GridFunctionSpaceOrderingData<size_type> Data;
 
         template<typename Ordering>
-        void update(const Ordering& ordering, bool is_root)
+        void update(const Ordering& ordering, bool  /*is_root*/)
         {
           if (ordering._gfs_data)
             {
@@ -134,7 +134,7 @@ namespace Dune {
         , public TypeTree::DynamicTraversal
       {
         template<typename T, typename TreePath>
-        void leaf(T&& t, TreePath treePath) {
+        void leaf(T&& t, TreePath  /*treePath*/) {
           if (not _entity_set)
             _entity_set = t.entitySet();
           else if (*_entity_set != t.entitySet())
@@ -166,7 +166,7 @@ namespace Dune {
         {}
 
         template<typename GFSNode, typename TreePath>
-        void leaf(GFSNode&& gfs_node, TreePath treePath) {
+        void leaf(GFSNode&& gfs_node, TreePath  /*treePath*/) {
           if (not _entity_set)
             _entity_set = gfs_node.entitySet();
           if (*_entity_set != gfs_node.entitySet()) {

@@ -32,7 +32,7 @@ namespace Dune {
        */
 
       template<typename P, typename EG, typename LFS, typename T>
-      void volume (const P& param, const EG& eg, const LFS& lfs, T& trafo) const
+      void volume (const P&  /*param*/, const EG& eg, const LFS& lfs, T& trafo) const
       {
         // nothing to do for interior entities
         if (eg.entity().partitionType()==Dune::InteriorEntity)

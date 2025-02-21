@@ -29,7 +29,7 @@ namespace Dune {
        * \tparam T   TransformationType
        */
       template<typename I, typename LFS, typename T>
-      void processor (const Dune::PDELab::IntersectionGeometry<I>& ig,
+      void processor (const Dune::PDELab::IntersectionGeometry<I>&  /*ig*/,
                       const LFS& lfs, T& trafo) const
       {
         typename T::RowType empty;

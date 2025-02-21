@@ -26,22 +26,22 @@ namespace Dune {
 
       // methods are here just to show interfaces; they are never called because doX are false above
       template<typename F, typename I, typename LFS, typename T>
-      void boundary (const F& f, const IntersectionGeometry<I>& ig, const LFS& lfs, T& trafo) const
+      void boundary (const F&  /*f*/, const IntersectionGeometry<I>&  /*ig*/, const LFS&  /*lfs*/, T&  /*trafo*/) const
       {
       }
 
       template<typename I, typename LFS, typename T>
-      void processor (const IntersectionGeometry<I>& ig, const LFS& lfs, T& trafo) const
+      void processor (const IntersectionGeometry<I>&  /*ig*/, const LFS&  /*lfs*/, T&  /*trafo*/) const
       {
       }
 
       template<typename I, typename LFS, typename T>
-      void skeleton (const IntersectionGeometry<I>& ig, const LFS& lfs, T& trafo) const
+      void skeleton (const IntersectionGeometry<I>&  /*ig*/, const LFS&  /*lfs*/, T&  /*trafo*/) const
       {
       }
 
       template<typename E, typename LFS, typename T>
-      void volume (const ElementGeometry<E>& eg, const LFS& lfs, T& trafo) const
+      void volume (const ElementGeometry<E>&  /*eg*/, const LFS&  /*lfs*/, T&  /*trafo*/) const
       {
       }
 

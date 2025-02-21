@@ -34,7 +34,7 @@ namespace Dune {
       {
 
         template<typename LFS, typename TreePath>
-        void leaf(const LFS& lfs, TreePath treePath) const
+        void leaf(const LFS& lfs, TreePath  /*treePath*/) const
         {
           std::vector<typename XG::ElementType> xl(lfs.size());
 
@@ -66,7 +66,7 @@ namespace Dune {
         using RangeField = typename FieldTraits<Range>::field_type;
 
         template<typename LFS, typename TreePath>
-        void leaf(const LFS& lfs, TreePath treePath) const
+        void leaf(const LFS& lfs, TreePath  /*treePath*/) const
         {
           std::vector<typename XG::ElementType> xl(lfs.size());
 
@@ -107,7 +107,7 @@ namespace Dune {
 
         template<typename F, typename LFS, typename TreePath>
         typename std::enable_if<F::isLeaf && LFS::isLeaf>::type
-        leaf(const F& f, const LFS& lfs, TreePath treePath) const
+        leaf(const F& f, const LFS& lfs, TreePath  /*treePath*/) const
         {
           if (lfs.size() == 0)
             return;
@@ -127,7 +127,7 @@ namespace Dune {
         typename std::enable_if<F::isLeaf &&
                            std::is_convertible<Range, typename FieldTraits< Range >::field_type>::value &&
                            (!LFS::isLeaf)>::type
-        leaf(const F& f, const LFS& lfs, TreePath treePath) const
+        leaf(const F& f, const LFS& lfs, TreePath  /*treePath*/) const
         {
           // call interpolate for the basis
           TypeTree::applyToTree(lfs,InterpolateLeafFromScalarVisitor<F,XG>(f, xg));
@@ -139,7 +139,7 @@ namespace Dune {
         typename std::enable_if<F::isLeaf &&
                           (!std::is_convertible<Range, typename FieldTraits< Range >::field_type>::value) &&
                           (!LFS::isLeaf)>::type
-        leaf(const F& f, const LFS& lfs, TreePath treePath) const
+        leaf(const F& f, const LFS& lfs, TreePath  /*treePath*/) const
         {
           static_assert(TypeTree::TreeInfo<LFS>::leafCount == Range::dimension,
                         "Number of leaves and dimension of range type " \

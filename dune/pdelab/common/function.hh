@@ -104,7 +104,7 @@ namespace Dune {
        *       classes documentation.
        */
       template<typename Time>
-      inline void setTime(Time t)
+      inline void setTime(Time  /*t*/)
       { }
     };
 
@@ -348,7 +348,7 @@ namespace Dune {
       PowerCompositeSetTimeVisitor(const TT time_) : time(time_) {}
 
       template<typename LeafNode, typename TreePath>
-      void leaf(LeafNode& node, TreePath treePath) const
+      void leaf(LeafNode& node, TreePath  /*treePath*/) const
       {
         node.setTime(time);
       }

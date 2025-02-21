@@ -26,7 +26,7 @@ namespace Dune {
     {
 
       template<typename Node, typename TreePath>
-      void leaf(Node& node, TreePath tp)
+      void leaf(Node& node, TreePath  /*tp*/)
       {
         node.collect_used_codims(codims);
       }
@@ -46,7 +46,7 @@ namespace Dune {
     {
 
       template<typename Node, typename TreePath>
-      void leaf(Node& node, TreePath tp)
+      void leaf(Node& node, TreePath  /*tp*/)
       {
         node.update_a_priori_fixed_size();
         any = any || node._fixed_size;
@@ -54,13 +54,13 @@ namespace Dune {
       }
 
       template<typename Node, typename TreePath>
-      void pre(Node& node, TreePath tp) const
+      void pre(Node& node, TreePath  /*tp*/) const
       {
         node._fixed_size = true;
       }
 
       template<typename Node, typename Child, typename TreePath, typename ChildIndex>
-      void afterChild(Node& node, const Child& child, TreePath tp, ChildIndex childIndex) const
+      void afterChild(Node& node, const Child& child, TreePath  /*tp*/, ChildIndex  /*childIndex*/) const
       {
         node._fixed_size = node._fixed_size && child._fixed_size;
       }
@@ -83,7 +83,7 @@ namespace Dune {
     {
 
       template<typename Node, typename TreePath>
-      void leaf(Node& node, TreePath tp) const
+      void leaf(Node& node, TreePath  /*tp*/) const
       {
         if (node._fixed_size)
           {
@@ -104,7 +104,7 @@ namespace Dune {
       }
 
       template<typename Node, typename TreePath>
-      void pre(Node& node, TreePath tp) const
+      void pre(Node& node, TreePath  /*tp*/) const
       {
         if (node._fixed_size)
           {
@@ -118,7 +118,7 @@ namespace Dune {
       }
 
       template<typename Node, typename Child, typename TreePath, typename ChildIndex>
-      void afterChild(Node& node, const Child& child, TreePath tp, ChildIndex childIndex) const
+      void afterChild(Node& node, const Child& child, TreePath  /*tp*/, ChildIndex childIndex) const
       {
         if (node._fixed_size)
           {
@@ -143,7 +143,7 @@ namespace Dune {
       }
 
       template<typename Node, typename TreePath>
-      void post(Node& node, TreePath tp) const
+      void post(Node& node, TreePath  /*tp*/) const
       {
         if (node._fixed_size)
           {
@@ -174,7 +174,7 @@ namespace Dune {
     {
 
       template<typename Node, typename TreePath>
-      void leaf(Node& node, TreePath tp) const
+      void leaf(Node& node, TreePath  /*tp*/) const
       {
         if (!node._fixed_size)
           {
@@ -207,7 +207,7 @@ namespace Dune {
     {
 
       template<typename Node, typename TreePath>
-      void leaf(Node& node, TreePath tp) const
+      void leaf(Node& node, TreePath  /*tp*/) const
       {
         if (!node._fixed_size)
           node.collect_used_geometry_types_from_cell(cell);
@@ -231,7 +231,7 @@ namespace Dune {
     {
 
       template<typename Node, typename TreePath>
-      void leaf(Node& node, TreePath tp) const
+      void leaf(Node& node, TreePath  /*tp*/) const
       {
         if (!node._fixed_size)
           {
@@ -250,7 +250,7 @@ namespace Dune {
       }
 
       template<typename Node, typename Child, typename TreePath, typename ChildIndex>
-      void afterChild(Node& node, const Child& child, TreePath tp, ChildIndex childIndex) const
+      void afterChild(Node& node, const Child& child, TreePath  /*tp*/, ChildIndex  /*childIndex*/) const
       {
         if (!node._fixed_size)
           {
@@ -290,7 +290,7 @@ namespace Dune {
       typedef std::size_t size_type;
 
       template<typename Node, typename TreePath>
-      void leaf(Node& node, TreePath tp)
+      void leaf(Node& node, TreePath  /*tp*/)
       {
         if (!node._fixed_size)
           node.extract_per_entity_sizes_from_cell(*cell,gt_sizes);
@@ -327,7 +327,7 @@ namespace Dune {
 
 
       template<typename Node, typename TreePath>
-      void leaf(Node& node, TreePath tp) const
+      void leaf(Node& node, TreePath  /*tp*/) const
       {
         if (!node._fixed_size)
           {
@@ -344,7 +344,7 @@ namespace Dune {
       }
 
       template<typename Node, typename TreePath>
-      void pre(Node& node, TreePath tp) const
+      void pre(Node& node, TreePath  /*tp*/) const
       {
         if (!node._fixed_size)
           {
@@ -355,7 +355,7 @@ namespace Dune {
 
 
       template<typename Node, typename Child, typename TreePath, typename ChildIndex>
-      void afterChild(Node& node, const Child& child, TreePath tp, ChildIndex childIndex) const
+      void afterChild(Node& node, const Child& child, TreePath  /*tp*/, ChildIndex  /*childIndex*/) const
       {
         if (!node._fixed_size)
           {
@@ -366,7 +366,7 @@ namespace Dune {
 
 
       template<typename Node, typename TreePath>
-      void post(Node& node, TreePath tp) const
+      void post(Node& node, TreePath  /*tp*/) const
       {
         if (!node._fixed_size)
           {
@@ -645,7 +645,7 @@ namespace Dune {
       template<typename CIOutIterator>
       typename Traits::SizeType
       extract_entity_indices(const typename Traits::DOFIndex::EntityIndex& ei,
-                             typename Traits::SizeType child_index,
+                             typename Traits::SizeType  /*child_index*/,
                              CIOutIterator ci_out, const CIOutIterator ci_end) const
       {
         typedef typename Traits::SizeType size_type;

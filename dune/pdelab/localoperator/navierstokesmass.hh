@@ -45,7 +45,7 @@ namespace Dune {
 
       // volume integral depending on test and ansatz functions
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
-      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
+      void alpha_volume (const EG& eg, const LFSU&  /*lfsu*/, const X& x, const LFSV& lfsv, R& r) const
       {
         using namespace Indices;
         const auto& lfsv_pfs_v = child(lfsv,_0);
@@ -57,7 +57,7 @@ namespace Dune {
 
       // jacobian of volume term
       template<typename EG, typename LFSU, typename X, typename LFSV, typename M>
-      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv,
+      void jacobian_volume (const EG& eg, const LFSU&  /*lfsu*/, const X& x, const LFSV& lfsv,
                             M& mat) const
       {
         using namespace Indices;
@@ -120,7 +120,7 @@ namespace Dune {
       }
 
       template<typename EG, typename LFSU, typename X, typename LFSV, typename M>
-      void scalar_jacobian_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv,
+      void scalar_jacobian_volume (const EG& eg, const LFSU& lfsu, const X&  /*x*/, const LFSV& lfsv,
                                    M& mat) const
       {
 
@@ -247,7 +247,7 @@ namespace Dune {
 
       // jacobian of volume term
       template<typename EG, typename LFSU, typename X, typename LFSV, typename M>
-      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv,
+      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X&  /*x*/, const LFSV& lfsv,
                             M& mat) const
       {
         // subspaces

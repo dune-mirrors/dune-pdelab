@@ -111,58 +111,58 @@ namespace Dune {
 
         template<typename EG,
                  typename LFSU, typename LFSV>
-        void onBindLFSUV(const EG& eg,
-                         const LFSU& lfsu, const LFSV& lfsv)
+        void onBindLFSUV(const EG&  /*eg*/,
+                         const LFSU&  /*lfsu*/, const LFSV&  /*lfsv*/)
         {
         }
 
         template<typename EG,
                  typename LFSV>
-        void onBindLFSV(const EG& eg,
-                        const LFSV& lfsv)
+        void onBindLFSV(const EG&  /*eg*/,
+                        const LFSV&  /*lfsv*/)
         {
         }
 
         template<typename EG,
                  typename LFSU, typename LFSV>
-        void onUnbindLFSUV(const EG& eg,
-                           const LFSU& lfsu, const LFSV& lfsv)
+        void onUnbindLFSUV(const EG&  /*eg*/,
+                           const LFSU&  /*lfsu*/, const LFSV&  /*lfsv*/)
         {
         }
 
         template<typename EG,
                  typename LFSV_S>
-        void onUnbindLFSV(const EG& eg,
-                          const LFSV_S& lfsv_s)
+        void onUnbindLFSV(const EG&  /*eg*/,
+                          const LFSV_S&  /*lfsv_s*/)
         {
         }
 
 
         template<typename IG,
                  typename LFSU, typename LFSV>
-        void onBindLFSUVInside(const IG& ig,
-                               const LFSU& lfsu, const LFSV& lfsv)
+        void onBindLFSUVInside(const IG&  /*ig*/,
+                               const LFSU&  /*lfsu*/, const LFSV&  /*lfsv*/)
         {
         }
 
         template<typename IG,
                  typename LFSV>
-        void onBindLFSVInside(const IG& ig,
-                              const LFSV& lfsv)
+        void onBindLFSVInside(const IG&  /*ig*/,
+                              const LFSV&  /*lfsv*/)
         {
         }
 
         template<typename IG,
                  typename LFSU, typename LFSV>
-        void onUnbindLFSUVInside(const IG& ig,
-                                 const LFSU& lfsu, const LFSV& lfsv)
+        void onUnbindLFSUVInside(const IG&  /*ig*/,
+                                 const LFSU&  /*lfsu*/, const LFSV&  /*lfsv*/)
         {
         }
 
         template<typename IG,
                  typename LFSV_S>
-        void onUnbindLFSVInside(const IG& ig,
-                                const LFSV_S& lfsv_s)
+        void onUnbindLFSVInside(const IG&  /*ig*/,
+                                const LFSV_S&  /*lfsv_s*/)
         {
         }
 
@@ -170,36 +170,36 @@ namespace Dune {
         template<typename IG,
                  typename LFSU_S, typename LFSV_S,
                  typename LFSU_N, typename LFSV_N>
-        void onBindLFSUVOutside(const IG& ig,
-                                const LFSU_S& lfsu_s, const LFSV_S& lfsv_s,
-                                const LFSU_N& lfsu_n, const LFSV_N& lfsv_n)
+        void onBindLFSUVOutside(const IG&  /*ig*/,
+                                const LFSU_S&  /*lfsu_s*/, const LFSV_S&  /*lfsv_s*/,
+                                const LFSU_N&  /*lfsu_n*/, const LFSV_N&  /*lfsv_n*/)
         {
         }
 
         template<typename IG,
                  typename LFSV_S,
                  typename LFSV_N>
-        void onBindLFSVOutside(const IG& ig,
-                               const LFSV_S& lfsv_s,
-                               const LFSV_N& lfsv_n)
+        void onBindLFSVOutside(const IG&  /*ig*/,
+                               const LFSV_S&  /*lfsv_s*/,
+                               const LFSV_N&  /*lfsv_n*/)
         {
         }
 
         template<typename IG,
                  typename LFSU_S, typename LFSV_S,
                  typename LFSU_N, typename LFSV_N>
-        void onUnbindLFSUVOutside(const IG& ig,
-                                  const LFSU_S& lfsu_s, const LFSV_S& lfsv_s,
-                                  const LFSU_N& lfsu_n, const LFSV_N& lfsv_n)
+        void onUnbindLFSUVOutside(const IG&  /*ig*/,
+                                  const LFSU_S&  /*lfsu_s*/, const LFSV_S&  /*lfsv_s*/,
+                                  const LFSU_N&  /*lfsu_n*/, const LFSV_N&  /*lfsv_n*/)
         {
         }
 
         template<typename IG,
                  typename LFSV_S,
                  typename LFSV_N>
-        void onUnbindLFSVOutside(const IG& ig,
-                                 const LFSV_S& lfsv_s,
-                                 const LFSV_N& lfsv_n)
+        void onUnbindLFSVOutside(const IG&  /*ig*/,
+                                 const LFSV_S&  /*lfsv_s*/,
+                                 const LFSV_N&  /*lfsv_n*/)
         {
         }
 
@@ -208,10 +208,10 @@ namespace Dune {
                  typename LFSU_S, typename LFSV_S,
                  typename LFSU_N, typename LFSV_N,
                  typename LFSU_C, typename LFSV_C>
-        void onBindLFSUVCoupling(const IG& ig,
-                                 const LFSU_S& lfsu_s, const LFSV_S& lfsv_s,
-                                 const LFSU_N& lfsu_n, const LFSV_N& lfsv_n,
-                                 const LFSU_C& lfsu_c, const LFSV_C& lfsv_c)
+        void onBindLFSUVCoupling(const IG&  /*ig*/,
+                                 const LFSU_S&  /*lfsu_s*/, const LFSV_S&  /*lfsv_s*/,
+                                 const LFSU_N&  /*lfsu_n*/, const LFSV_N&  /*lfsv_n*/,
+                                 const LFSU_C&  /*lfsu_c*/, const LFSV_C&  /*lfsv_c*/)
         {
         }
 
@@ -219,10 +219,10 @@ namespace Dune {
                  typename LFSV_S,
                  typename LFSV_N,
                  typename LFSV_C>
-        void onBindLFSVCoupling(const IG& ig,
-                                const LFSV_S& lfsv_s,
-                                const LFSV_N& lfsv_n,
-                                const LFSV_C& lfsv_c)
+        void onBindLFSVCoupling(const IG&  /*ig*/,
+                                const LFSV_S&  /*lfsv_s*/,
+                                const LFSV_N&  /*lfsv_n*/,
+                                const LFSV_C&  /*lfsv_c*/)
         {
         }
 
@@ -230,10 +230,10 @@ namespace Dune {
                  typename LFSU_S, typename LFSV_S,
                  typename LFSU_N, typename LFSV_N,
                  typename LFSU_C, typename LFSV_C>
-        void onUnbindLFSUVCoupling(const IG& ig,
-                                   const LFSU_S& lfsu_s, const LFSV_S& lfsv_s,
-                                   const LFSU_N& lfsu_n, const LFSV_N& lfsv_n,
-                                   const LFSU_C& lfsu_c, const LFSV_C& lfsv_c)
+        void onUnbindLFSUVCoupling(const IG&  /*ig*/,
+                                   const LFSU_S&  /*lfsu_s*/, const LFSV_S&  /*lfsv_s*/,
+                                   const LFSU_N&  /*lfsu_n*/, const LFSV_N&  /*lfsv_n*/,
+                                   const LFSU_C&  /*lfsu_c*/, const LFSV_C&  /*lfsv_c*/)
         {
         }
 
@@ -241,25 +241,25 @@ namespace Dune {
                  typename LFSV_S,
                  typename LFSV_N,
                  typename LFSV_C>
-        void onUnbindLFSVCoupling(const IG& ig,
-                                  const LFSV_S& lfsv_s,
-                                  const LFSV_N& lfsv_n,
-                                  const LFSV_C& lfsv_c)
+        void onUnbindLFSVCoupling(const IG&  /*ig*/,
+                                  const LFSV_S&  /*lfsv_s*/,
+                                  const LFSV_N&  /*lfsv_n*/,
+                                  const LFSV_C&  /*lfsv_c*/)
         {
         }
 
         template<typename LFSU>
-        void loadCoefficientsLFSUInside(const LFSU& lfsu_s)
+        void loadCoefficientsLFSUInside(const LFSU&  /*lfsu_s*/)
         {
         }
 
         template<typename LFSU_N>
-        void loadCoefficientsLFSUOutside(const LFSU_N& lfsu_n)
+        void loadCoefficientsLFSUOutside(const LFSU_N&  /*lfsu_n*/)
         {
         }
 
         template<typename LFSU_C>
-        void loadCoefficientsLFSUCoupling(const LFSU_C& lfsu_c)
+        void loadCoefficientsLFSUCoupling(const LFSU_C&  /*lfsu_c*/)
         {
         }
 
@@ -278,62 +278,62 @@ namespace Dune {
         //! Method for per-cell assembly setup and possibly aborting assembly of current cell
         //! - returns false by default to continue cell assembly.
         template<typename EG>
-        bool skipEntity(const EG & eg)
+        bool skipEntity(const EG &  /*eg*/)
         {
           return false;
         }
 
         //! - returns false by default to continue intersection assembly.
         template<typename IG>
-        bool skipIntersection(const IG & ig)
+        bool skipIntersection(const IG &  /*ig*/)
         {
           return false;
         }
 
         template<typename EG, typename LFSU, typename LFSV>
-        void assembleUVVolume(const EG& eg, const LFSU& lfsu, const LFSV& lfsv)
+        void assembleUVVolume(const EG&  /*eg*/, const LFSU&  /*lfsu*/, const LFSV&  /*lfsv*/)
         {
         }
 
         template<typename EG, typename LFSV>
-        void assembleVVolume(const EG& eg, const LFSV& lfsv)
+        void assembleVVolume(const EG&  /*eg*/, const LFSV&  /*lfsv*/)
         {
         }
 
 
         template<typename IG, typename LFSU_S, typename LFSV_S, typename LFSU_N, typename LFSV_N>
-        void assembleUVSkeleton(const IG& ig,
-                                const LFSU_S& lfsu_s, const LFSV_S& lfsv_s,
-                                const LFSU_N& lfsu_n, const LFSV_N& lfsv_n)
+        void assembleUVSkeleton(const IG&  /*ig*/,
+                                const LFSU_S&  /*lfsu_s*/, const LFSV_S&  /*lfsv_s*/,
+                                const LFSU_N&  /*lfsu_n*/, const LFSV_N&  /*lfsv_n*/)
         {
         }
 
         template<typename IG, typename LFSV_S, typename LFSV_N>
-        void assembleVSkeleton(const IG& ig,
-                               const LFSV_S& lfsv_s,
-                               const LFSV_N& lfsv_n)
+        void assembleVSkeleton(const IG&  /*ig*/,
+                               const LFSV_S&  /*lfsv_s*/,
+                               const LFSV_N&  /*lfsv_n*/)
         {
         }
 
 
         template<typename IG, typename LFSU, typename LFSV>
-        void assembleUVBoundary(const IG& ig, const LFSU& lfsu, const LFSV& lfsv)
+        void assembleUVBoundary(const IG&  /*ig*/, const LFSU&  /*lfsu*/, const LFSV&  /*lfsv*/)
         {
         }
 
         template<typename IG, typename LFSV>
-        void assembleVBoundary(const IG& ig, const LFSV& lfsv)
+        void assembleVBoundary(const IG&  /*ig*/, const LFSV&  /*lfsv*/)
         {
         }
 
 
         template<typename IG, typename LFSU, typename LFSV>
-        void assembleUVProcessor(const IG& ig, const LFSU& lfsu, const LFSV& lfsv)
+        void assembleUVProcessor(const IG&  /*ig*/, const LFSU&  /*lfsu*/, const LFSV&  /*lfsv*/)
         {
         }
 
         template<typename IG, typename LFSV>
-        void assembleVProcessor(const IG& ig, const LFSV& lfsv)
+        void assembleVProcessor(const IG&  /*ig*/, const LFSV&  /*lfsv*/)
         {
         }
 
@@ -342,10 +342,10 @@ namespace Dune {
                  typename LFSU_S, typename LFSV_S,
                  typename LFSU_N, typename LFSV_N,
                  typename LFSU_C, typename LFSV_C>
-        void assembleUVEnrichedCoupling(const IG& ig,
-                                        const LFSU_S& lfsu_s, const LFSV_S& lfsv_s,
-                                        const LFSU_N& lfsu_n, const LFSV_N& lfsv_n,
-                                        const LFSU_C& lfsu_c, const LFSV_C& lfsv_c)
+        void assembleUVEnrichedCoupling(const IG&  /*ig*/,
+                                        const LFSU_S&  /*lfsu_s*/, const LFSV_S&  /*lfsv_s*/,
+                                        const LFSU_N&  /*lfsu_n*/, const LFSV_N&  /*lfsv_n*/,
+                                        const LFSU_C&  /*lfsu_c*/, const LFSV_C&  /*lfsv_c*/)
         {
         }
 
@@ -353,21 +353,21 @@ namespace Dune {
                  typename LFSV_S,
                  typename LFSV_N,
                  typename LFSV_C>
-        void assembleVEnrichedCoupling(const IG& ig,
-                                       const LFSV_S& lfsv_s,
-                                       const LFSV_N& lfsv_n,
-                                       const LFSV_C& lfsv_c)
+        void assembleVEnrichedCoupling(const IG&  /*ig*/,
+                                       const LFSV_S&  /*lfsv_s*/,
+                                       const LFSV_N&  /*lfsv_n*/,
+                                       const LFSV_C&  /*lfsv_c*/)
         {
         }
 
 
         template<typename EG, typename LFSU, typename LFSV>
-        void assembleUVVolumePostSkeleton(const EG& eg, const LFSU& lfsu, const LFSV& lfsv)
+        void assembleUVVolumePostSkeleton(const EG&  /*eg*/, const LFSU&  /*lfsu*/, const LFSV&  /*lfsv*/)
         {
         }
 
         template<typename EG, typename LFSV>
-        void assembleVVolumePostSkeleton(const EG& eg, const LFSV& lfsv)
+        void assembleVVolumePostSkeleton(const EG&  /*eg*/, const LFSV&  /*lfsv*/)
         {
         }
 
@@ -381,7 +381,7 @@ namespace Dune {
         }
 
         template<typename GFSU, typename GFSV>
-        void postAssembly(const GFSU& gfsu, const GFSV& gfsv)
+        void postAssembly(const GFSU&  /*gfsu*/, const GFSV&  /*gfsv*/)
         {
         }
 

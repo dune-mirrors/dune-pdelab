@@ -77,7 +77,7 @@ public:
 
   //! tensor diffusion coefficient
   typename Traits::PermTensorType
-  A (const typename Traits::ElementType& e, const typename Traits::DomainType& xlocal) const
+  A (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*xlocal*/) const
   {
     typename Traits::PermTensorType I;
     for (std::size_t i=0; i<Traits::dimDomain; i++)
@@ -88,7 +88,7 @@ public:
 
   //! velocity field
   typename Traits::RangeType
-  b (const typename Traits::ElementType& e, const typename Traits::DomainType& xlocal) const
+  b (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*xlocal*/) const
   {
     typename Traits::RangeType v(0.0);
     return v;
@@ -96,14 +96,14 @@ public:
 
   //! sink term
   typename Traits::RangeFieldType
-  c (const typename Traits::ElementType& e, const typename Traits::DomainType& xlocal) const
+  c (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*xlocal*/) const
   {
     return 0.0;
   }
 
   //! source term
   typename Traits::RangeFieldType
-  f (const typename Traits::ElementType& e, const typename Traits::DomainType& xlocal) const
+  f (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*xlocal*/) const
   {
     return 0.0;
   }
@@ -114,7 +114,7 @@ public:
    * return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Outflow for outflow boundary conditions
    */
   BCType
-  bctype (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& xlocal) const
+  bctype (const typename Traits::IntersectionType&  /*is*/, const typename Traits::IntersectionDomainType&  /*xlocal*/) const
   {
     return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Dirichlet;
   }
@@ -132,14 +132,14 @@ public:
 
   //! flux boundary condition
   typename Traits::RangeFieldType
-  j (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& xlocal) const
+  j (const typename Traits::IntersectionType&  /*is*/, const typename Traits::IntersectionDomainType&  /*xlocal*/) const
   {
     return 0.0;
   }
 
   //! outflow boundary condition
   typename Traits::RangeFieldType
-  o (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& xlocal) const
+  o (const typename Traits::IntersectionType&  /*is*/, const typename Traits::IntersectionDomainType&  /*xlocal*/) const
   {
     return 0.0;
   }

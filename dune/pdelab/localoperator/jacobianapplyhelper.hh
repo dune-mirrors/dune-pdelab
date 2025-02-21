@@ -30,19 +30,19 @@ namespace Dune{
       }
         template <typename LOP, typename EG, typename LFSU, typename X, typename Z, typename LFSV, typename Y>
         std::enable_if_t<LOP::isLinear> jacobianApplyVolume(
-            const LOP& lop,
-            const EG& eg,
-            const LFSU& lfsu, const X& x, const Z& z, const LFSV& lfsv,
-            Y& y)
+            const LOP&  /*lop*/,
+            const EG&  /*eg*/,
+            const LFSU&  /*lfsu*/, const X&  /*x*/, const Z&  /*z*/, const LFSV&  /*lfsv*/,
+            Y&  /*y*/)
         {
             DUNE_THROW(Dune::Exception, "You try to call a nonlinear method on a linear operator");
         }
         template <typename LOP, typename EG, typename LFSU, typename X, typename LFSV, typename Y>
         std::enable_if_t<not LOP::isLinear> jacobianApplyVolume(
-            const LOP& lop,
-            const EG& eg,
-            const LFSU& lfsu, const X& z, const LFSV& lfsv,
-            Y& y)
+            const LOP&  /*lop*/,
+            const EG&  /*eg*/,
+            const LFSU&  /*lfsu*/, const X&  /*z*/, const LFSV&  /*lfsv*/,
+            Y&  /*y*/)
         {
             DUNE_THROW(Dune::Exception, "You try to call a linear method on a nonlinear operator");
         }
@@ -72,21 +72,21 @@ namespace Dune{
         }
         template <typename LOP, typename IG, typename LFSU, typename X, typename Z, typename LFSV, typename Y>
         std::enable_if_t<LOP::isLinear> jacobianApplySkeleton(
-            const LOP& lop,
-            const IG& ig,
-            const LFSU& lfsu_s, const X& x_s, const Z& z_s, const LFSV& lfsv_s,
-            const LFSU& lfsu_n, const X& x_n, const Z& z_n, const LFSV& lfsv_n,
-            Y& y_s, Y& y_n)
+            const LOP&  /*lop*/,
+            const IG&  /*ig*/,
+            const LFSU&  /*lfsu_s*/, const X&  /*x_s*/, const Z&  /*z_s*/, const LFSV&  /*lfsv_s*/,
+            const LFSU&  /*lfsu_n*/, const X&  /*x_n*/, const Z&  /*z_n*/, const LFSV&  /*lfsv_n*/,
+            Y&  /*y_s*/, Y&  /*y_n*/)
         {
             DUNE_THROW(Dune::Exception, "You try to call a nonlinear method on a linear operator");
         }
         template <typename LOP, typename IG, typename LFSU, typename X, typename LFSV, typename Y>
         std::enable_if_t<not LOP::isLinear> jacobianApplySkeleton(
-            const LOP& lop,
-            const IG& ig,
-            const LFSU& lfsu_s, const X& z_s, const LFSV& lfsv_s,
-            const LFSU& lfsu_n, const X& z_n, const LFSV& lfsv_n,
-            Y& y_s, Y& y_n)
+            const LOP&  /*lop*/,
+            const IG&  /*ig*/,
+            const LFSU&  /*lfsu_s*/, const X&  /*z_s*/, const LFSV&  /*lfsv_s*/,
+            const LFSU&  /*lfsu_n*/, const X&  /*z_n*/, const LFSV&  /*lfsv_n*/,
+            Y&  /*y_s*/, Y&  /*y_n*/)
         {
             DUNE_THROW(Dune::Exception, "You try to call a nonlinear method on a linear operator");
         }
@@ -116,19 +116,19 @@ namespace Dune{
         }
         template<typename LOP, typename IG, typename LFSU, typename X, typename Z, typename LFSV, typename Y>
         std::enable_if_t<LOP::isLinear> jacobianApplyBoundary(
-            const LOP& lop,
-            const IG& ig,
-            const LFSU& lfsu_s, const X& x_s, const Z& z_s, const LFSV& lfsv_s,
-            Y& y_s)
+            const LOP&  /*lop*/,
+            const IG&  /*ig*/,
+            const LFSU&  /*lfsu_s*/, const X&  /*x_s*/, const Z&  /*z_s*/, const LFSV&  /*lfsv_s*/,
+            Y&  /*y_s*/)
         {
             DUNE_THROW(Dune::Exception, "You try to call a nonlinear method on a linear operator");
         }
         template<typename LOP, typename IG, typename LFSU, typename X, typename LFSV, typename Y>
         std::enable_if_t<not LOP::isLinear> jacobianApplyBoundary(
-            const LOP& lop,
-            const IG& ig,
-            const LFSU& lfsu_s, const X& z_s, const LFSV& lfsv_s,
-            Y& y_s)
+            const LOP&  /*lop*/,
+            const IG&  /*ig*/,
+            const LFSU&  /*lfsu_s*/, const X&  /*z_s*/, const LFSV&  /*lfsv_s*/,
+            Y&  /*y_s*/)
         {
             DUNE_THROW(Dune::Exception, "You try to call a nonlinear method on a linear operator");
         }

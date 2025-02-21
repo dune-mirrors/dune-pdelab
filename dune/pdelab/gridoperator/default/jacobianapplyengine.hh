@@ -24,7 +24,7 @@ namespace Dune{
     public:
 
       template<typename TrialConstraintsContainer, typename TestConstraintsContainer>
-      bool needsConstraintsCaching(const TrialConstraintsContainer& cu, const TestConstraintsContainer& cv) const
+      bool needsConstraintsCaching(const TrialConstraintsContainer&  /*cu*/, const TestConstraintsContainer&  /*cv*/) const
       {
         return false;
       }
@@ -132,7 +132,7 @@ namespace Dune{
       //! global assembler.
       //! @{
       template<typename EG, typename LFSUC, typename LFSVC>
-      void onBindLFSUV(const EG & eg, const LFSUC & lfsu_cache, const LFSVC & lfsv_cache)
+      void onBindLFSUV(const EG &  /*eg*/, const LFSUC & lfsu_cache, const LFSVC &  /*lfsv_cache*/)
       {
         global_solution_view_inside.bind(lfsu_cache);
         // In the linear case the solution is not needed and we drop this part
@@ -143,14 +143,14 @@ namespace Dune{
       }
 
       template<typename EG, typename LFSVC>
-      void onBindLFSV(const EG & eg, const LFSVC & lfsv_cache)
+      void onBindLFSV(const EG &  /*eg*/, const LFSVC & lfsv_cache)
       {
         global_result_view_inside.bind(lfsv_cache);
         local_result_inside.assign(lfsv_cache.size(),0.0);
       }
 
       template<typename IG, typename LFSUC, typename LFSVC>
-      void onBindLFSUVInside(const IG & ig, const LFSUC & lfsu_cache, const LFSVC & lfsv_cache)
+      void onBindLFSUVInside(const IG &  /*ig*/, const LFSUC & lfsu_cache, const LFSVC &  /*lfsv_cache*/)
       {
         global_solution_view_inside.bind(lfsu_cache);
         // In the linear case the solution is not needed and we drop this part
@@ -161,9 +161,9 @@ namespace Dune{
       }
 
       template<typename IG, typename LFSUC, typename LFSVC>
-      void onBindLFSUVOutside(const IG & ig,
-                              const LFSUC & lfsu_s_cache, const LFSVC & lfsv_s_cache,
-                              const LFSUC & lfsu_n_cache, const LFSVC & lfsv_n_cache)
+      void onBindLFSUVOutside(const IG &  /*ig*/,
+                              const LFSUC &  /*lfsu_s_cache*/, const LFSVC &  /*lfsv_s_cache*/,
+                              const LFSUC & lfsu_n_cache, const LFSVC &  /*lfsv_n_cache*/)
       {
         global_solution_view_outside.bind(lfsu_n_cache);
         // In the linear case the solution is not needed and we drop this part
@@ -174,15 +174,15 @@ namespace Dune{
       }
 
       template<typename IG, typename LFSVC>
-      void onBindLFSVInside(const IG & ig, const LFSVC & lfsv_cache)
+      void onBindLFSVInside(const IG &  /*ig*/, const LFSVC & lfsv_cache)
       {
         global_result_view_inside.bind(lfsv_cache);
         local_result_inside.assign(lfsv_cache.size(),0.0);
       }
 
       template<typename IG, typename LFSVC>
-      void onBindLFSVOutside(const IG & ig,
-                             const LFSVC & lfsv_s_cache,
+      void onBindLFSVOutside(const IG &  /*ig*/,
+                             const LFSVC &  /*lfsv_s_cache*/,
                              const LFSVC & lfsv_n_cache)
       {
         global_result_view_outside.bind(lfsv_n_cache);
@@ -195,23 +195,23 @@ namespace Dune{
       //! discarded
       //! @{
       template<typename EG, typename LFSVC>
-      void onUnbindLFSV(const EG & eg, const LFSVC & lfsv_cache)
+      void onUnbindLFSV(const EG &  /*eg*/, const LFSVC &  /*lfsv_cache*/)
       {
         global_result_view_inside.add(local_result_inside);
         global_result_view_inside.commit();
       }
 
       template<typename IG, typename LFSVC>
-      void onUnbindLFSVInside(const IG & ig, const LFSVC & lfsv_cache)
+      void onUnbindLFSVInside(const IG &  /*ig*/, const LFSVC &  /*lfsv_cache*/)
       {
         global_result_view_inside.add(local_result_inside);
         global_result_view_inside.commit();
       }
 
       template<typename IG, typename LFSVC>
-      void onUnbindLFSVOutside(const IG & ig,
-                               const LFSVC & lfsv_s_cache,
-                               const LFSVC & lfsv_n_cache)
+      void onUnbindLFSVOutside(const IG &  /*ig*/,
+                               const LFSVC &  /*lfsv_s_cache*/,
+                               const LFSVC &  /*lfsv_n_cache*/)
       {
         global_result_view_outside.add(local_result_outside);
         global_result_view_outside.commit();
@@ -221,7 +221,7 @@ namespace Dune{
       //! Methods for loading of the local function's coefficients
       //! @{
       template<typename LFSUC>
-      void loadCoefficientsLFSUInside(const LFSUC & lfsu_s_cache)
+      void loadCoefficientsLFSUInside(const LFSUC &  /*lfsu_s_cache*/)
       {
         // In the linear case the solution is not needed and we drop this part
         if (not isLinear)
@@ -229,7 +229,7 @@ namespace Dune{
         global_update_view_inside.read(local_update_inside);
       }
       template<typename LFSUC>
-      void loadCoefficientsLFSUOutside(const LFSUC & lfsu_n_cache)
+      void loadCoefficientsLFSUOutside(const LFSUC &  /*lfsu_n_cache*/)
       {
         // In the linear case the solution is not needed and we drop this part
         if (not isLinear)
@@ -237,7 +237,7 @@ namespace Dune{
         global_update_view_outside.read(local_update_outside);
       }
       template<typename LFSUC>
-      void loadCoefficientsLFSUCoupling(const LFSUC & lfsu_c_cache)
+      void loadCoefficientsLFSUCoupling(const LFSUC &  /*lfsu_c_cache*/)
       {
         DUNE_THROW(Dune::NotImplemented,"No coupling lfsu available for ");
       }
@@ -246,7 +246,7 @@ namespace Dune{
       //! Notifier functions, called immediately before and after assembling
       //! @{
 
-      void postAssembly(const GFSU& gfsu, const GFSV& gfsv)
+      void postAssembly(const GFSU&  /*gfsu*/, const GFSV&  /*gfsv*/)
       {
         if(local_assembler.doPostProcessing())
           Dune::PDELab::constrain_residual(local_assembler.testConstraints(),
@@ -313,10 +313,10 @@ namespace Dune{
       }
 
       template<typename IG, typename LFSUC, typename LFSVC>
-      static void assembleUVEnrichedCoupling(const IG & ig,
-                                             const LFSUC & lfsu_s_cache, const LFSVC & lfsv_s_cache,
-                                             const LFSUC & lfsu_n_cache, const LFSVC & lfsv_n_cache,
-                                             const LFSUC & lfsu_coupling_cache, const LFSVC & lfsv_coupling_cache)
+      static void assembleUVEnrichedCoupling(const IG &  /*ig*/,
+                                             const LFSUC &  /*lfsu_s_cache*/, const LFSVC &  /*lfsv_s_cache*/,
+                                             const LFSUC &  /*lfsu_n_cache*/, const LFSVC &  /*lfsv_n_cache*/,
+                                             const LFSUC &  /*lfsu_coupling_cache*/, const LFSVC &  /*lfsv_coupling_cache*/)
       {
         DUNE_THROW(Dune::NotImplemented,"Assembling of coupling spaces is not implemented for ");
       }

@@ -37,13 +37,13 @@ namespace Dune {
         }
 
         //! Returns true if data for this codim should be communicated.
-        bool contains (int dim, int codim) const
+        bool contains (int  /*dim*/, int  /*codim*/) const
         {
           return true;
         }
 
         //! Returns true if size per entity of given dim and codim is a constant.
-        bool fixedSize (int dim, int codim) const
+        bool fixedSize (int  /*dim*/, int  /*codim*/) const
         {
           // We return false here, since gather and scatter is called
           // for all entities of all levels of the grid but we only
@@ -57,7 +57,7 @@ namespace Dune {
         // End of tmp recursion
         template <std::size_t I, typename EntityType>
         inline typename std::enable_if<I==sizeof...(T),void>::type
-        sizeTMP(std::size_t& commSize, EntityType& e) const
+        sizeTMP(std::size_t&  /*commSize*/, EntityType&  /*e*/) const
         {
         }
 
@@ -116,7 +116,7 @@ namespace Dune {
         // End of tmp recursion
         template <std::size_t I, typename Buf, typename Entity>
         inline typename std::enable_if<I==sizeof...(T),void>::type
-        gatherTMP(Buf& buf, const Entity& e) const
+        gatherTMP(Buf&  /*buf*/, const Entity&  /*e*/) const
         {
         }
 
@@ -180,7 +180,7 @@ namespace Dune {
         // End of tmp reucrsion
         template <std::size_t I, typename Buf, typename Entity>
         inline typename std::enable_if<I==sizeof...(T),void>::type
-        scatterTMP(Buf& buf, const Entity& e) const
+        scatterTMP(Buf&  /*buf*/, const Entity&  /*e*/) const
         {
         }
 
@@ -222,7 +222,7 @@ namespace Dune {
          * \param n Size of data we receive for all vectors together.
          */
         template<class MessageBuffer, class EntityType>
-        void scatter (MessageBuffer& buff, const EntityType& e, size_t n)
+        void scatter (MessageBuffer& buff, const EntityType& e, size_t  /*n*/)
         {
           // Communicate different things than char.
           using Buf = Dune::PDELab::PolymorphicBufferWrapper<MessageBuffer>;

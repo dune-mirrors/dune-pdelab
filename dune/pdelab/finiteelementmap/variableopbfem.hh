@@ -33,7 +33,7 @@ namespace Dune {
       struct InitVariableOPBLocalFiniteElementMap<D,R,d,-1,bt,ComputationFieldType>
       {
         template<typename C>
-        static void init(C & c) {}
+        static void init(C &  /*c*/) {}
       };
     }
 
@@ -103,7 +103,7 @@ namespace Dune {
         return codim == 0;
       }
 
-      std::size_t size(GeometryType gt) const
+      std::size_t size(GeometryType  /*gt*/) const
       {
         DUNE_THROW(Dune::Exception,"This should not be called!");
       }

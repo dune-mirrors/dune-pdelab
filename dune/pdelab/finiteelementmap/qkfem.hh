@@ -31,7 +31,7 @@ namespace Dune {
         "QkLocalFiniteElementMap is only implemented for k = 1,2"
         );
 
-      QkLocalFiniteElementMap(const GV& gv)
+      QkLocalFiniteElementMap(const GV&  /*gv*/)
       {}
 
       static constexpr bool fixedSize()

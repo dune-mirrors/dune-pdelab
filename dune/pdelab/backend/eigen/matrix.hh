@@ -236,7 +236,7 @@ namespace Dune
 
       protected:
         template<typename GO>
-        static void allocate_matrix(std::shared_ptr<Container> & c, const GO & go, const ElementType& e)
+        static void allocate_matrix(std::shared_ptr<Container> & c, const GO & go, const ElementType&  /*e*/)
         {
           // guess size
           int rows = go.testGridFunctionSpace().ordering().blockCount();

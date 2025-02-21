@@ -22,7 +22,7 @@ struct GatherScatter
 {
 
   template<typename Buffer, typename Entity, typename LocalView>
-  bool gather(Buffer& buffer, const Entity& e, const LocalView& local_view) const
+  bool gather(Buffer& buffer, const Entity&  /*e*/, const LocalView& local_view) const
   {
     std::size_t size = _expected_size >= 0 ? _expected_size : local_view.size();
     for (std::size_t i = 0 ; i < size ; ++i)
@@ -31,7 +31,7 @@ struct GatherScatter
   }
 
   template<typename Buffer, typename Entity, typename LocalView>
-  bool scatter(Buffer& buffer, std::size_t n, const Entity& e, const LocalView& local_view) const
+  bool scatter(Buffer& buffer, std::size_t n, const Entity&  /*e*/, const LocalView& local_view) const
   {
     std::size_t size = 0;
     if (_expected_size >= 0)
@@ -51,7 +51,7 @@ struct GatherScatter
   }
 
   template<typename Buffer, typename O1, typename O2, typename Entity, typename LocalView>
-  bool scatter(Buffer& buffer, const O1& o1, const O2& o2, const Entity& e, const LocalView& local_view) const
+  bool scatter(Buffer&  /*buffer*/, const O1&  /*o1*/, const O2&  /*o2*/, const Entity&  /*e*/, const LocalView&  /*local_view*/) const
   {
     assert(false && "Should never get here - this only exists to make the test compile");
     return false;

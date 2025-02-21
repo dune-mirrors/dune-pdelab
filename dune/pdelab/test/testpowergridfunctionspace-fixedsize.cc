@@ -149,7 +149,7 @@ public:
 
   bool hasDOFs(int codim) const { return codim == 0; }
 
-  std::size_t size(Dune::GeometryType gt) const {
+  std::size_t size(Dune::GeometryType  /*gt*/) const {
     DUNE_THROW(Dune::PDELab::VariableElementSize,
                "the fem has variable element size");
   }

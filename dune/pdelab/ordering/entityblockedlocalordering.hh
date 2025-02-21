@@ -83,13 +83,13 @@ namespace Dune {
       };
 
       template<typename TC>
-      static typename result<TC>::type transform(const GFS& gfs, const Transformation& t, const std::array<std::shared_ptr<TC>,TypeTree::StaticDegree<GFS>::value>& children)
+      static typename result<TC>::type transform(const GFS& gfs, const Transformation&  /*t*/, const std::array<std::shared_ptr<TC>,TypeTree::StaticDegree<GFS>::value>& children)
       {
         return typename result<TC>::type(children,gfs.backend().blocked(gfs));
       }
 
       template<typename TC>
-      static typename result<TC>::storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t, const std::array<std::shared_ptr<TC>,TypeTree::StaticDegree<GFS>::value>& children)
+      static typename result<TC>::storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation&  /*t*/, const std::array<std::shared_ptr<TC>,TypeTree::StaticDegree<GFS>::value>& children)
       {
         return std::make_shared<typename result<TC>::type>(children,gfs->backend().blocked(*gfs));
       }
@@ -113,7 +113,7 @@ namespace Dune {
 
       using EntitySet = typename GFS::Traits::EntitySet;
 
-      static transformed_type transform(const GFS& gfs, const Transformation& t)
+      static transformed_type transform(const GFS& gfs, const Transformation&  /*t*/)
       {
         // check and extract common entity set on leaf nodes
         auto es_visitor = impl::common_entity_set<EntitySet>{};
@@ -128,7 +128,7 @@ namespace Dune {
         return r;
       }
 
-      static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t)
+      static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation&  /*t*/)
       {
         // check and extract common entity set on leaf nodes
         auto es_visitor = impl::common_entity_set<EntitySet>{};
@@ -209,13 +209,13 @@ namespace Dune {
       };
 
       template<typename... TC>
-      static typename result<TC...>::type transform(const GFS& gfs, const Transformation& t, std::shared_ptr<TC>... children)
+      static typename result<TC...>::type transform(const GFS& gfs, const Transformation&  /*t*/, std::shared_ptr<TC>... children)
       {
         return typename result<TC...>::type(gfs.backend().blocked(gfs),children...);
       }
 
       template<typename... TC>
-      static typename result<TC...>::storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t, std::shared_ptr<TC>... children)
+      static typename result<TC...>::storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation&  /*t*/, std::shared_ptr<TC>... children)
       {
         return std::make_shared<typename result<TC...>::type>(gfs->backend().blocked(*gfs),children...);
       }
@@ -236,7 +236,7 @@ namespace Dune {
 
       using EntitySet = typename GFS::Traits::EntitySet;
 
-      static transformed_type transform(const GFS& gfs, const Transformation& t)
+      static transformed_type transform(const GFS& gfs, const Transformation&  /*t*/)
       {
         // check and extract common entity set on leaf nodes
         auto es_visitor = impl::common_entity_set<EntitySet>{};
@@ -251,7 +251,7 @@ namespace Dune {
         return r;
       }
 
-      static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t)
+      static transformed_storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation&  /*t*/)
       {
         // check and extract common entity set on leaf nodes
         auto es_visitor = impl::common_entity_set<EntitySet>{};

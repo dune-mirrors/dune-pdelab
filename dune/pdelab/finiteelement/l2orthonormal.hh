@@ -184,7 +184,7 @@ namespace Dune {
       }
 
       template <int d>
-      static void multiindex(int i, int k, MultiIndex<d>& alpha)
+      static void multiindex(int i, int  /*k*/, MultiIndex<d>& alpha)
       {
         pk_multiindex(i,alpha);
       }
@@ -262,7 +262,7 @@ namespace Dune {
     {
     public:
       //! integrate one monomial
-      ComputationFieldType integrate (const MultiIndex<d>& a) const
+      ComputationFieldType integrate (const MultiIndex<d>&  /*a*/) const
       {
         DUNE_THROW(Dune::NotImplemented,"non-specialized version of MonomalIntegrator called. Please implement.");
       }
@@ -445,7 +445,7 @@ namespace Dune {
 
       // construct orthonormal basis from an other basis
       template<class LFE>
-      OrthonormalPolynomialBasis (const LFE & lfe)
+      OrthonormalPolynomialBasis (const LFE &  /*lfe*/)
         : coeffs(new LowprecMat)
       {
         for (int i=0; i<d; ++i)
@@ -674,10 +674,10 @@ namespace Dune {
 
 DUNE_NO_DEPRECATED_BEGIN
 
-    OPBLocalBasis (int order_) : opb(), gt(bt,d) {}
+    OPBLocalBasis (int  /*order_*/) : opb(), gt(bt,d) {}
 
     template<class LFE>
-    OPBLocalBasis (int order_, const LFE & lfe) : opb(lfe), gt(bt,d) {}
+    OPBLocalBasis (int  /*order_*/, const LFE & lfe) : opb(lfe), gt(bt,d) {}
 
 DUNE_NO_DEPRECATED_END
 
@@ -723,7 +723,7 @@ DUNE_NO_DEPRECATED_END
   {
     enum{ n = PB::BasisTraits<basisType>::template Size<k,d>::value };
   public:
-    OPBLocalCoefficients (int order_) : li(n)  {
+    OPBLocalCoefficients (int  /*order_*/) : li(n)  {
       for (int i=0; i<n; i++) li[i] = Dune::LocalKey(0,0,i);
     }
 
@@ -745,7 +745,7 @@ DUNE_NO_DEPRECATED_END
     const LB& lb;
 
   public:
-    OPBLocalInterpolation (const LB& lb_, int order_) : lb(lb_) {}
+    OPBLocalInterpolation (const LB& lb_, int  /*order_*/) : lb(lb_) {}
 
     //! \brief Local interpolation of a function
     template<typename F, typename C>

@@ -202,7 +202,7 @@ namespace Dune {
       //! Dynamic viscosity value from local cell coordinate
       template<typename EG>
       typename Traits::RangeField
-      mu(const EG& e, const typename Traits::Domain& x) const
+      mu(const EG&  /*e*/, const typename Traits::Domain&  /*x*/) const
       {
         return _mu;
       }
@@ -210,7 +210,7 @@ namespace Dune {
       //! Dynamic viscosity value from local intersection coordinate
       template<typename IG>
       typename Traits::RangeField
-      mu(const IG& ig, const typename Traits::IntersectionDomain& x) const
+      mu(const IG&  /*ig*/, const typename Traits::IntersectionDomain&  /*x*/) const
       {
         return _mu;
       }
@@ -218,7 +218,7 @@ namespace Dune {
       //! Density value from local cell coordinate
       template<typename EG>
       typename Traits::RangeField
-      rho(const EG& eg, const typename Traits::Domain& x) const
+      rho(const EG&  /*eg*/, const typename Traits::Domain&  /*x*/) const
       {
         return _rho;
       }
@@ -226,7 +226,7 @@ namespace Dune {
       //! Density value from local intersection coordinate
       template<typename IG>
       typename Traits::RangeField
-      rho(const IG& ig, const typename Traits::IntersectionDomain& x) const
+      rho(const IG&  /*ig*/, const typename Traits::IntersectionDomain&  /*x*/) const
       {
         return _rho;
       }
@@ -244,7 +244,7 @@ namespace Dune {
       //! pressure source term
       template<typename EG>
       typename Traits::RangeField
-      g2(const EG& e, const typename Traits::Domain& x) const
+      g2(const EG&  /*e*/, const typename Traits::Domain&  /*x*/) const
       {
         return 0;
       }
@@ -288,7 +288,7 @@ namespace Dune {
         >::type
         j(const IG& ig,
           const typename Traits::IntersectionDomain& x,
-          const typename Traits::Domain& normal) const
+          const typename Traits::Domain&  /*normal*/) const
       {
         auto e = ig.inside();
         typename J::Traits::RangeType y;
@@ -361,8 +361,8 @@ namespace Dune {
 
       /** Predicate identifying Dirichlet boundaries for velocity. */
       template<typename I>
-      bool isDirichlet(const I & intersection,
-                       const Dune::FieldVector<typename I::ctype, I::mydimension> & coord) const
+      bool isDirichlet(const I &  /*intersection*/,
+                       const Dune::FieldVector<typename I::ctype, I::mydimension> &  /*coord*/) const
       { return false; }
     };
 

@@ -45,16 +45,16 @@ namespace Dune {
 
     public:
 
-      void map_local_index(const typename Traits::SizeType geometry_type_index,
-                           const typename Traits::SizeType entity_index,
-                           typename Traits::TreeIndexView mi,
-                           typename Traits::ContainerIndex& ci) const
+      void map_local_index(const typename Traits::SizeType  /*geometry_type_index*/,
+                           const typename Traits::SizeType  /*entity_index*/,
+                           typename Traits::TreeIndexView  /*mi*/,
+                           typename Traits::ContainerIndex&  /*ci*/) const
       {
         DUNE_THROW(NotImplemented,"not implemented");
       }
 
       template<typename ItIn, typename ItOut>
-      void map_lfs_indices(const ItIn begin, const ItIn end, ItOut out) const
+      void map_lfs_indices(const ItIn  /*begin*/, const ItIn  /*end*/, ItOut  /*out*/) const
       {
         // don't do anything - this is handled by the specialized GridViewOrdering
       }
@@ -62,8 +62,8 @@ namespace Dune {
       template<typename CIOutIterator, typename DIOutIterator = DummyDOFIndexIterator>
       typename Traits::SizeType
       extract_entity_indices(const typename Traits::DOFIndex::EntityIndex& ei,
-                             typename Traits::SizeType child_index,
-                             CIOutIterator ci_out, const CIOutIterator ci_end,
+                             typename Traits::SizeType  /*child_index*/,
+                             CIOutIterator  /*ci_out*/, const CIOutIterator  /*ci_end*/,
                              DIOutIterator di_out = DIOutIterator()) const
       {
         const typename Traits::SizeType s = size(ei);
@@ -118,12 +118,12 @@ namespace Dune {
           return 0;
       }
 
-      typename Traits::SizeType size(const typename Traits::SizeType geometry_type_index, const typename Traits::SizeType entity_index, const typename Traits::SizeType child_index) const
+      typename Traits::SizeType size(const typename Traits::SizeType  /*geometry_type_index*/, const typename Traits::SizeType  /*entity_index*/, const typename Traits::SizeType  /*child_index*/) const
       {
         DUNE_THROW(NotImplemented,"not implemented");
       }
 
-      typename Traits::SizeType offset(const typename Traits::SizeType geometry_type_index, const typename Traits::SizeType entity_index, const typename Traits::SizeType child_index) const
+      typename Traits::SizeType offset(const typename Traits::SizeType  /*geometry_type_index*/, const typename Traits::SizeType  /*entity_index*/, const typename Traits::SizeType child_index) const
       {
         assert(child_index == 0);
         return 0;
@@ -314,7 +314,7 @@ namespace Dune {
 
     private:
 
-      bool update_gfs_data_size(typename Traits::SizeType& size, typename Traits::SizeType& block_count) const
+      bool update_gfs_data_size(typename Traits::SizeType&  /*size*/, typename Traits::SizeType&  /*block_count*/) const
       {
         return false;
       }

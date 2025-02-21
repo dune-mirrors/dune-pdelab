@@ -50,7 +50,7 @@ namespace Dune {
 
       // Volume integral depending on test and ansatz functions
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
-      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
+      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV&  /*lfsv*/, R& r) const
       {
         // Switches between local and global interface
         using FESwitch = FiniteElementInterfaceSwitch<
@@ -92,7 +92,7 @@ namespace Dune {
 
       // Jacobian of volume term
       template<typename EG, typename LFSU, typename X, typename LFSV, typename M>
-      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv,
+      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X&  /*x*/, const LFSV&  /*lfsv*/,
                             M & mat) const
       {
         // Switches between local and global interface

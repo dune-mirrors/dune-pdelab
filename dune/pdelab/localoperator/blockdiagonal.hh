@@ -105,7 +105,7 @@ namespace Dune {
       {
         auto visitor = impl::applyBlockOperation(
           lfsv,
-          [&](auto tree_path, auto& lfsu, auto& lfsv)
+          [&](auto  /*tree_path*/, auto& lfsu, auto& lfsv)
           {
             _scalar_lop->alpha_volume(eg,lfsu,x,lfsv,r);
           });
@@ -117,7 +117,7 @@ namespace Dune {
       {
         auto visitor = impl::applyBlockOperation(
           lfsv,
-          [&](auto tree_path, auto& lfsu, auto& lfsv)
+          [&](auto  /*tree_path*/, auto& lfsu, auto& lfsv)
           {
             _scalar_lop->jacobian_apply_volume(eg,lfsu,x,lfsv,y);
           });
@@ -129,7 +129,7 @@ namespace Dune {
       {
         auto visitor = impl::applyBlockOperation(
           lfsv,
-          [&](auto tree_path, auto& lfsu, auto& lfsv)
+          [&](auto  /*tree_path*/, auto& lfsu, auto& lfsv)
           {
             _scalar_lop->jacobian_volume(eg,lfsu,x,lfsv,mat);
           });

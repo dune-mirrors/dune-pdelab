@@ -30,7 +30,7 @@ namespace Dune {
       struct ConstraintsCallBoundary
       {
         template<typename P, typename IG, typename LFS, typename T>
-        static void boundary (const C& c, const P& p, const IG& ig, const LFS& lfs, T& trafo)
+        static void boundary (const C&  /*c*/, const P&  /*p*/, const IG&  /*ig*/, const LFS&  /*lfs*/, T&  /*trafo*/)
         {
         }
       };
@@ -38,7 +38,7 @@ namespace Dune {
       struct ConstraintsCallProcessor
       {
         template<typename IG, typename LFS, typename T>
-        static void processor (const C& c, const IG& ig, const LFS& lfs, T& trafo)
+        static void processor (const C&  /*c*/, const IG&  /*ig*/, const LFS&  /*lfs*/, T&  /*trafo*/)
         {
         }
       };
@@ -46,9 +46,9 @@ namespace Dune {
       struct ConstraintsCallSkeleton
       {
         template<typename IG, typename LFS, typename T>
-        static void skeleton (const C& c,  const IG& ig,
-                              const LFS& lfs_e, const LFS& lfs_f,
-                              T& trafo_e, T& trafo_f)
+        static void skeleton (const C&  /*c*/,  const IG&  /*ig*/,
+                              const LFS&  /*lfs_e*/, const LFS&  /*lfs_f*/,
+                              T&  /*trafo_e*/, T&  /*trafo_f*/)
         {
         }
       };
@@ -56,7 +56,7 @@ namespace Dune {
       struct ConstraintsCallVolume
       {
         template<typename P, typename EG, typename LFS, typename T>
-        static void volume (const C& c, const P&, const EG& eg, const LFS& lfs, T& trafo)
+        static void volume (const C&  /*c*/, const P&, const EG&  /*eg*/, const LFS&  /*lfs*/, T&  /*trafo*/)
         {
         }
       };
@@ -114,7 +114,7 @@ namespace Dune {
         // implementation in TreeVisitor, which simply does nothing. The resulting bugs would
         // probably be hell to find...
         template<typename P, typename LFS, typename TreePath>
-        void leaf(const P& p, const LFS& lfs, TreePath treePath) const
+        void leaf(const P&  /*p*/, const LFS&  /*lfs*/, TreePath  /*treePath*/) const
         {
           static_assert((AlwaysFalse<P>::Value),
                         "unsupported combination of function and LocalFunctionSpace");
@@ -129,7 +129,7 @@ namespace Dune {
       {
 
         template<typename LFS, typename TreePath>
-        void leaf(const LFS& lfs, TreePath treePath) const
+        void leaf(const LFS& lfs, TreePath  /*treePath*/) const
         {
 
           // extract constraints type
@@ -161,7 +161,7 @@ namespace Dune {
         // standard case - leaf in both trees
         template<typename P, typename LFS, typename TreePath>
         typename std::enable_if<P::isLeaf && LFS::isLeaf>::type
-        leaf(const P& p, const LFS& lfs, TreePath treePath) const
+        leaf(const P& p, const LFS& lfs, TreePath  /*treePath*/) const
         {
           // extract constraints type
           typedef typename LFS::Traits::ConstraintsType C;
@@ -173,7 +173,7 @@ namespace Dune {
         // reuse constraints parameter information from p for all LFS children
         template<typename P, typename LFS, typename TreePath>
         typename std::enable_if<P::isLeaf && (!LFS::isLeaf)>::type
-        leaf(const P& p, const LFS& lfs, TreePath treePath) const
+        leaf(const P& p, const LFS& lfs, TreePath  /*treePath*/) const
         {
           // traverse LFS tree and reuse parameter information
           TypeTree::applyToTree(lfs,BoundaryConstraintsForParametersLeaf<P,IG,CL>(p,ig,cl));
@@ -198,7 +198,7 @@ namespace Dune {
       {
 
         template<typename LFS, typename TreePath>
-        void leaf(const LFS& lfs, TreePath treePath) const
+        void leaf(const LFS& lfs, TreePath  /*treePath*/) const
         {
           // extract constraints type
           typedef typename LFS::Traits::ConstraintsType C;
@@ -226,7 +226,7 @@ namespace Dune {
       {
 
         template<typename LFS, typename TreePath>
-        void leaf(const LFS& lfs_e, const LFS& lfs_f, TreePath treePath) const
+        void leaf(const LFS& lfs_e, const LFS& lfs_f, TreePath  /*treePath*/) const
         {
           // extract constraints type
           typedef typename LFS::Traits::ConstraintsType C;
@@ -261,7 +261,7 @@ namespace Dune {
       {
 
         template<typename LFS, typename TreePath>
-        void leaf(const LFS& lfs, TreePath treePath) const
+        void leaf(const LFS& lfs, TreePath  /*treePath*/) const
         {
           // extract constraints type
           typedef typename LFS::Traits::ConstraintsType C;
@@ -294,7 +294,7 @@ namespace Dune {
         // standard case - leaf in both trees
         template<typename P, typename LFS, typename TreePath>
         typename std::enable_if<P::isLeaf && LFS::isLeaf>::type
-        leaf(const P& p, const LFS& lfs, TreePath treePath) const
+        leaf(const P& p, const LFS& lfs, TreePath  /*treePath*/) const
         {
           // extract constraints type
           typedef typename LFS::Traits::ConstraintsType C;
@@ -307,7 +307,7 @@ namespace Dune {
         // reuse constraints parameter information from p for all LFS children
         template<typename P, typename LFS, typename TreePath>
         typename std::enable_if<P::isLeaf && (!LFS::isLeaf)>::type
-        leaf(const P& p, const LFS& lfs, TreePath treePath) const
+        leaf(const P& p, const LFS& lfs, TreePath  /*treePath*/) const
         {
           // traverse LFS tree and reuse parameter information
           TypeTree::applyToTree(lfs,VolumeConstraintsForParametersLeaf<P,EG,CL>(p,eg,cl));
@@ -474,13 +474,13 @@ namespace Dune {
     public:
 
       template<typename Transformation>
-      OldStyleConstraintsWrapper(std::shared_ptr<const F> f, const Transformation& t, unsigned int i=0)
+      OldStyleConstraintsWrapper(std::shared_ptr<const F> f, const Transformation&  /*t*/, unsigned int i=0)
         : _f(f)
         , _i(i)
       {}
 
       template<typename Transformation>
-      OldStyleConstraintsWrapper(const F & f, const Transformation& t, unsigned int i=0)
+      OldStyleConstraintsWrapper(const F & f, const Transformation&  /*t*/, unsigned int i=0)
         : _f(stackobject_to_shared_ptr(f))
         , _i(i)
       {}
@@ -700,7 +700,7 @@ namespace Dune {
     template<typename F, typename GFS>
     struct ConstraintsAssemblerHelper<F, GFS, EmptyTransformation, true>
     {
-      static void assemble(const F& f, const GFS& gfs, EmptyTransformation& cg, const bool verbose)
+      static void assemble(const F&  /*f*/, const GFS&  /*gfs*/, EmptyTransformation&  /*cg*/, const bool  /*verbose*/)
       {}
     };
 
@@ -708,7 +708,7 @@ namespace Dune {
     template<typename F, typename GFS>
     struct ConstraintsAssemblerHelper<F, GFS, EmptyTransformation, false>
     {
-      static void assemble(const F& f, const GFS& gfs, EmptyTransformation& cg, const bool verbose)
+      static void assemble(const F&  /*f*/, const GFS&  /*gfs*/, EmptyTransformation&  /*cg*/, const bool  /*verbose*/)
       {}
     };
 
@@ -806,9 +806,9 @@ namespace Dune {
 
     // Specialized version for unconstrained spaces
     template<typename XG>
-    void set_constrained_dofs(const EmptyTransformation& cg,
-                              typename XG::ElementType x,
-                              XG& xg)
+    void set_constrained_dofs(const EmptyTransformation&  /*cg*/,
+                              typename XG::ElementType  /*x*/,
+                              XG&  /*xg*/)
     {}
 
 #endif // DOXYGEN
@@ -877,16 +877,16 @@ namespace Dune {
 
     // Specialized version for unconstrained spaces
     template<typename XG, typename Cmp>
-    bool check_constrained_dofs(const EmptyTransformation& cg, typename XG::ElementType x,
-                                XG& xg, const Cmp& cmp = Cmp())
+    bool check_constrained_dofs(const EmptyTransformation&  /*cg*/, typename XG::ElementType  /*x*/,
+                                XG&  /*xg*/, const Cmp&  /*cmp*/ = Cmp())
     {
       return true;
     }
 
     // Specialized version for unconstrained spaces
     template<typename XG>
-    bool check_constrained_dofs(const EmptyTransformation& cg, typename XG::ElementType x,
-                                XG& xg)
+    bool check_constrained_dofs(const EmptyTransformation&  /*cg*/, typename XG::ElementType  /*x*/,
+                                XG&  /*xg*/)
     {
       return true;
     }
@@ -918,7 +918,7 @@ namespace Dune {
 
     // Specialized version for unconstrained spaces
     template<typename XG>
-    void constrain_residual (const EmptyTransformation& cg, XG& xg)
+    void constrain_residual (const EmptyTransformation&  /*cg*/, XG&  /*xg*/)
     {}
 
 #endif // DOXYGEN
@@ -944,7 +944,7 @@ namespace Dune {
 
     // Specialized version for unconstrained spaces
     template<typename XG>
-    void copy_constrained_dofs (const EmptyTransformation& cg, const XG& xgin, XG& xgout)
+    void copy_constrained_dofs (const EmptyTransformation&  /*cg*/, const XG&  /*xgin*/, XG&  /*xgout*/)
     {}
 
 #endif // DOXYGEN
@@ -969,7 +969,7 @@ namespace Dune {
 
     // Specialized version for unconstrained spaces
     template<typename XG>
-    void set_nonconstrained_dofs (const EmptyTransformation& cg, typename XG::ElementType x, XG& xg)
+    void set_nonconstrained_dofs (const EmptyTransformation&  /*cg*/, typename XG::ElementType x, XG& xg)
     {
       xg = x;
     }
@@ -996,7 +996,7 @@ namespace Dune {
 
     // Specialized version for unconstrained spaces
     template<typename XG>
-    void copy_nonconstrained_dofs (const EmptyTransformation& cg, const XG& xgin, XG& xgout)
+    void copy_nonconstrained_dofs (const EmptyTransformation&  /*cg*/, const XG& xgin, XG& xgout)
     {
       xgout = xgin;
     }
@@ -1033,7 +1033,7 @@ namespace Dune {
 
     // Specialized version for unconstrained spaces
     template<typename XG>
-    void set_shifted_dofs (const EmptyTransformation& cg, typename XG::ElementType x, XG& xg)
+    void set_shifted_dofs (const EmptyTransformation&  /*cg*/, typename XG::ElementType  /*x*/, XG&  /*xg*/)
     {}
 
 #endif // DOXYGEN

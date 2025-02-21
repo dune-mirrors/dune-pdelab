@@ -71,11 +71,11 @@ namespace Imp {
 
     // transforming constructor
     template<typename Transformation>
-    LocalGridViewFunctionAdapter(std::shared_ptr<const F> f, const Transformation & t) : f_(f) {};
+    LocalGridViewFunctionAdapter(std::shared_ptr<const F> f, const Transformation &  /*t*/) : f_(f) {};
 
     // transforming constructor
     template<typename Transformation>
-    LocalGridViewFunctionAdapter(const F & f, const Transformation & t) : f_(stackobject_to_shared_ptr(f)) {};
+    LocalGridViewFunctionAdapter(const F & f, const Transformation &  /*t*/) : f_(stackobject_to_shared_ptr(f)) {};
 
   private:
     Element element_;

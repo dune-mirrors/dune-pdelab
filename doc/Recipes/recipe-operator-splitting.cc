@@ -243,13 +243,13 @@ public:
   }
 
   template <typename E, typename X>
-  Number g_C0 (const E& e, const X& x) const
+  Number g_C0 (const E&  /*e*/, const X&  /*x*/) const
   {
     return C0_ini;
   }
 
   template <typename E, typename X>
-  Number g_C1 (const E& e, const X& x) const
+  Number g_C1 (const E&  /*e*/, const X&  /*x*/) const
   {
     return C1_ini;
   }
@@ -262,37 +262,37 @@ public:
   }
 
   template <typename I, typename X>
-  bool b (const I& i, const X& x)
+  bool b (const I&  /*i*/, const X&  /*x*/)
   {
     return false;
   }
 
   template <typename I, typename X>
-  bool bC0 (const I& i, const X& x)
+  bool bC0 (const I&  /*i*/, const X&  /*x*/)
   {
     return false;
   }
 
   template <typename I, typename X>
-  bool bC1 (const I& i, const X& x)
+  bool bC1 (const I&  /*i*/, const X&  /*x*/)
   {
     return false;
   }
 
   template <typename I, typename X>
-  Number inflow (const I& i, const X& x)
+  Number inflow (const I&  /*i*/, const X&  /*x*/)
   {
     return inflow_;
   }
 
   template <typename I, typename X>
-  Number inflowC0 (const I& i, const X& x)
+  Number inflowC0 (const I&  /*i*/, const X&  /*x*/)
   {
     return inflow_C0;
   }
 
   template <typename I, typename X>
-  Number inflowC1 (const I& i, const X& x)
+  Number inflowC1 (const I&  /*i*/, const X&  /*x*/)
   {
     return inflow_C1;
   }
@@ -1134,7 +1134,7 @@ class YaspPartition : public Dune::Yasp::Partitioning<dim>
 {
 public:
   using iTuple = std::array<int,dim>;
-  void partition (const iTuple& size, int P, iTuple& dims, int /*overlap*/) const override
+  void partition (const iTuple&  /*size*/, int P, iTuple& dims, int /*overlap*/) const override
   {
     // greedy algorithm for splitting P into product of dim numbers, closest to \sqrt[dim]{P}
     for (int j=0; j<dim; ++j)

@@ -122,7 +122,7 @@ namespace PDELab {
              models< Dune::Functions::Imp::HasFreeLocalFunction, F>()
              and
              not(TypeTree::has_node_tag<typename std::decay<F>::type>::value), int>::type = 0>
-  auto makeLocalFunctionTree(const F& f, const GV & gv)
+  auto makeLocalFunctionTree(const F& f, const GV &  /*gv*/)
     -> Imp::LocalFunctionLeafNodeWrapper< decltype(localFunction(f)) >
   {
     return Imp::LocalFunctionLeafNodeWrapper< decltype(localFunction(f)) >(localFunction(f));
@@ -148,7 +148,7 @@ namespace PDELab {
              models< Dune::Functions::Imp::HasFreeLocalFunction, F>()
              and
              TypeTree::has_node_tag<typename std::decay<F>::type>::value, int>::type = 0>
-  auto makeLocalFunctionTree(F&& f, const GV & gv)
+  auto makeLocalFunctionTree(F&& f, const GV &  /*gv*/)
     -> decltype(localView(f))
   {
     return localView(std::forward(f));
@@ -172,7 +172,7 @@ namespace PDELab {
            typename std::enable_if<
              // case (d)
              IsGridFunction<F>::value, int>::type = 0>
-  auto makeLocalFunctionTree(const F& f, const GV & gv)
+  auto makeLocalFunctionTree(const F& f, const GV &  /*gv*/)
   -> typename Dune::TypeTree::TransformTree<typename std::decay<F>::type,
                                             GridFunctionToLocalViewTransformation>::transformed_type
   {
@@ -187,7 +187,7 @@ namespace PDELab {
              not(IsGridFunction<F>::value)
              &&
              std::is_same<TypeTree::NodeTag<F>,TypeTree::LeafNodeTag>::value, int>::type = 0>
-  auto makeLocalFunctionTree(const GridFunctionInterface<typename F::Traits,F>& f, const GV & gv)
+  auto makeLocalFunctionTree(const GridFunctionInterface<typename F::Traits,F>& f, const GV &  /*gv*/)
     -> Imp::LocalGridViewFunctionAdapter<F>
   {
     // call the transformation

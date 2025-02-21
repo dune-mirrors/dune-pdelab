@@ -103,7 +103,7 @@ namespace Dune {
 
     //! speed of sound
     typename Traits::RangeFieldType
-    c (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+    c (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
     {
       return 340.0;
     }
@@ -133,7 +133,7 @@ namespace Dune {
 
     //! right hand side
     typename Traits::StateType
-    q (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+    q (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
     {
       typename Traits::StateType rhs(0.0);
       return rhs;
@@ -141,7 +141,7 @@ namespace Dune {
 
     //! initial value
     typename Traits::StateType
-    u0 (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+    u0 (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
     {
       typename Traits::StateType u(0.0);
       return u;

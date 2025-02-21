@@ -64,7 +64,7 @@ namespace Dune {
 
       // volume integral depending on test and ansatz functions
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
-      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
+      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV&  /*lfsv*/, R& r) const
       {
         // get cell
         const auto& cell = eg.entity();
@@ -90,7 +90,7 @@ namespace Dune {
 
       // jacobian of volume term
       template<typename EG, typename LFSU, typename X, typename LFSV, typename M>
-      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv,
+      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X&  /*x*/, const LFSV&  /*lfsv*/,
                             M& mat) const
       {
         // get cell
@@ -112,8 +112,8 @@ namespace Dune {
       // each face is only visited ONCE!
       template<typename IG, typename LFSU, typename X, typename LFSV, typename R>
       void alpha_skeleton (const IG& ig,
-                           const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
-                           const LFSU& lfsu_n, const X& x_n, const LFSV& lfsv_n,
+                           const LFSU& lfsu_s, const X& x_s, const LFSV&  /*lfsv_s*/,
+                           const LFSU& lfsu_n, const X& x_n, const LFSV&  /*lfsv_n*/,
                            R& r_s, R& r_n) const
       {
         // define types
@@ -191,8 +191,8 @@ namespace Dune {
 
       template<typename IG, typename LFSU, typename X, typename LFSV, typename M>
       void jacobian_skeleton (const IG& ig,
-                              const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
-                              const LFSU& lfsu_n, const X& x_n, const LFSV& lfsv_n,
+                              const LFSU& lfsu_s, const X&  /*x_s*/, const LFSV&  /*lfsv_s*/,
+                              const LFSU& lfsu_n, const X&  /*x_n*/, const LFSV&  /*lfsv_n*/,
                               M& mat_ss, M& mat_sn,
                               M& mat_ns, M& mat_nn) const
       {
@@ -272,8 +272,8 @@ namespace Dune {
 
       // post skeleton: compute time step allowable for cell; to be done later
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
-      void alpha_volume_post_skeleton(const EG& eg, const LFSU& lfsu, const X& x,
-                                      const LFSV& lfsv, R& r) const
+      void alpha_volume_post_skeleton(const EG& eg, const LFSU&  /*lfsu*/, const X&  /*x*/,
+                                      const LFSV&  /*lfsv*/, R&  /*r*/) const
       {
         if (not first_stage) return; // time step calculation is only done in first stage
 
@@ -296,7 +296,7 @@ namespace Dune {
       // We put the Dirchlet evaluation also in the alpha term to save some geometry evaluations
       template<typename IG, typename LFSU, typename X, typename LFSV, typename R>
       void alpha_boundary (const IG& ig,
-                           const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
+                           const LFSU& lfsu_s, const X& x_s, const LFSV&  /*lfsv_s*/,
                            R& r_s) const
       {
         // define types
@@ -393,7 +393,7 @@ namespace Dune {
 
       template<typename IG, typename LFSU, typename X, typename LFSV, typename M>
       void jacobian_boundary (const IG& ig,
-                              const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
+                              const LFSU& lfsu_s, const X&  /*x_s*/, const LFSV& lfsv_s,
                               M& mat_ss) const
       {
         // define types
@@ -488,13 +488,13 @@ namespace Dune {
       }
 
       //! to be called once before each time step
-      void preStep (typename TP::Traits::RangeFieldType time, typename TP::Traits::RangeFieldType dt,
-                    int stages)
+      void preStep (typename TP::Traits::RangeFieldType  /*time*/, typename TP::Traits::RangeFieldType  /*dt*/,
+                    int  /*stages*/)
       {
       }
 
       //! to be called once before each stage
-      void preStage (typename TP::Traits::RangeFieldType time, int r)
+      void preStage (typename TP::Traits::RangeFieldType  /*time*/, int r)
       {
         if (r==1)
           {
@@ -510,7 +510,7 @@ namespace Dune {
       }
 
       //! to be called once before each stage
-      typename TP::Traits::RangeFieldType suggestTimestep (typename TP::Traits::RangeFieldType dt) const
+      typename TP::Traits::RangeFieldType suggestTimestep (typename TP::Traits::RangeFieldType  /*dt*/) const
       {
         return dtmin;
       }
@@ -551,7 +551,7 @@ namespace Dune {
 
       // volume integral depending on test and ansatz functions
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
-      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
+      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV&  /*lfsv*/, R& r) const
       {
         // get cell
         const auto& cell = eg.entity();
@@ -577,7 +577,7 @@ namespace Dune {
 
       // jacobian of volume term
       template<typename EG, typename LFSU, typename X, typename LFSV, typename M>
-      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv,
+      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X&  /*x*/, const LFSV&  /*lfsv*/,
                             M& mat) const
       {
         // get cell

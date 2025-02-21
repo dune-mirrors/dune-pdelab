@@ -112,7 +112,7 @@ namespace Dune {
         return codim == 0;
       }
 
-      std::size_t size(GeometryType gt) const
+      std::size_t size(GeometryType  /*gt*/) const
       {
         DUNE_THROW(VariableElementSize,"VariableMonomLocalFiniteElementMap can contain elements of variable order.");
       }

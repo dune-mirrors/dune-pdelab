@@ -97,7 +97,7 @@ namespace Dune {
        * \note We support only Galerkin method lfsu==lfsv
        */
       template<typename EG, typename LFS, typename X, typename M>
-      void jacobian_volume (const EG& eg, const LFS& lfsu, const X& x,
+      void jacobian_volume (const EG& eg, const LFS& lfsu, const X&  /*x*/,
                             const LFS& lfsv, M& mat) const
       {
         using BasisTraits =
@@ -189,7 +189,7 @@ namespace Dune {
        * \note We support only Galerkin method lfsu==lfsv
        */
       template<typename EG, typename LFS, typename X, typename M>
-      void jacobian_volume (const EG& eg, const LFS& lfsu, const X& x,
+      void jacobian_volume (const EG& eg, const LFS& lfsu, const X&  /*x*/,
                             const LFS& lfsv, M& mat) const
       {
         using ElectrodynamicImpl::dimOfCurl;

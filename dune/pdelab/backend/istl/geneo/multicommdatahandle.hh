@@ -22,7 +22,7 @@ namespace Dune {
       typedef std::size_t size_type;
 
       template<typename MessageBuffer, typename Entity, typename LocalView>
-      bool gather(MessageBuffer& buff, const Entity& e, LocalView& local_view) const
+      bool gather(MessageBuffer& buff, const Entity&  /*e*/, LocalView& local_view) const
       {
         // Write values
         for (std::size_t i = 0; i < local_view.size(); ++i) {
@@ -32,7 +32,7 @@ namespace Dune {
       }
 
       template<typename MessageBuffer, typename Entity, typename LocalView>
-      bool scatter(MessageBuffer& buff, std::size_t n, const Entity& e, LocalView& local_view) const
+      bool scatter(MessageBuffer& buff, std::size_t n, const Entity& e, LocalView&  /*local_view*/) const
       {
         RankIndex remote_rank = buff.senderRank();
 

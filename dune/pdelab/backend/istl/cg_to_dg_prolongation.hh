@@ -76,7 +76,7 @@ namespace Dune {
         {}
 
         template<typename LFSU, typename LFSV, typename TreePath>
-        void leaf(const LFSU& lfsu, const LFSV& lfsv, TreePath treePath) const
+        void leaf(const LFSU& lfsu, const LFSV& lfsv, TreePath  /*treePath*/) const
         {
           // map from CG (lfsu) 2 DG (lfsv)
           typedef typename LFSV::Traits::FiniteElementType DG_FEM;

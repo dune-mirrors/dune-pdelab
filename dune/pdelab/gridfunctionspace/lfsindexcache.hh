@@ -147,7 +147,7 @@ namespace Dune {
     {
 
       template<typename LeafLFS, typename TreePath>
-      void leaf(const LeafLFS& leaf_lfs, TreePath tp)
+      void leaf(const LeafLFS& leaf_lfs, TreePath  /*tp*/)
       {
         (*it) = leaf_lfs.size();
         ++it;
@@ -181,7 +181,7 @@ namespace Dune {
     {
 
       template<typename Ordering, typename TreePath>
-      void leaf(const Ordering& ordering, TreePath tp)
+      void leaf(const Ordering& ordering, TreePath  /*tp*/)
       {
         std::size_t leaf_size = *(leaf_size_pos++);
         if (fast)
@@ -194,7 +194,7 @@ namespace Dune {
       }
 
       template<typename Ordering, typename TreePath>
-      void post(const Ordering& ordering, TreePath tp)
+      void post(const Ordering& ordering, TreePath  /*tp*/)
       {
         if (Ordering::consume_tree_index)
           {
@@ -207,7 +207,7 @@ namespace Dune {
       }
 
       template<typename Ordering, typename TreePath>
-      void pre(const Ordering& ordering, TreePath tp)
+      void pre(const Ordering&  /*ordering*/, TreePath  /*tp*/)
       {
         dof_stack.push(dof_pos);
         container_stack.push(container_pos);
@@ -593,7 +593,7 @@ namespace Dune {
       }
 
       template<typename C>
-      LFSIndexCacheBase(const LFS& lfs, const C& c, bool enable_constraints_caching)
+      LFSIndexCacheBase(const LFS& lfs, const C&  /*c*/, bool  /*enable_constraints_caching*/)
         : _lfs(lfs)
         , _container_indices(lfs.maxSize())
       {
@@ -655,22 +655,22 @@ namespace Dune {
         return r.first->second;
       }
 
-      bool isConstrained(size_type i) const
+      bool isConstrained(size_type  /*i*/) const
       {
         return false;
       }
 
-      bool isDirichletConstraint(size_type i) const
+      bool isDirichletConstraint(size_type  /*i*/) const
       {
         return false;
       }
 
-      ConstraintsIterator constraintsBegin(size_type i) const
+      ConstraintsIterator constraintsBegin(size_type  /*i*/) const
       {
         return _constraints.begin();
       }
 
-      ConstraintsIterator constraintsEnd(size_type i) const
+      ConstraintsIterator constraintsEnd(size_type  /*i*/) const
       {
         return _constraints.end();
       }
@@ -913,7 +913,7 @@ namespace Dune {
       }
 
       template<typename C>
-      LFSIndexCacheBase(const LFS& lfs, const C& c)
+      LFSIndexCacheBase(const LFS& lfs, const C&  /*c*/)
         : _lfs(lfs)
       {
       }
@@ -934,22 +934,22 @@ namespace Dune {
         return CI(i[0]);
       }
 
-      bool isConstrained(size_type i) const
+      bool isConstrained(size_type  /*i*/) const
       {
         return false;
       }
 
-      bool isDirichletConstraint(size_type i) const
+      bool isDirichletConstraint(size_type  /*i*/) const
       {
         return false;
       }
 
-      ConstraintsIterator constraintsBegin(size_type i) const
+      ConstraintsIterator constraintsBegin(size_type  /*i*/) const
       {
         return _constraints.begin();
       }
 
-      ConstraintsIterator constraintsEnd(size_type i) const
+      ConstraintsIterator constraintsEnd(size_type  /*i*/) const
       {
         return _constraints.end();
       }

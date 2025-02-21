@@ -48,7 +48,7 @@ namespace Dune {
        * \param y  The resulting value.
        */
       inline void
-      evaluateGlobal(const typename Traits::DomainType& x,
+      evaluateGlobal(const typename Traits::DomainType&  /*x*/,
                      typename Traits::RangeType& y) const
       {
         y = val;
@@ -106,8 +106,8 @@ namespace Dune {
        */
       template<typename I>
       inline void
-      evaluate(const IntersectionGeometry<I>& ig,
-               const typename Traits::DomainType& x,
+      evaluate(const IntersectionGeometry<I>&  /*ig*/,
+               const typename Traits::DomainType&  /*x*/,
                typename Traits::RangeType& y) const
       {
         y = val;

@@ -38,7 +38,7 @@ namespace Dune {
 
     //! Compute global jacobian matrix for vector valued bases
     template<typename Geometry>
-    static void jacobian(const Basis& basis, const Geometry& geometry,
+    static void jacobian(const Basis& basis, const Geometry&  /*geometry*/,
                          const DomainLocal& xl,
                          std::vector<FieldMatrix<RangeField, dimRange,
                                           Geometry::coorddimension> >& jac)
@@ -940,7 +940,7 @@ namespace Dune {
       template<typename IG, typename LFSU, typename X, typename LFSV,
                typename LocalMatrix>
       void jacobian_boundary (const IG& ig,
-                              const LFSU& lfsu, const X& x, const LFSV& lfsv,
+                              const LFSU& lfsu, const X&  /*x*/, const LFSV& lfsv,
                               LocalMatrix& mat) const
       {
         // dimensions

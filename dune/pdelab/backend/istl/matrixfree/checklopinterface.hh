@@ -44,13 +44,13 @@ namespace Dune {
         }
 
       public:
-        template <typename A> constexpr auto operator()(const A& p)
+        template <typename A> constexpr auto operator()(const A&  /*p*/)
         {
           return test<A>(int());
         }
       };
 
-      template <typename T> constexpr auto lambdaToTemplate(const T& t)
+      template <typename T> constexpr auto lambdaToTemplate(const T&  /*t*/)
       {
         return Result<T>();
       }

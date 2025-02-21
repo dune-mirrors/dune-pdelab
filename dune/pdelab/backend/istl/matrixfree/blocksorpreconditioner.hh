@@ -88,22 +88,22 @@ namespace Dune {
 
       //! Provide this method, but it actually does not nothing
       template<typename IG, typename LFSU, typename X, typename LFSV, typename Y>
-      void alpha_skeleton(const IG& ig,
-                          const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
-                          const LFSU& lfsu_n, const X& x_n, const LFSV& lfsv_n,
-                          Y& y_s, Y& y_n) const
+      void alpha_skeleton(const IG&  /*ig*/,
+                          const LFSU&  /*lfsu_s*/, const X&  /*x_s*/, const LFSV&  /*lfsv_s*/,
+                          const LFSU&  /*lfsu_n*/, const X&  /*x_n*/, const LFSV&  /*lfsv_n*/,
+                          Y&  /*y_s*/, Y&  /*y_n*/) const
       {}
 
       //! Provide this method, but it actually does nothing
       template<typename EG, typename LFSU, typename X, typename LFSV, typename Y>
-      void alpha_volume_post_skeleton(const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, Y& y) const
+      void alpha_volume_post_skeleton(const EG&  /*eg*/, const LFSU&  /*lfsu*/, const X&  /*x*/, const LFSV&  /*lfsv*/, Y&  /*y*/) const
       {}
 
       //! Linear operator application, volume terms
       template<typename EG, typename LFSU, typename X, typename LFSV, typename Y>
-      void jacobian_apply_volume(const EG& eg,
-                                 const LFSU& lfsu, const X& x,
-                                 const LFSV& lfsv, Y& y) const
+      void jacobian_apply_volume(const EG&  /*eg*/,
+                                 const LFSU&  /*lfsu*/, const X&  /*x*/,
+                                 const LFSV&  /*lfsv*/, Y&  /*y*/) const
       {
         //====================================
         // How does this preconditioner work
@@ -126,7 +126,7 @@ namespace Dune {
 
       //! linearized operator application, volume terms
       template<typename EG, typename LFSU, typename X, typename Z, typename LFSV, typename Y>
-      void jacobian_apply_volume(const EG& eg, const LFSU& lfsu, const X& x, const Z& z, const LFSV& lfsv, Y& y) const
+      void jacobian_apply_volume(const EG&  /*eg*/, const LFSU&  /*lfsu*/, const X&  /*x*/, const Z&  /*z*/, const LFSV&  /*lfsv*/, Y&  /*y*/) const
       {
         _a_i = 0.0;
       }
@@ -134,8 +134,8 @@ namespace Dune {
       //! Gather off-block-diagonals in Gauss-Seidel process of linear operator
       template<typename IG, typename LFSU, typename Z, typename LFSV, typename Y>
       void jacobian_apply_skeleton(const IG& ig,
-                                   const LFSU& lfsu_s, const Z& z_s, const LFSV& lfsv_s,
-                                   const LFSU& lfsu_n, const Z& z_n, const LFSV& lfsv_n,
+                                   const LFSU& lfsu_s, const Z&  /*z_s*/, const LFSV& lfsv_s,
+                                   const LFSU& lfsu_n, const Z&  /*z_n*/, const LFSV&  /*lfsv_n*/,
                                    Y& y_s, Y& y_n) const
       {
         // This step is bit tricky.
@@ -206,8 +206,8 @@ namespace Dune {
       //! Gather off-block-diagonals in Gauss-Seidel process of linearized operator
       template<typename IG, typename LFSU, typename X, typename Z, typename LFSV, typename Y>
       void jacobian_apply_skeleton(const IG& ig,
-                                   const LFSU& lfsu_s, const X& x_s, const Z& z_s, const LFSV& lfsv_s,
-                                   const LFSU& lfsu_n, const X& x_n, const Z& z_n, const LFSV& lfsv_n,
+                                   const LFSU& lfsu_s, const X& x_s, const Z&  /*z_s*/, const LFSV& lfsv_s,
+                                   const LFSU& lfsu_n, const X& x_n, const Z&  /*z_n*/, const LFSV&  /*lfsv_n*/,
                                    Y& y_s, Y& y_n) const
       {
         // See documentation above!

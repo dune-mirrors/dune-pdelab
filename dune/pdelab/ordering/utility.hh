@@ -48,7 +48,7 @@ namespace Dune {
       {
 
         template<typename GFS, typename Child, typename TreePath, typename ChildIndex>
-        void afterChild(const GFS& gfs, Child& child, TreePath tp, ChildIndex childIndex) const
+        void afterChild(const GFS&  /*gfs*/, Child& child, TreePath  /*tp*/, ChildIndex  /*childIndex*/) const
         {
           child.update();
         }
@@ -159,7 +159,7 @@ namespace Dune {
     {
 
       template<typename DOFIndex, typename SizeType>
-      static void store(DOFIndex& dof_index, const GeometryType& gt, SizeType entity_index, SizeType tree_index)
+      static void store(DOFIndex& dof_index, const GeometryType&  /*gt*/, SizeType entity_index, SizeType  /*tree_index*/)
       {
         dof_index = entity_index;
       }
@@ -259,21 +259,21 @@ namespace Dune {
     {
 
       template<typename Node, typename Child, typename TreePath, typename ChildIndex>
-      void afterChild(const Node& node, Child& child, TreePath tp, ChildIndex child_index)
+      void afterChild(const Node& node, Child& child, TreePath  /*tp*/, ChildIndex child_index)
       {
         extract_child(node,child,child_index);
       }
 
       template<typename Node, typename Child, typename ChildIndex>
       typename std::enable_if<Node::has_dynamic_ordering_children>::type
-      extract_child(const Node& node, Child& child, ChildIndex child_index)
+      extract_child(const Node&  /*node*/, Child& child, ChildIndex child_index)
       {
         _children[child_index] = &child;
       }
 
       template<typename Node, typename Child, typename ChildIndex>
       typename std::enable_if<!Node::has_dynamic_ordering_children>::type
-      extract_child(const Node& node, Child& child, ChildIndex child_index)
+      extract_child(const Node&  /*node*/, Child&  /*child*/, ChildIndex  /*child_index*/)
       {
       }
 
@@ -307,7 +307,7 @@ namespace Dune {
         return *this;
       }
 
-      DummyDOFIndexIterator& operator+=(size_type i)
+      DummyDOFIndexIterator& operator+=(size_type  /*i*/)
       {
         return *this;
       }
@@ -327,7 +327,7 @@ namespace Dune {
         return *this;
       }
 
-      bool operator==(const DummyDOFIndexIterator& r) const
+      bool operator==(const DummyDOFIndexIterator&  /*r*/) const
       {
         return true;
       }
@@ -337,7 +337,7 @@ namespace Dune {
         return !operator==(r);
       }
 
-      void push_back(size_type i)
+      void push_back(size_type  /*i*/)
       {}
 
     };

@@ -44,7 +44,7 @@ public:
 
   //! tensor diffusion coefficient
   typename Traits::PermTensorType
-  A (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+  A (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
   {
     typename Traits::PermTensorType I;
     for (std::size_t i=0; i<Traits::dimDomain; i++)
@@ -55,7 +55,7 @@ public:
 
   //! velocity field
   typename Traits::RangeType
-  b (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+  b (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
   {
     typename Traits::RangeType v(0.0);
     return v;
@@ -63,7 +63,7 @@ public:
 
   //! sink term
   typename Traits::RangeFieldType
-  c (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+  c (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
   {
     return 0.0;
   }
@@ -79,7 +79,7 @@ public:
 
   //! boundary condition type function
   BCType
-  bctype (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& x) const
+  bctype (const typename Traits::IntersectionType&  /*is*/, const typename Traits::IntersectionDomainType&  /*x*/) const
   {
     return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Dirichlet;
   }
@@ -95,14 +95,14 @@ public:
 
   //! Neumann boundary condition
   typename Traits::RangeFieldType
-  j (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& x) const
+  j (const typename Traits::IntersectionType&  /*is*/, const typename Traits::IntersectionDomainType&  /*x*/) const
   {
     return 0.0;
   }
 
   //! outflow boundary condition
   typename Traits::RangeFieldType
-  o (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& x) const
+  o (const typename Traits::IntersectionType&  /*is*/, const typename Traits::IntersectionDomainType&  /*x*/) const
   {
     return 0.0;
   }

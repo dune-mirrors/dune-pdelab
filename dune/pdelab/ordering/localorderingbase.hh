@@ -387,7 +387,7 @@ namespace Dune {
 
     private:
 
-      bool update_gfs_data_size(typename Traits::SizeType& size, typename Traits::SizeType& block_count) const
+      bool update_gfs_data_size(typename Traits::SizeType&  /*size*/, typename Traits::SizeType&  /*block_count*/) const
       {
         return false;
       }

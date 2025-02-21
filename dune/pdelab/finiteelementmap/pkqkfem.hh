@@ -45,7 +45,7 @@ namespace Dune {
             struct InitPkQkLocalFiniteElementMap<D,R,d,-1>
             {
                 template<typename C>
-                    static void init(C & c, unsigned int order)
+                    static void init(C &  /*c*/, unsigned int order)
                 {
                     DUNE_THROW(Exception, "Sorry, but we failed to initialize a QkPk FiniteElementMap of order " << order);
                 }
@@ -129,7 +129,7 @@ namespace Dune {
                 }
             }
 
-            std::size_t size(GeometryType gt) const
+            std::size_t size(GeometryType  /*gt*/) const
             {
                 DUNE_THROW(NotImplemented, "PkQkLocalFiniteElement is not fixed-size!");
             }

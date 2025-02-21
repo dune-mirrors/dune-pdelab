@@ -294,7 +294,7 @@ namespace Dune{
       }
 
       template<typename GFSV, typename GC, typename C>
-      void set_trivial_rows(const GFSV& gfsv, GC& globalcontainer, const C& c) const
+      void set_trivial_rows(const GFSV&  /*gfsv*/, GC& globalcontainer, const C& c) const
       {
         typedef typename C::const_iterator global_row_iterator;
         for (global_row_iterator cit = c.begin(); cit != c.end(); ++cit)
@@ -302,7 +302,7 @@ namespace Dune{
       }
 
       template<typename GFSV, typename GC>
-      void set_trivial_rows(const GFSV& gfsv, GC& globalcontainer, const EmptyTransformation& c) const
+      void set_trivial_rows(const GFSV&  /*gfsv*/, GC&  /*globalcontainer*/, const EmptyTransformation&  /*c*/) const
       {
       }
 

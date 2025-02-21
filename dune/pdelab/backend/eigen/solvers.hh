@@ -208,7 +208,7 @@ namespace Dune {
         \param[in] reduction to be achieved
         */
       template<class M, class V, class W>
-      void apply(M& A, V& z, W& r, typename W::field_type reduction)
+      void apply(M& A, V& z, W& r, typename W::field_type  /*reduction*/)
       {
         using Backend::native;
         using Mat = Backend::Native<M>;
@@ -322,7 +322,7 @@ namespace Dune {
         \param[in] reduction to be achieved
         */
       template<class M, class V, class W>
-      void apply(M& A, V& z, W& r, typename W::field_type reduction)
+      void apply(M& A, V& z, W& r, typename W::field_type  /*reduction*/)
       {
         Dune::Timer watch;
         watch.reset();

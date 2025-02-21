@@ -131,7 +131,7 @@ namespace Dune
              *       of the step, a multi-step method is similar to a one step
              *       method with one stage.
              */
-            void preStep (RealType time, RealType dt, int stages)
+            void preStep (RealType  /*time*/, RealType  /*dt*/, int  /*stages*/)
             {
             }
 
@@ -161,7 +161,7 @@ namespace Dune
              * \note For the MultiStepMethod, this is called once after
              *       preStep() with r=1.
              */
-            void preStage (RealType time, int r)
+            void preStage (RealType  /*time*/, int r)
             {
                 stage = r;
             }

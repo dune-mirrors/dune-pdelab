@@ -196,7 +196,7 @@ namespace Dune {
 
       // jacobian of volume term
       template<typename EG, typename LFSU, typename X, typename LFSV, typename M>
-      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv,
+      void jacobian_volume (const EG& eg, const LFSU& lfsu, const X&  /*x*/, const LFSV& lfsv,
                             M& mat) const
       {
         // define types
@@ -482,8 +482,8 @@ namespace Dune {
 
       template<typename IG, typename LFSU, typename X, typename LFSV, typename M>
       void jacobian_skeleton (const IG& ig,
-                              const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
-                              const LFSU& lfsu_n, const X& x_n, const LFSV& lfsv_n,
+                              const LFSU& lfsu_s, const X&  /*x_s*/, const LFSV& lfsv_s,
+                              const LFSU& lfsu_n, const X&  /*x_n*/, const LFSV& lfsv_n,
                               M& mat_ss, M& mat_sn,
                               M& mat_ns, M& mat_nn) const
       {
@@ -900,7 +900,7 @@ namespace Dune {
 
       template<typename IG, typename LFSU, typename X, typename LFSV, typename M>
       void jacobian_boundary (const IG& ig,
-                              const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
+                              const LFSU& lfsu_s, const X&  /*x_s*/, const LFSV& lfsv_s,
                               M& mat_ss) const
       {
         // define types

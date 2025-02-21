@@ -105,28 +105,28 @@ namespace Dune {
 
       //! permittivity
       typename Traits::RangeFieldType
-      eps (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+      eps (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
       {
         return 1.0;
       }
 
       //! permeability
       typename Traits::RangeFieldType
-      mu (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+      mu (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
       {
         return 1.0;
       }
 
       //! permeability
       typename Traits::RangeFieldType
-      sigma (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+      sigma (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
       {
         return 1.0;
       }
 
       //! boundary condition value
       typename Traits::StateType
-      g (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& x, const typename Traits::StateType& s) const
+      g (const typename Traits::IntersectionType& is, const typename Traits::IntersectionDomainType& x, const typename Traits::StateType&  /*s*/) const
       {
         typename Traits::DomainType xglobal = is.geometry().global(x);
         typename Traits::StateType u(0.0);
@@ -135,7 +135,7 @@ namespace Dune {
 
       //! right hand side
       typename Traits::StateType
-      j (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+      j (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
       {
         typename Traits::StateType rhs(0.0);
         return rhs;
@@ -143,7 +143,7 @@ namespace Dune {
 
       //! initial value
       typename Traits::StateType
-      u0 (const typename Traits::ElementType& e, const typename Traits::DomainType& x) const
+      u0 (const typename Traits::ElementType&  /*e*/, const typename Traits::DomainType&  /*x*/) const
       {
         typename Traits::StateType u(0.0);
         return u;

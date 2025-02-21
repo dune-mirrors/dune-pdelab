@@ -138,7 +138,7 @@ namespace Dune {
       // Bad: This interface cannot be used for mixed finite elements where the flux is the essential b.c.
       typename Traits::RangeFieldType
       j (const typename Traits::ElementType& e, const typename Traits::DomainType& x,
-         typename Traits::RangeFieldType u) const
+         typename Traits::RangeFieldType  /*u*/) const
       {
         return asImp().j(e,x);
       }
@@ -244,7 +244,7 @@ namespace Dune {
 
       // volume integral depending on test and ansatz functions
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
-      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
+      void alpha_volume (const EG& eg, const LFSU& lfsu, const X& x, const LFSV&  /*lfsv*/, R& r) const
       {
         // define types
         using RF = typename LFSU::Traits::FiniteElementType::

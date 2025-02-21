@@ -113,19 +113,19 @@ namespace Dune {
         //
 
         template<typename FieldMatrix, typename CI>
-        std::size_t row_size(tags::field_matrix, const FieldMatrix& c, const CI& ci, int i)
+        std::size_t row_size(tags::field_matrix, const FieldMatrix&  /*c*/, const CI&  /*ci*/, int  /*i*/)
         {
           return FieldMatrix::cols;
         }
 
         template<typename FieldMatrix>
-        std::size_t row_size(tags::field_matrix, const FieldMatrix& c)
+        std::size_t row_size(tags::field_matrix, const FieldMatrix&  /*c*/)
         {
           return FieldMatrix::cols;
         }
 
         template<typename BlockVector, typename CI>
-        std::size_t row_size(tags::block_vector, const BlockVector& c, const CI& ci, int i)
+        std::size_t row_size(tags::block_vector, const BlockVector& c, const CI&  /*ci*/, int  /*i*/)
         {
           return row_size(container_tag(c[0]),c[0]);
         }
@@ -139,7 +139,7 @@ namespace Dune {
         // FieldMatrix with a single row is special because the last-level index isn't stored, so we have to
         // manually extract row 0.
         template<typename FieldMatrix, typename CI>
-        typename FieldMatrix::field_type* row_begin(tags::field_matrix_1_any, FieldMatrix& c, const CI& ci, int i)
+        typename FieldMatrix::field_type* row_begin(tags::field_matrix_1_any, FieldMatrix& c, const CI&  /*ci*/, int i)
         {
           assert(i == -1);
           return &(*c[0].begin());
@@ -161,7 +161,7 @@ namespace Dune {
 
         // With a 1x1 matrix, we can simply take the address directly following the begin() iterator's target.
         template<typename FieldMatrix, typename CI>
-        typename FieldMatrix::field_type* row_end(tags::field_matrix_1_1, FieldMatrix& c, const CI& ci, int i)
+        typename FieldMatrix::field_type* row_end(tags::field_matrix_1_1, FieldMatrix& c, const CI&  /*ci*/, int i)
         {
           assert(i == -1);
           return &(*c[0].begin()) + 1;
@@ -170,7 +170,7 @@ namespace Dune {
         // For any other matrix, we perform the decrement iterator / increment address of target dance...
         // Once for the optimized storage scheme of single row matrices...
         template<typename FieldMatrix, typename CI>
-        typename FieldMatrix::field_type* row_end(tags::field_matrix_1_any, FieldMatrix& c, const CI& ci, int i)
+        typename FieldMatrix::field_type* row_end(tags::field_matrix_1_any, FieldMatrix& c, const CI&  /*ci*/, int i)
         {
           assert(i == -1);
           typename FieldMatrix::row_type::iterator it = c[0].end();
@@ -279,13 +279,13 @@ namespace Dune {
           {}
 
           //! returns true if data for this codim should be communicated
-          bool contains(int dim, int codim) const
+          bool contains(int  /*dim*/, int codim) const
           {
             return _gfs.dataHandleContains(codim);
           }
 
           //!  \brief returns true if size per entity of given dim and codim is a constant
-          bool fixedSize(int dim, int codim) const
+          bool fixedSize(int  /*dim*/, int codim) const
           {
             return _gfs.dataHandleFixedSize(codim);
           }
@@ -326,7 +326,7 @@ namespace Dune {
             n is the number of objects sent by the sender
           */
           template<typename MessageBuffer, typename Entity>
-          void scatter(MessageBuffer& buff, const Entity& e, size_type n)
+          void scatter(MessageBuffer& buff, const Entity& e, size_type  /*n*/)
           {
             _index_cache.update(e);
             for (size_type i = 0; i < _index_cache.size(); ++i)

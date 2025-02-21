@@ -218,8 +218,8 @@ namespace Dune {
       // apply jacobian of skeleton term
       template<typename IG, typename LFSU, typename X, typename Z, typename LFSV, typename Y>
       void jacobian_apply_skeleton (const IG& ig,
-                                    const LFSU& lfsu_s, const X& x_s, const Z& z_s, const LFSV& lfsv_s,
-                                    const LFSU& lfsu_n, const X& x_n, const Z& z_n, const LFSV& lfsv_n,
+                                    const LFSU& lfsu_s, const X&  /*x_s*/, const Z& z_s, const LFSV& lfsv_s,
+                                    const LFSU& lfsu_n, const X&  /*x_n*/, const Z& z_n, const LFSV& lfsv_n,
                                     Y& y_s, Y& y_n) const
       {
         linearLocalOperator.jacobian_apply_skeleton(ig, lfsu_s, z_s, lfsv_s, lfsu_n, z_n, lfsv_n, y_s, y_n);
@@ -248,7 +248,7 @@ namespace Dune {
       // apply jacobian of boundary term
       template<typename IG, typename LFSU, typename X, typename Z, typename LFSV, typename Y>
       void jacobian_apply_boundary (const IG& ig,
-                                    const LFSU& lfsu_s, const X& x_s, const Z& z_s, const LFSV& lfsv_s,
+                                    const LFSU& lfsu_s, const X&  /*x_s*/, const Z& z_s, const LFSV& lfsv_s,
                                     Y& y_s) const
       {
         linearLocalOperator.jacobian_apply_boundary(ig, lfsu_s, z_s, lfsv_s, y_s);

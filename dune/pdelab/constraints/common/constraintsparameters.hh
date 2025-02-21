@@ -35,7 +35,7 @@ namespace Dune {
        * \returns            true iff the given location should have a Dirichlet constraint.
        */
       template<typename I>
-      bool isDirichlet(const I & intersection, const FieldVector<typename I::ctype, I::mydimension> & coord) const
+      bool isDirichlet(const I &  /*intersection*/, const FieldVector<typename I::ctype, I::mydimension> &  /*coord*/) const
       {
         return true;
       }
@@ -53,7 +53,7 @@ namespace Dune {
        * \returns            true iff the given location should have a Neumann constraint.
        */
       template<typename I>
-      bool isNeumann(const I & intersection, const FieldVector<typename I::ctype, I::mydimension> & coord) const
+      bool isNeumann(const I &  /*intersection*/, const FieldVector<typename I::ctype, I::mydimension> &  /*coord*/) const
       {
         return false;
       }
@@ -65,7 +65,7 @@ namespace Dune {
        * \note This method only needs to be implement for instationary problems.
        */
       template<typename T>
-      void setTime(const T& time)
+      void setTime(const T&  /*time*/)
       {}
 
     };
@@ -84,7 +84,7 @@ namespace Dune {
        * Predicate implementation that will always return false.
        */
       template<typename I>
-      bool isDirichlet(const I & intersection, const FieldVector<typename I::ctype, I::mydimension> & coord) const
+      bool isDirichlet(const I &  /*intersection*/, const FieldVector<typename I::ctype, I::mydimension> &  /*coord*/) const
       {
         return false;
       }
@@ -93,7 +93,7 @@ namespace Dune {
        * Predicate implementation that will always return true.
        */
       template<typename I>
-      bool isNeumann(const I & intersection, const FieldVector<typename I::ctype, I::mydimension> & coord) const
+      bool isNeumann(const I &  /*intersection*/, const FieldVector<typename I::ctype, I::mydimension> &  /*coord*/) const
       {
         return true;
       }
@@ -104,7 +104,7 @@ namespace Dune {
        * \note This method only needs to be implement for instationary problems.
        */
       template<typename T>
-      void setTime(const T& time)
+      void setTime(const T&  /*time*/)
       {}
 
     };
@@ -131,7 +131,7 @@ namespace Dune {
        * \returns            true iff the given location should have a Neumann constraint.
        */
       template<typename I>
-      bool isNeumann(const I & intersection, const FieldVector<typename I::ctype, I::mydimension> & coord) const
+      bool isNeumann(const I &  /*intersection*/, const FieldVector<typename I::ctype, I::mydimension> &  /*coord*/) const
       {
         return true;
       }
@@ -142,7 +142,7 @@ namespace Dune {
        * \note This method only needs to be implement for instationary problems.
        */
       template<typename T>
-      void setTime(const T& time)
+      void setTime(const T&  /*time*/)
       {}
 
     };
@@ -161,7 +161,7 @@ namespace Dune {
        * Predicate implementation that will always return false.
        */
       template<typename I>
-      bool isNeumann(const I & intersection, const FieldVector<typename I::ctype, I::mydimension> & coord) const
+      bool isNeumann(const I &  /*intersection*/, const FieldVector<typename I::ctype, I::mydimension> &  /*coord*/) const
       {
         return false;
       }
@@ -172,7 +172,7 @@ namespace Dune {
        * \note This method only needs to be implement for instationary problems.
        */
       template<typename T>
-      void setTime(const T& time)
+      void setTime(const T&  /*time*/)
       {}
 
     };

@@ -49,8 +49,8 @@ public:
   B (const GV& gv_) : gv(gv_) {}
 
   template<typename I>
-  inline void evaluate (const Dune::PDELab::IntersectionGeometry<I>& ig,
-                        const typename Traits::DomainType& x,
+  inline void evaluate (const Dune::PDELab::IntersectionGeometry<I>&  /*ig*/,
+                        const typename Traits::DomainType&  /*x*/,
                         typename Traits::RangeType& y) const
   {
     y = 1; // all is Dirichlet boundary

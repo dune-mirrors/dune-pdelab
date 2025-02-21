@@ -48,7 +48,7 @@ namespace Dune {
 
       /*! \brief Return name of the scheme
        */
-      virtual RealType suggestTimestep (RealType time, RealType givendt) override
+      virtual RealType suggestTimestep (RealType  /*time*/, RealType givendt) override
       {
         return givendt;
       }
@@ -705,11 +705,11 @@ namespace Dune {
       {
       public:
         template<typename V>
-        void prestage(V& v)
+        void prestage(V&  /*v*/)
         {}
 
         template<typename V>
-        void poststage(V& v)
+        void poststage(V&  /*v*/)
         {}
       };
 

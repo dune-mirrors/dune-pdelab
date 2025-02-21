@@ -19,7 +19,7 @@ namespace Dune {
         {}
 
         template <typename LFSU, typename I, typename LFSV, typename J, typename Value>
-        void accumulate(const LFSU& lfsu, I i, const LFSV& lfsv, J j, Value value)
+        void accumulate(const LFSU& lfsu, I i, const LFSV&  /*lfsv*/, J j, Value value)
         {
           if (_diagonal && i == j){
             _view.accumulate(lfsu, i, value);
@@ -106,7 +106,7 @@ namespace Dune {
       void alpha_skeleton (const IG& ig,
                            const LFSU& lfsu_s, const X& x_s, const LFSV& lfsv_s,
                            const LFSU& lfsu_n, const X& x_n, const LFSV& lfsv_n,
-                           R& r_s, R& r_n) const
+                           R& r_s, R&  /*r_n*/) const
       {
         impl::PointDiagonalAccumulationViewWrapper<R> view_ss(r_s, true);
         impl::PointDiagonalAccumulationViewWrapper<R> view_other(r_s, false);
