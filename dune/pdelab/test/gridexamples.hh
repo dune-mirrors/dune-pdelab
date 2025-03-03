@@ -12,9 +12,24 @@
 #include<dune/grid/yaspgrid.hh>
 #include<dune/grid/common/gridfactory.hh>
 #if HAVE_ALBERTA
+/* In older versions of Alberta, it tries to fix the issues around not having
+   proper bool in C by redefining bool as _Bool or vice versa, depending
+   on the language that it is compiled with (C or C++). Clang's stdbool header
+   does essentially the same and we end up with `typedef bool bool` which is a
+   compile error. This whole bool/_Bool logic in an ifdef in Albert that is
+   active if HAVE_STDBOOL_H is not defined, in which case it just includes
+   stdbool.h and uses that. So let's just check if that header is available
+   and set that define to make Alberta happy.
+*/
+#if __has_include(<stdbool.h>)
+#define HAVE_STDBOOL_H
+#endif
+
 #include<dune/grid/albertagrid.hh>
 #include <dune/grid/albertagrid/dgfparser.hh>
 #include <dune/grid/albertagrid/gridfactory.hh>
+
+#undef HAVE_STDBOOL_H
 #endif
 #if HAVE_DUNE_UGGRID
 #include <dune/grid/uggrid/uggridfactory.hh>
