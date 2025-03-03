@@ -46,16 +46,28 @@ pdelab-tutorials:
     - when: manual
       # allow_failure: true
 
+# alberta in this image does not work with clang-18
+ubuntu:24.04 clang-18-23 (debug):
+  before_script:
+    - echo "CMAKE_FLAGS+=' -DCMAKE_DISABLE_FIND_PACKAGE_Alberta=True' " >> /duneci/cmake-flags/disable-alberta.opts
+    - *dune_setup
+
+# alberta in this image does not work with clang-18
+ubuntu:24.04 clang-18-23-libcxx (no python, no bindings):
+  before_script:
+    - echo "CMAKE_FLAGS+=' -DCMAKE_DISABLE_FIND_PACKAGE_Alberta=True' " >> /duneci/cmake-flags/disable-alberta.opts
+    - *dune_setup
+
 debian:11 gcc-10-20:
   extends: .common
   image: registry.dune-project.org/docker/ci/debian:11
   before_script:
     - *dune_setup
-    - echo "CMAKE_FLAGS+=' -DCOVERAGE_REPORT=ON' " >> /duneci/cmake-flags/overage.opts
+    - echo "CMAKE_FLAGS+=' -DCOVERAGE_REPORT=ON' " >> /duneci/cmake-flags/coverage.opts
   after_script:
     - gcovr $GCOVR_OPTS $CI_PROJECT_DIR/build-cmake
   variables:
-    # Create a coverage report 
+    # Create a coverage report
     #
     # Notes:
     # - Only works for gcc
