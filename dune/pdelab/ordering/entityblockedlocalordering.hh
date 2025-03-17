@@ -104,7 +104,7 @@ namespace Dune {
 
       static const bool recursive = false;
 
-      typedef TypeTree::TransformTree<GFS,gfs_to_local_ordering<Transformation> > LocalOrderingTransformation;
+      typedef PDELab::TransformTree<GFS,gfs_to_local_ordering<Transformation> > LocalOrderingTransformation;
       typedef typename LocalOrderingTransformation::Type LocalOrdering;
 
       typedef GridViewOrdering<LocalOrdering> transformed_type;
@@ -227,7 +227,7 @@ namespace Dune {
     {
       static const bool recursive = false;
 
-      typedef TypeTree::TransformTree<GFS,gfs_to_local_ordering<Transformation> > LocalOrderingTransformation;
+      typedef PDELab::TransformTree<GFS,gfs_to_local_ordering<Transformation> > LocalOrderingTransformation;
       typedef typename LocalOrderingTransformation::Type LocalOrdering;
 
       typedef GridViewOrdering<LocalOrdering> transformed_type;

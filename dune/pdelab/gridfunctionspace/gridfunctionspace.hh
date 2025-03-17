@@ -188,7 +188,7 @@ namespace Dune {
       , public DataHandleProvider<GridFunctionSpace<ES,FEM,CE,B,O> >
     {
 
-      typedef TypeTree::TransformTree<GridFunctionSpace,gfs_to_ordering<GridFunctionSpace> > ordering_transformation;
+      typedef PDELab::TransformTree<GridFunctionSpace,gfs_to_ordering<GridFunctionSpace> > ordering_transformation;
 
       template<typename,typename>
       friend class GridFunctionSpaceBase;

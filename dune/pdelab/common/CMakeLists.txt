@@ -27,6 +27,7 @@ install(FILES benchmarkhelper.hh
               referenceelements.hh
               simpledofindex.hh
               topologyutility.hh
+              transform_tree.hh
               typetraits.hh
               utility.hh
               vtkexport.hh

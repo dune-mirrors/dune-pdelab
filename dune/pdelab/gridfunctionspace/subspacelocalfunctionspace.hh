@@ -96,7 +96,7 @@ namespace Dune {
     template <typename BaseGFS, typename SubSpaceTreePath>
     class LocalFunctionSpace<gfs::GridFunctionSubSpace<BaseGFS,SubSpaceTreePath>, AnySpaceTag>
       : public gfs::SubSpaceLocalFunctionSpaceNode<gfs::GridFunctionSubSpace<BaseGFS,SubSpaceTreePath>,
-                                                   typename TypeTree::TransformTree<
+                                                   typename PDELab::TransformTree<
                                                      gfs::GridFunctionSubSpace<BaseGFS,SubSpaceTreePath>,
                                                      gfs_to_lfs<gfs::GridFunctionSubSpace<
                                                                   BaseGFS,
@@ -111,7 +111,7 @@ namespace Dune {
 
       typedef gfs::SubSpaceLocalFunctionSpaceNode<
         GFS,
-        typename TypeTree::TransformTree<
+        typename PDELab::TransformTree<
           GFS,
           gfs_to_lfs<GFS>
           >::Type
@@ -132,14 +132,14 @@ namespace Dune {
     public:
 
       LocalFunctionSpace(const GFS & gfs)
-        : BaseT(TypeTree::TransformTree<GFS,gfs_to_lfs<GFS> >::transform(gfs))
+        : BaseT(PDELab::TransformTree<GFS,gfs_to_lfs<GFS> >::transform(gfs))
       {
         this->_dof_indices = &(this->_dof_index_storage);
         this->setup(*this);
       }
 
       LocalFunctionSpace(std::shared_ptr<const GFS> pgfs)
-        : BaseT(*TypeTree::TransformTree<GFS,gfs_to_lfs<GFS> >::transform_storage(pgfs))
+        : BaseT(*PDELab::TransformTree<GFS,gfs_to_lfs<GFS> >::transform_storage(pgfs))
       {
         this->_dof_indices = &(this->_dof_index_storage);
         this->setup(*this);

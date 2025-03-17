@@ -722,7 +722,7 @@ namespace Dune {
       assemble(const F& f, const GFS& gfs, CG& cg, const bool verbose)
       {
         // type of transformed tree
-        typedef typename TypeTree::TransformTree<F,gf_to_constraints> Transformation;
+        typedef typename PDELab::TransformTree<F,gf_to_constraints> Transformation;
         typedef typename Transformation::Type P;
         // transform tree
         P p = Transformation::transform(f);

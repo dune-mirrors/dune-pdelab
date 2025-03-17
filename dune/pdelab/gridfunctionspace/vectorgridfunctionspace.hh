@@ -124,7 +124,7 @@ namespace Dune {
         OrderingTag,
         k>;
 
-      typedef TypeTree::TransformTree<VectorGridFunctionSpace,
+      typedef PDELab::TransformTree<VectorGridFunctionSpace,
                                       gfs_to_ordering<VectorGridFunctionSpace>
                                       > ordering_transformation;
 

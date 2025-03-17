@@ -750,9 +750,9 @@ namespace Dune {
      */
     template <typename GFS, typename TAG>
     class LocalFunctionSpace :
-      public TypeTree::TransformTree<GFS,gfs_to_lfs<GFS> >::Type
+      public PDELab::TransformTree<GFS,gfs_to_lfs<GFS> >::Type
     {
-      typedef typename TypeTree::TransformTree<GFS,gfs_to_lfs<GFS> >::Type BaseT;
+      typedef typename PDELab::TransformTree<GFS,gfs_to_lfs<GFS> >::Type BaseT;
       typedef typename BaseT::Traits::IndexContainer::size_type I;
       typedef typename BaseT::Traits::IndexContainer::size_type LocalIndex;
 
@@ -772,7 +772,7 @@ namespace Dune {
       typedef typename BaseT::Traits Traits;
 
       LocalFunctionSpace(const GFS & gfs)
-        : BaseT(TypeTree::TransformTree<GFS,gfs_to_lfs<GFS> >::transform(gfs))
+        : BaseT(PDELab::TransformTree<GFS,gfs_to_lfs<GFS> >::transform(gfs))
       {
         this->setup(*this);
       }
@@ -805,9 +805,9 @@ namespace Dune {
     // subspacelocalfunctionspace.hh!
     template <typename GFS>
     class LocalFunctionSpace<GFS, AnySpaceTag> :
-      public TypeTree::TransformTree<GFS,gfs_to_lfs<GFS> >::Type
+      public PDELab::TransformTree<GFS,gfs_to_lfs<GFS> >::Type
     {
-      typedef typename TypeTree::TransformTree<GFS,gfs_to_lfs<GFS> >::Type BaseT;
+      typedef typename PDELab::TransformTree<GFS,gfs_to_lfs<GFS> >::Type BaseT;
 
       template<typename>
       friend struct PropagateGlobalStorageVisitor;
@@ -824,14 +824,14 @@ namespace Dune {
     public:
 
       LocalFunctionSpace(const GFS & gfs)
-        : BaseT(TypeTree::TransformTree<GFS,gfs_to_lfs<GFS> >::transform(gfs))
+        : BaseT(PDELab::TransformTree<GFS,gfs_to_lfs<GFS> >::transform(gfs))
       {
         this->_dof_indices = &(this->_dof_index_storage);
         this->setup(*this);
       }
 
       LocalFunctionSpace(std::shared_ptr<const GFS> pgfs)
-        : BaseT(*TypeTree::TransformTree<GFS,gfs_to_lfs<GFS> >::transform_storage(pgfs))
+        : BaseT(*PDELab::TransformTree<GFS,gfs_to_lfs<GFS> >::transform_storage(pgfs))
       {
         this->_dof_indices = &(this->_dof_index_storage);
         this->setup(*this);

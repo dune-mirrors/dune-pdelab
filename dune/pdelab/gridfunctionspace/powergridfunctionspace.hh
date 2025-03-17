@@ -74,7 +74,7 @@ namespace Dune {
       template<typename,typename>
       friend class GridFunctionSpaceBase;
 
-      typedef TypeTree::TransformTree<PowerGridFunctionSpace,
+      typedef PDELab::TransformTree<PowerGridFunctionSpace,
                                       gfs_to_ordering<PowerGridFunctionSpace>
                                       > ordering_transformation;
 

@@ -103,13 +103,13 @@ namespace Dune {
 
     template<typename DI, typename CI, typename Child, std::size_t k>
     class PowerLexicographicOrdering
-      : public TypeTree::PowerNode<Child, k>
+      : public Dune::TypeTree::PowerNode<Child, k>
       , public lexicographic_ordering::Base<DI,
                                             CI,
                                             PowerLexicographicOrdering<DI,CI,Child,k>
                                             >
     {
-      typedef TypeTree::PowerNode<Child, k> Node;
+      typedef Dune::TypeTree::PowerNode<Child, k> Node;
 
       typedef lexicographic_ordering::Base<DI,
                                            CI,
@@ -188,7 +188,7 @@ namespace Dune {
           typename Transformation::DOFIndex,
           typename Transformation::ContainerIndex,
           TC,
-          TypeTree::StaticDegree<GFS>::value
+          Dune::TypeTree::StaticDegree<GFS>::value
           > type;
 
         typedef std::shared_ptr<type> storage_type;
@@ -196,13 +196,13 @@ namespace Dune {
       };
 
       template<typename TC>
-      static typename result<TC>::type transform(const GFS& gfs, const Transformation& t, const std::array<std::shared_ptr<TC>,TypeTree::StaticDegree<GFS>::value>& children)
+      static typename result<TC>::type transform(const GFS& gfs, const Transformation& t, const std::array<std::shared_ptr<TC>,Dune::TypeTree::StaticDegree<GFS>::value>& children)
       {
         return typename result<TC>::type(gfs.backend().blocked(gfs),children,const_cast<GFS*>(&gfs));
       }
 
       template<typename TC>
-      static typename result<TC>::storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t, const std::array<std::shared_ptr<TC>,TypeTree::StaticDegree<GFS>::value>& children)
+      static typename result<TC>::storage_type transform_storage(std::shared_ptr<const GFS> gfs, const Transformation& t, const std::array<std::shared_ptr<TC>,Dune::TypeTree::StaticDegree<GFS>::value>& children)
       {
         return std::make_shared<typename result<TC>::type>(gfs->backend().blocked(*gfs),children,const_cast<GFS*>(gfs.get()));
       }
@@ -219,7 +219,7 @@ namespace Dune {
     //! Interface for merging index spaces
     template<typename DI, typename CI, typename... Children>
     class CompositeLexicographicOrdering :
-      public TypeTree::CompositeNode<Children...>,
+      public Dune::TypeTree::CompositeNode<Children...>,
       public lexicographic_ordering::Base<DI,
                                           CI,
                                           CompositeLexicographicOrdering<
@@ -229,7 +229,7 @@ namespace Dune {
                                             >
                                           >
     {
-      typedef TypeTree::CompositeNode<Children...> Node;
+      typedef Dune::TypeTree::CompositeNode<Children...> Node;
 
       typedef lexicographic_ordering::Base<
         DI,
@@ -262,7 +262,7 @@ namespace Dune {
 
       void update()
       {
-        TypeTree::applyToTree(*this,ordering::update_direct_children());
+        Dune::TypeTree::applyToTree(*this,ordering::update_direct_children());
         Base::update();
       }
 

@@ -67,7 +67,7 @@ namespace Dune {
         OrderingTag,
         sizeof...(Children)>;
 
-      typedef TypeTree::TransformTree<CompositeGridFunctionSpace,
+      typedef PDELab::TransformTree<CompositeGridFunctionSpace,
                                       gfs_to_ordering<CompositeGridFunctionSpace>
                                       > ordering_transformation;
 

@@ -173,11 +173,11 @@ namespace PDELab {
              // case (d)
              IsGridFunction<F>::value, int>::type = 0>
   auto makeLocalFunctionTree(const F& f, const GV & gv)
-  -> typename Dune::TypeTree::TransformTree<typename std::decay<F>::type,
+  -> typename PDELab::TransformTree<typename std::decay<F>::type,
                                             GridFunctionToLocalViewTransformation>::transformed_type
   {
     // call the transformation
-    return Dune::TypeTree::TransformTree<typename std::decay<F>::type,
+    return PDELab::TransformTree<typename std::decay<F>::type,
                                          GridFunctionToLocalViewTransformation>::transform(f);
   }
 

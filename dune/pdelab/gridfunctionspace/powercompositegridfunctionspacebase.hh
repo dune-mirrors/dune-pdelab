@@ -12,9 +12,9 @@
 #include <dune/typetree/traversal.hh>
 #include <dune/typetree/traversalutilities.hh>
 #include <dune/typetree/utility.hh>
-#include <dune/typetree/transformation.hh>
 #include <dune/typetree/visitor.hh>
 
+#include <dune/pdelab/common/transform_tree.hh>
 #include <dune/pdelab/constraints/common/constraintstransformation.hh>
 #include <dune/pdelab/constraints/noconstraints.hh>
 #include <dune/pdelab/gridfunctionspace/tags.hh>
