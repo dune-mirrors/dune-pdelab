@@ -158,7 +158,7 @@ namespace Dune {
 
       template<typename GFS,typename Transformation,typename Undecorated,typename GlueTag, typename Tag>
       struct gfs_to_decorator_descriptor
-        : public TypeTree::meta_function
+        : public PDELab::meta_function
       {
         typedef decltype(
           register_gfs_to_decorator_descriptor(

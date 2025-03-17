@@ -8,6 +8,7 @@
 #include <dune/typetree/traversal.hh>
 #include <dune/typetree/accumulate_static.hh>
 
+#include <dune/pdelab/common/transform_tree.hh>
 #include <dune/pdelab/common/typetraits.hh>
 #include <dune/pdelab/common/multiindex.hh>
 #include <dune/pdelab/gridfunctionspace/tags.hh>
@@ -79,7 +80,7 @@ namespace Dune {
 
     template<typename GFS, typename Transformation, typename OrderingTag>
     struct power_gfs_to_ordering_descriptor
-      : public TypeTree::meta_function
+      : public PDELab::meta_function
     {
       typedef decltype(
         register_power_gfs_to_ordering_descriptor(
@@ -103,7 +104,7 @@ namespace Dune {
 
     template<typename GFS, typename Transformation, typename OrderingTag>
     struct leaf_gfs_to_ordering_descriptor
-      : public TypeTree::meta_function
+      : public PDELab::meta_function
     {
       typedef decltype(
         register_leaf_gfs_to_ordering_descriptor(
@@ -127,7 +128,7 @@ namespace Dune {
 
     template<typename GFS, typename Transformation, typename OrderingTag>
     struct composite_gfs_to_ordering_descriptor
-      : public TypeTree::meta_function
+      : public PDELab::meta_function
     {
       typedef decltype(
         register_composite_gfs_to_ordering_descriptor(

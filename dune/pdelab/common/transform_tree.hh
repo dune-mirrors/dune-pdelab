@@ -44,7 +44,7 @@ namespace Dune::PDELab {
     /**
      * Just inherit from this type to cause lazy evaluation
      */
-    using meta_function = Dune::TypeTree::meta_function;
+    struct meta_function {};
 
     //! Helper meta function to delay evaluation of F.
     template<typename F>
