@@ -19,6 +19,11 @@ namespace Dune {
       : public TypeTree::LeafNode
     {
     public:
+
+      NoConstraints() :
+        TypeTree::LeafNode{}
+      {}
+
       enum { doBoundary = false };
       enum { doProcessor = false }; // added ParallelStuff
       enum { doSkeleton = false };

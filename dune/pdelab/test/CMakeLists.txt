@@ -1,6 +1,10 @@
 # All libraries unders this directory use pdelab
 link_libraries(Dune::PDELab)
 
+find_package(GTest)
+link_libraries(GTest::gtest)
+
+add_subdirectory(basis)
 add_subdirectory(fem)
 add_subdirectory(matrixfree)
 
