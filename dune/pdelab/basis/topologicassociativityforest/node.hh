@@ -569,11 +569,17 @@ auto TopologicAssociativityForestNode<Node,MS>::containerIndexRange(
   // only map known geometry indices
   assert(containsGeometry(gt_index));
   if constexpr (Concept::LeafTreeNode<Node>) {
-    // (end of recursion) in case of leaf node. The fist multi-index is
-    // guaranteed to be a range of multi-indices from 0 to block-count
+    // (end of recursion) in case of leaf node.
+    // Simply return iota (in form of a multi-index of size 1) from 0 to the block size of this node.
     static_assert(CompositionSuffix::size() == 0);
-    SizeType sz = blockCount(gt_index, entity_index);
-    return Dune::transformedRangeView(Dune::range(SizeType{0}, sz), [](SizeType i){ return TypeTree::treePath(i); });
+    auto mae_range = [&](){
+      constexpr std::optional static_sz = Node::commonSizePerGeometryType();
+      if constexpr (static_sz)
+        return range(index_constant<static_sz.value()>());
+      else
+        return range(blockCount(gt_index, entity_index));
+    };
+    return transformedRangeView(mae_range(), [](SizeType i){ return TypeTree::treePath(i); });
   } else {
     static_assert(CompositionSuffix::size() > 0);
     const auto child = front(comp_suff);
@@ -581,7 +587,7 @@ auto TopologicAssociativityForestNode<Node,MS>::containerIndexRange(
     const auto cir = node().child(child).containerIndexRange(pop_front(comp_suff), gt_index, entity_index);
     if constexpr (containerBlocked()) {
       // blocked merging: simply push front the child index
-      return Dune::transformedRangeView(std::move(cir), [child](auto ci){ return push_front(ci, child); });
+      return transformedRangeView(std::move(cir), [child](auto ci){ return push_front(ci, child); });
     } else {
       SizeType offset = 0;
       // lexicopgraphic merging: accumulate front the offest of the (child-1)
@@ -593,7 +599,7 @@ auto TopologicAssociativityForestNode<Node,MS>::containerIndexRange(
           offset = _entity_dof_offsets[index];
         }
       }
-      return Dune::transformedRangeView(std::move(cir), [offset](auto ci){ return accumulate_front(ci, offset); });
+      return transformedRangeView(std::move(cir), [offset](auto ci){ return accumulate_front(ci, offset); });
     }
   }
 }
@@ -759,7 +765,7 @@ auto TopologicAssociativityForestNode<Node,MS>::blockCount(std::size_t gt_index)
 }
 
 template<class Node, class MS>
-[[nodiscard]] auto TopologicAssociativityForestNode<Node,MS>::blockCount() const noexcept
+auto TopologicAssociativityForestNode<Node,MS>::blockCount() const noexcept
 {
   if constexpr (containerBlocked()) {
     static_assert(not Concept::LeafTreeNode<Node>);
