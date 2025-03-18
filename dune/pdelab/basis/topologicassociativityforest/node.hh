@@ -26,6 +26,7 @@
 #include <numeric>
 #include <span>
 #include <memory>
+#include <version>
 
 namespace Dune::PDELab::Impl {
 
@@ -1171,7 +1172,11 @@ void TopologicAssociativityForestNode<Node,MS>::shareChildenData() {
 
 template<class Node, class MS>
 void TopologicAssociativityForestNode<Node,MS>::assign_storage(std::shared_ptr<SizeType[]>& storage, std::span<SizeType>& span, std::size_t size, SizeType value) {
+#if __cpp_lib_smart_ptr_for_overwrite >= 202002L
   storage = std::make_shared_for_overwrite<SizeType[]>(size);
+#else
+  storage = std::shared_ptr<SizeType[]>(new SizeType[size]);
+#endif
   span = {storage.get(), size};
   std::uninitialized_fill_n(std::begin(span), size, value);
 }
