@@ -52,7 +52,7 @@ namespace Dune::PDELab::Concept {
 
   }
 
-
+  //!@brief Model of a leaf node of a typetree
   template<class Node>
   concept LeafTreeNode = requires
   {
@@ -60,21 +60,26 @@ namespace Dune::PDELab::Concept {
     requires (std::remove_cvref_t<Node>::degree() == 0);
   };
 
+  //!@brief Model of a tuple node of a typetree
   template<class Node>
   concept TupleTreeNode = (not Impl::DynamicChildAccess<Node>) && Impl::StaticTreeAccess<Node>;
 
+  //!@brief Model of a tuple node of a typetree
   template<class Node>
   concept ArrayTreeNode = Impl::DynamicChildAccess<Node> && Impl::StaticTreeAccess<Node>;
 
+  //!@brief Model of a tuple node of a typetree
   template<class Node>
   concept VectorTreeNode = Impl::DynamicChildAccess<Node> && (not Impl::StaticTreeAccess<Node>);
 
+  //!@brief Model of a parent node of a typetree
   template<class Node>
   concept ParentTreeNode = requires
   {
     requires VectorTreeNode<Node> || ArrayTreeNode<Node> || TupleTreeNode<Node>;
   };
 
+  //!@brief Model of a node of a typetree
   template<class Node>
   concept TreeNode = requires
   {

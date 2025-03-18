@@ -18,10 +18,10 @@
 namespace Dune::PDELab {
 
 /**
- * @brief Array node of Space
+ * @brief Array node of proto-basis
  *
  * @tparam MergingStrategy  Merging strategy
- * @tparam Node             A Space node type
+ * @tparam Node             A proto-basis node type
  * @tparam degree           Size of the array
  */
 template<class MergingStrategy,
@@ -44,14 +44,15 @@ public:
   {
   }
 
-  ProtoBasisArray(const ProtoBasisArray&) = default;
+  ProtoBasisArray(const ProtoBasisArray&) = delete;
+  ProtoBasisArray& operator=(const ProtoBasisArray&) = delete;
 };
 
 /**
- * @brief Make an array node of Space nodes
+ * @brief Make an array node of proto-basis nodes
  *
  * @param merging_strategy  Merging strategy
- * @param nodes             Array of Space
+ * @param nodes             Array of proto-basis
  * @return auto             ProtoBasisArray
  */
 template<class MergingStrategy, Concept::Impl::ProtoBasisNode Node, std::size_t degree>
@@ -66,10 +67,10 @@ composite(const MergingStrategy& merging_strategy, const std::array<Node, degree
 }
 
 /**
- * @brief Vector node of Space
+ * @brief Vector node of proto-basis
  *
  * @tparam MergingStrategy  Merging strategy
- * @tparam Node             A Space node type
+ * @tparam Node             A proto-basis node type
  */
 template<class MergingStrategy, Concept::Impl::ProtoBasisNode Node>
 class ProtoBasisVector
@@ -88,14 +89,15 @@ public:
   {
   }
 
-  ProtoBasisVector(const ProtoBasisVector&) = default;
+  ProtoBasisVector(const ProtoBasisVector&) = delete;
+  ProtoBasisVector& operator=(const ProtoBasisVector&) = delete;
 };
 
 /**
- * @brief Make an vector node of Space nodes
+ * @brief Make an vector node of proto-basis nodes
  *
  * @param merging_strategy  Merging strategy
- * @param nodes             Vector of Space
+ * @param nodes             Vector of proto-basis
  * @return auto             ProtoBasisVector
  */
 template<class MergingStrategy, Concept::Impl::ProtoBasisNode Node>
@@ -110,10 +112,10 @@ composite(const MergingStrategy& merging_strategy, const std::vector<Node>& node
 }
 
 /**
- * @brief Tuple node of Space
+ * @brief Tuple node of proto-basis
  *
  * @tparam MergingStrategy  Merging strategy
- * @tparam Nodes            Space node types
+ * @tparam Nodes            Variadic proto-basis node types
  */
 template<class MergingStrategy, Concept::Impl::ProtoBasisNode... Nodes>
 class ProtoBasisTuple
@@ -131,14 +133,15 @@ public:
   {
   }
 
-  ProtoBasisTuple(const ProtoBasisTuple&) = default;
+  ProtoBasisTuple(const ProtoBasisTuple&) = delete;
+  ProtoBasisTuple& operator=(const ProtoBasisTuple&) = delete;
 };
 
 /**
- * @brief Make a tuple node of Space nodes
+ * @brief Make a tuple node of proto-basis nodes
  *
  * @param merging_strategy  Merging strategy
- * @param nodes             Tuple of Space
+ * @param nodes             Tuple of proto-basis
  * @return auto             ProtoBasisTuple
  */
 template<class MergingStrategy, Concept::Impl::ProtoBasisNode... Nodes>

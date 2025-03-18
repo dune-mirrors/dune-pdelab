@@ -30,8 +30,8 @@ auto makeQkProtoBasis(const MergingStragetgy& strategy, Dune::index_constant<k>)
 template<class Q1TopologicAssociativityForest>
 void testQ1TopologicAssociativityForest(Q1TopologicAssociativityForest& entity_ordering) {
   static_assert(not Q1TopologicAssociativityForest::containerBlocked());
-  static_assert(Q1TopologicAssociativityForest::prioryFixedSize());
-  EXPECT_TRUE(entity_ordering.fixedSize());
+  static_assert(Q1TopologicAssociativityForest::fixedSizePerGeometryTypeStatic());
+  EXPECT_TRUE(entity_ordering.fixedSizePerGeometryType());
 
   static_assert(Q1TopologicAssociativityForest::maxContainerDepth() == 1);
   EXPECT_TRUE(entity_ordering.containsGeometry(Dune::GeometryTypes::vertex));
@@ -83,8 +83,8 @@ TEST_F(StructuredGridFixture2D, TestQ1TopologicAssociativityForest) {
 
     EXPECT_EQ(p_entity_ordering.degree(), 2);
     static_assert(not VectorTopologicAssociativityForest::containerBlocked());
-    static_assert(VectorTopologicAssociativityForest::prioryFixedSize());
-    EXPECT_TRUE(p_entity_ordering.fixedSize());
+    static_assert(VectorTopologicAssociativityForest::fixedSizePerGeometryTypeStatic());
+    EXPECT_TRUE(p_entity_ordering.fixedSizePerGeometryType());
 
     static_assert(VectorTopologicAssociativityForest::maxContainerDepth() == 1);
     EXPECT_TRUE(p_entity_ordering.containsGeometry(Dune::GeometryTypes::vertex));
@@ -140,8 +140,8 @@ TEST_F(StructuredGridFixture2D, TestQ1TopologicAssociativityForest) {
 
     static_assert(ArrayTopologicAssociativityForest::degree() == 2);
     static_assert(ArrayTopologicAssociativityForest::containerBlocked());
-    static_assert(ArrayTopologicAssociativityForest::prioryFixedSize());
-    EXPECT_TRUE(p_entity_ordering.fixedSize());
+    static_assert(ArrayTopologicAssociativityForest::fixedSizePerGeometryTypeStatic());
+    EXPECT_TRUE(p_entity_ordering.fixedSizePerGeometryType());
 
     static_assert(ArrayTopologicAssociativityForest::maxContainerDepth() == 2);
     EXPECT_TRUE(p_entity_ordering.containsGeometry(Dune::GeometryTypes::vertex));
@@ -197,8 +197,8 @@ TEST_F(StructuredGridFixture2D, TestQ1TopologicAssociativityForest) {
 template<class Q2TopologicAssociativityForest>
 void testQ2TopologicAssociativityForest(Q2TopologicAssociativityForest& entity_ordering) {
   static_assert(not Q2TopologicAssociativityForest::containerBlocked());
-  static_assert(Q2TopologicAssociativityForest::prioryFixedSize());
-  EXPECT_TRUE(entity_ordering.fixedSize());
+  static_assert(Q2TopologicAssociativityForest::fixedSizePerGeometryTypeStatic());
+  EXPECT_TRUE(entity_ordering.fixedSizePerGeometryType());
 
   static_assert(Q2TopologicAssociativityForest::maxContainerDepth() == 1);
   EXPECT_TRUE(entity_ordering.containsGeometry(Dune::GeometryTypes::vertex));
@@ -279,8 +279,8 @@ TEST_F(StructuredGridFixture2D, TestQ2TopologicAssociativityForest) {
 template<class FixedMonomialTopologicAssociativityForest>
 void testFixedMonomialTopologicAssociativityForest(FixedMonomialTopologicAssociativityForest& entity_ordering) {
   static_assert(not FixedMonomialTopologicAssociativityForest::containerBlocked());
-  static_assert(not FixedMonomialTopologicAssociativityForest::prioryFixedSize());
-  EXPECT_TRUE(entity_ordering.fixedSize());
+  static_assert(not FixedMonomialTopologicAssociativityForest::fixedSizePerGeometryTypeStatic());
+  EXPECT_TRUE(entity_ordering.fixedSizePerGeometryType());
 
   static_assert(FixedMonomialTopologicAssociativityForest::maxContainerDepth() == 1);
   EXPECT_FALSE(entity_ordering.containsGeometry(Dune::GeometryTypes::vertex));
@@ -343,8 +343,8 @@ TEST_F(StructuredGridFixture2D, TestFixedMonomialTopologicAssociativityForest) {
   EXPECT_EQ(p_entity_ordering.childStorage(0), p_entity_ordering.childStorage(1));
 
   static_assert(not p_entity_ordering.containerBlocked());
-  static_assert(not p_entity_ordering.prioryFixedSize());
-  EXPECT_TRUE(p_entity_ordering.fixedSize());
+  static_assert(not p_entity_ordering.fixedSizePerGeometryTypeStatic());
+  EXPECT_TRUE(p_entity_ordering.fixedSizePerGeometryType());
 
   static_assert(p_entity_ordering.maxContainerDepth() == 1);
   EXPECT_FALSE(p_entity_ordering.containsGeometry(Dune::GeometryTypes::vertex));
@@ -389,8 +389,8 @@ TEST_F(StructuredGridFixture2D, TestFixedMonomialTopologicAssociativityForest) {
 template<class VariableMonomialTopologicAssociativityForest>
 void testVariableMonomialTopologicAssociativityForest(VariableMonomialTopologicAssociativityForest& entity_ordering) {
   static_assert(not VariableMonomialTopologicAssociativityForest::containerBlocked());
-  static_assert(not VariableMonomialTopologicAssociativityForest::prioryFixedSize());
-  EXPECT_FALSE(entity_ordering.fixedSize());
+  static_assert(not VariableMonomialTopologicAssociativityForest::fixedSizePerGeometryTypeStatic());
+  EXPECT_FALSE(entity_ordering.fixedSizePerGeometryType());
 
   static_assert(VariableMonomialTopologicAssociativityForest::maxContainerDepth() == 1);
   EXPECT_FALSE(entity_ordering.containsGeometry(Dune::GeometryTypes::vertex));
@@ -465,8 +465,8 @@ TEST(TestTopologicAssociativityForests, TestVariableMonomialTopologicAssociativi
   testVariableMonomialTopologicAssociativityForest(p_entity_ordering.child(_1));
 
   static_assert(not TupleTopologicAssociativityForest::containerBlocked());
-  static_assert(not TupleTopologicAssociativityForest::prioryFixedSize());
-  EXPECT_FALSE(p_entity_ordering.fixedSize());
+  static_assert(not TupleTopologicAssociativityForest::fixedSizePerGeometryTypeStatic());
+  EXPECT_FALSE(p_entity_ordering.fixedSizePerGeometryType());
 
   static_assert(TupleTopologicAssociativityForest::maxContainerDepth() == 1);
   EXPECT_FALSE(p_entity_ordering.containsGeometry(Dune::GeometryTypes::vertex));

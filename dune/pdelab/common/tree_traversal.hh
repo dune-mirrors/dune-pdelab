@@ -14,13 +14,23 @@
 
 namespace Dune::PDELab {
 
-/**
- * @brief Traverse each entry of a tree container
- * @details Functors may accept one or two values. The first one being the child
- * node to be evaluated, and the second one the index of such entry
+ /**
+ * @brief Traverse each child of a tree and apply a callable function.
  *
- * @tparam Container          Tree container to be traversed
- * @tparam Callable           Functor to be applied at each child
+ * This function iterates over each child node of a given tree container and
+ * applies a callable function to each child. The callable function can accept
+ * either one or two arguments: the child node itself, and optionally, its index.
+ *
+ * @tparam Container The type of the tree container to be traversed. This must
+ *                   satisfy the Concept::ParentTreeNode concept.
+ * @tparam Callable  The type of the callable function (functor) to be applied
+ *                   to each child node. This can be a lambda, function pointer,
+ *                   or any callable object.
+ *
+ * @param container The tree container whose children will be traversed.
+ * @param at_value  The callable function to be applied to each child node.
+ *                  This function can accept either one argument (the child node)
+ *                  or two arguments (the child node and its index).
  */
 template<class Container, class Callable>
 requires Concept::ParentTreeNode<std::remove_cvref_t<Container>>
@@ -36,23 +46,37 @@ constexpr void forEachChild(Container&& container, Callable&& at_value)
 
   if constexpr (Concept::TupleTreeNode<Container>)
     Dune::unpackIntegerSequence(
-      [&](auto... i) { (invoke(container.child(i), i), ...); },
+      [&](auto... i) { (invoke(std::forward<Container>(container).child(i), i), ...); },
       std::make_index_sequence<std::remove_cvref_t<Container>::degree()>{});
   else
     for (std::size_t i = 0; i != container.degree(); ++i)
-      invoke(container.child(i), i);
+      invoke(std::forward<Container>(container).child(i), i);
 }
 
 /**
- * @brief Traverse each entry of a tree container
- * @details Functors may accept one or two values. The first one being the entry
- * to be evaluated, and the second one the multi-index of such entry
+ * @brief Traverse each entry of a tree and apply functors at different stages.
  *
- * @tparam Container          Recursive tree container to be traversed
- * @tparam PreCall            Functor to be applied at each node
- * @tparam LeafCall           Functor to be applied before each leaf node
- * @tparam PostCall           Functor to be applied after each node
- * @tparam MultiIndex         Multi-index representing the current position of the container
+ * This function traverses each entry of a recursive tree container and applies
+ * specified functors at different stages of the traversal: before each node,
+ * before each leaf node, and after each node. The functors can accept either
+ * one or two arguments: the entry (node) and optionally its multi-index.
+ *
+ * @tparam Node       The type of the tree node to be traversed. This must
+ *                    satisfy the Concept::TreeNode and Concept::LeafTreeNode
+ *                    concepts.
+ * @tparam PreCall    The type of the functor to be applied before each node.
+ * @tparam LeafCall   The type of the functor to be applied before each leaf node.
+ * @tparam PostCall   The type of the functor to be applied after each node.
+ * @tparam Prefix     The type representing the multi-index of the current
+ *                    position in the tree container. This must satisfy the
+ *                    Concept::MultiIndex concept.
+ *
+ * @param node        The tree node to be traversed.
+ * @param pre_call    The functor to be applied before each node.
+ * @param leaf_call   The functor to be applied before each leaf node.
+ * @param post_call   The functor to be applied after each node.
+ * @param multiindex  The multi-index representing the current position in the
+ *                    tree container.
  */
 template<Concept::TreeNode Node,
          class PreCall,
@@ -75,15 +99,29 @@ forEachNode(Node&& node,
 }
 
 /**
- * @brief Traverse each entry of a tree container
- * @details Functors may accept one or two values. The first one being the entry
- * to be evaluated, and the second one the multi-index of such entry
+ * @brief Traverse each entry of a tree and apply functors at different stages.
  *
- * @tparam Container          Recursive tree container to be traversed
- * @tparam PreCall            Functor to be applied at each node
- * @tparam LeafCall           Functor to be applied before each leaf node
- * @tparam PostCall           Functor to be applied after each node
- * @tparam MultiIndex         Multi-index representing the current position of the container
+ * This function traverses each entry of a recursive tree container and applies
+ * specified functors at different stages of the traversal: before each node,
+ * before each leaf node, and after each node. The functors can accept either
+ * one or two arguments: the entry (node) and optionally its multi-index.
+ *
+ * @tparam Node       The type of the tree node to be traversed. This must
+ *                    satisfy the Concept::TreeNode and Concept::LeafTreeNode
+ *                    concepts.
+ * @tparam PreCall    The type of the functor to be applied before each node.
+ * @tparam LeafCall   The type of the functor to be applied before each leaf node.
+ * @tparam PostCall   The type of the functor to be applied after each node.
+ * @tparam Prefix     The type representing the multi-index of the current
+ *                    position in the tree container. This must satisfy the
+ *                    Concept::MultiIndex concept.
+ *
+ * @param node        The tree node to be traversed.
+ * @param pre_call    The functor to be applied before each node.
+ * @param leaf_call   The functor to be applied before each leaf node.
+ * @param post_call   The functor to be applied after each node.
+ * @param multiindex  The multi-index representing the current position in the
+ *                    tree container.
  */
 template<Concept::TreeNode Node,
          class PreCall,
@@ -123,13 +161,22 @@ forEachNode(Node&& node,
 }
 
 /**
- * @brief Traverse each entry of a tree container
- * @details Functors may accept one or two values. The first one being the entry
- * to be evaluated, and the second one the multi-index of such entry
+ * @brief Traverse each entry of a tree container and apply a callback function.
  *
- * @tparam Container          Recursive tree container to be traversed
- * @tparam Callback           Functor to be applied at each node
- * @tparam MultiIndex         Multi-index representing the current position of the container
+ * This function traverses each entry of a recursive tree container and applies
+ * a specified callback function to each node. The callback function can accept
+ * either one or two arguments: the entry (node) and optionally its multi-index.
+ *
+ * @tparam Node       The type of the tree node to be traversed. This must
+ *                    satisfy the Concept::TreeNode concept.
+ * @tparam Callback   The type of the callback function to be applied at each node.
+ *                    This can be a lambda, function pointer, or any callable
+ *                    object.
+ *
+ * @param node        The tree node to be traversed.
+ * @param callback    The callback function to be applied at each node.
+ *                    This function can accept either one argument (the node)
+ *                    or two arguments (the node and its multi-index).
  */
 template<Concept::TreeNode Node, class Callback>
 constexpr auto
@@ -144,14 +191,22 @@ forEachNode(Node&& node, Callback&& callback)
   );
 }
 
-
 /**
- * @brief Traverse each leaf entry of a tree container
- * @details Functors may accept one or two values. The first one being the leaf
- * entry to be evaluated, and the second one the multi-index of such entry
+ * @brief Traverse each leaf entry of a tree container and apply a callback function.
  *
- * @tparam Container          Tree container to be traversed
- * @tparam Callback           Functor to be applied at each leaf node
+ * This function traverses each leaf entry of a tree container and applies a specified
+ * callback function to each leaf node. The callback function can accept either one or
+ * two arguments: the leaf entry (node) and optionally its multi-index.
+ *
+ * @tparam Node       The type of the tree node to be traversed. This must
+ *                    satisfy the Concept::TreeNode concept.
+ * @tparam Callback   The type of the callback function to be applied at each leaf node.
+ *                    This can be a lambda, function pointer, or any callable object.
+ *
+ * @param node        The tree node to be traversed.
+ * @param callback    The callback function to be applied at each leaf node.
+ *                    This function can accept either one argument (the leaf node)
+ *                    or two arguments (the leaf node and its multi-index).
  */
 template<Concept::TreeNode Node, class Callback>
 constexpr auto

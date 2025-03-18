@@ -16,7 +16,7 @@ namespace Dune::PDELab {
  *
  * @tparam MS   A merging strategy
  * @tparam FEM  A Finite element map
- * @tparam CON  Constraint
+ * @tparam CON  Constraints operator
  */
 template<class MergingStrategy_, class FiniteElementMap_, class ConstraintsOperator_ = NoConstraints>
 class ProtoBasis
