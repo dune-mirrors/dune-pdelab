@@ -19,10 +19,13 @@
 #include <dune/geometry/typeindex.hh>
 #include <dune/geometry/referenceelements.hh>
 
+#include <dune/common/rangeutilities.hh>
+
 #include <vector>
-#include <ranges>
+#include <algorithm>
 #include <numeric>
 #include <span>
+#include <memory>
 
 namespace Dune::PDELab::Impl {
 
@@ -569,7 +572,7 @@ auto TopologicAssociativityForestNode<Node,MS>::containerIndexRange(
     // guaranteed to be a range of multi-indices from 0 to block-count
     static_assert(CompositionSuffix::size() == 0);
     SizeType sz = blockCount(gt_index, entity_index);
-    return std::views::iota(SizeType{0}, sz) | std::views::transform([](SizeType i){ return TypeTree::treePath(i); });
+    return Dune::transformedRangeView(Dune::range(SizeType{0}, sz), [](SizeType i){ return TypeTree::treePath(i); });
   } else {
     static_assert(CompositionSuffix::size() > 0);
     const auto child = front(comp_suff);
@@ -577,7 +580,7 @@ auto TopologicAssociativityForestNode<Node,MS>::containerIndexRange(
     const auto cir = node().child(child).containerIndexRange(pop_front(comp_suff), gt_index, entity_index);
     if constexpr (containerBlocked()) {
       // blocked merging: simply push front the child index
-      return cir | std::views::transform([child](auto ci){ return push_front(ci, child); });
+      return Dune::transformedRangeView(std::move(cir), [child](auto ci){ return push_front(ci, child); });
     } else {
       SizeType offset = 0;
       // lexicopgraphic merging: accumulate front the offest of the (child-1)
@@ -589,7 +592,7 @@ auto TopologicAssociativityForestNode<Node,MS>::containerIndexRange(
           offset = _entity_dof_offsets[index];
         }
       }
-      return cir | std::views::transform([offset](auto ci){ return accumulate_front(ci, offset); });
+      return Dune::transformedRangeView(std::move(cir), [offset](auto ci){ return accumulate_front(ci, offset); });
     }
   }
 }
@@ -1175,17 +1178,17 @@ void TopologicAssociativityForestNode<Node,MS>::assign_storage(std::shared_ptr<S
 
 template<class Node, class MS>
 void TopologicAssociativityForestNode<Node,MS>::useDataFromSibling(const auto& other) {
-  if (_gt_dof_offsets_storage and std::ranges::equal(_gt_dof_offsets, other._gt_dof_offsets)) {
+  if (_gt_dof_offsets_storage and std::equal(_gt_dof_offsets.begin(), _gt_dof_offsets.end(), other._gt_dof_offsets.begin(), other._gt_dof_offsets.end())) {
     _gt_dof_offsets_storage = other._gt_dof_offsets_storage;
     _gt_dof_offsets = other._gt_dof_offsets;
   }
 
-  if (_gt_entity_offsets_storage and std::ranges::equal(_gt_entity_offsets, other._gt_entity_offsets)) {
+  if (_gt_entity_offsets_storage and std::equal(_gt_entity_offsets.begin(), _gt_entity_offsets.end(), other._gt_entity_offsets.begin(), other._gt_entity_offsets.end())) {
     _gt_entity_offsets_storage = other._gt_entity_offsets_storage;
     _gt_entity_offsets = other._gt_entity_offsets;
   }
 
-  if (_entity_dof_offsets_storage and std::ranges::equal(_entity_dof_offsets, other._entity_dof_offsets)) {
+  if (_entity_dof_offsets_storage and std::equal(_entity_dof_offsets.begin(), _entity_dof_offsets.end(), other._entity_dof_offsets.begin(), other._entity_dof_offsets.end())) {
     _entity_dof_offsets_storage = other._entity_dof_offsets_storage;
     _entity_dof_offsets = other._entity_dof_offsets;
   }
