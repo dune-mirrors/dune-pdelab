@@ -24,20 +24,21 @@ template<class MergingStrategy,
          class FiniteElementMap,
          class ConstraintsOperator>
 auto
-makeProtoBasis(const MergingStrategy& merging_strategy,
-              std::shared_ptr<FiniteElementMap> fem,
-              const ConstraintsOperator& constraints_op)
+protoBasis(const MergingStrategy& merging_strategy,
+           std::shared_ptr<FiniteElementMap> fem,
+           const ConstraintsOperator& constraints_op)
 {
-  return ProtoBasis<MergingStrategy, std::remove_const_t<FiniteElementMap>, ConstraintsOperator>{ merging_strategy, std::move(fem), constraints_op };
+  using ProtoBasis = LeafProtoBasis<MergingStrategy, std::remove_const_t<FiniteElementMap>, ConstraintsOperator>;
+  return ProtoBasis{ merging_strategy, std::move(fem), constraints_op };
 }
 
 template<class MergingStrategy,
          class FiniteElementMap>
 auto
-makeProtoBasis(const MergingStrategy& merging_strategy,
-               std::shared_ptr<FiniteElementMap> fem)
+protoBasis(const MergingStrategy& merging_strategy,
+           std::shared_ptr<FiniteElementMap> fem)
 {
-  return makeProtoBasis(merging_strategy, std::move(fem), NoConstraints{});
+  return protoBasis(merging_strategy, fem, NoConstraints{});
 }
 
 } // namespace Dune::PDELab::BasisFactory

@@ -29,22 +29,22 @@ namespace Dune::PDELab::Impl
    * degrees of freedom associated with finite element spaces.
    *
    * @tparam MergingStrategy The merging strategy that defines how child indices are merged.
-   * @tparam ChildOrdering   The type of child ordering to store. This must satisfy the Concept::TreeNode concept.
+   * @tparam ChildNode       The type of child ordering to store. This must satisfy the Concept::TreeNode concept.
    * @tparam degree          The number of child orderings to keep in the array.
    */
   template <class MergingStrategy,
-            Concept::TreeNode ChildOrdering,
+            Concept::TreeNode ChildNode,
             std::size_t degree>
   class ArrayTopologicAssociativityForest
-      : public TypeTree::PowerNode<ChildOrdering, degree>,
+      : public TypeTree::PowerNode<ChildNode, degree>,
         public TopologicAssociativityForestNode<
-            ArrayTopologicAssociativityForest<MergingStrategy, ChildOrdering, degree>,
-            MergingStrategy>
+            ArrayTopologicAssociativityForest<MergingStrategy, ChildNode, degree>,
+            typename ChildNode::GridView, MergingStrategy>
   {
-    using TreeNode = TypeTree::PowerNode<ChildOrdering, degree>;
+    using TreeNode = TypeTree::PowerNode<ChildNode, degree>;
     using OrderingNode = TopologicAssociativityForestNode<
-        ArrayTopologicAssociativityForest<MergingStrategy, ChildOrdering, degree>,
-        MergingStrategy>;
+        ArrayTopologicAssociativityForest<MergingStrategy, ChildNode, degree>,
+        typename ChildNode::GridView, MergingStrategy>;
 
   public:
     /**
@@ -55,7 +55,7 @@ namespace Dune::PDELab::Impl
      */
     ArrayTopologicAssociativityForest(typename TreeNode::NodeStorage &&storage,
                                       const MergingStrategy &merging_strategy)
-        : TreeNode{std::move(storage)}, OrderingNode{merging_strategy}
+        : TreeNode{std::move(storage)}, OrderingNode{this->child(0).gridView(), merging_strategy}
     {
     }
 
@@ -74,22 +74,23 @@ namespace Dune::PDELab::Impl
  * orderings. It's useful for cases scenarios where the number of children is not known at compile time.
  *
  * @tparam MergingStrategy The merging strategy that defines how child indices are merged.
- * @tparam ChildOrdering   The type of child ordering to store. This must satisfy the Concept::TreeNode concept.
+ * @tparam ChildNode   The type of child ordering to store. This must satisfy the Concept::TreeNode concept.
  */
-  template <class MergingStrategy, Concept::TreeNode ChildOrdering>
+  template <class MergingStrategy, Concept::TreeNode ChildNode>
   class VectorTopologicAssociativityForest
-      : public TypeTree::DynamicPowerNode<ChildOrdering>,
+      : public TypeTree::DynamicPowerNode<ChildNode>,
         public TopologicAssociativityForestNode<
-            VectorTopologicAssociativityForest<MergingStrategy, ChildOrdering>,
-            MergingStrategy>
+            VectorTopologicAssociativityForest<MergingStrategy, ChildNode>,
+            typename ChildNode::GridView, MergingStrategy>
   {
-    using TreeNode = TypeTree::DynamicPowerNode<ChildOrdering>;
+    using TreeNode = TypeTree::DynamicPowerNode<ChildNode>;
     using OrderingNode =
-        TopologicAssociativityForestNode<VectorTopologicAssociativityForest<MergingStrategy, ChildOrdering>,
-                                         MergingStrategy>;
+        TopologicAssociativityForestNode<VectorTopologicAssociativityForest<MergingStrategy, ChildNode>,
+                                         typename ChildNode::GridView, MergingStrategy>;
 
   public:
 
+    using GridView = typename ChildNode::GridView;
     /**
      * @brief Constructs a dynamic array of entity orderings.
      *
@@ -98,7 +99,7 @@ namespace Dune::PDELab::Impl
      */
     VectorTopologicAssociativityForest(typename TreeNode::NodeStorage &&storage,
                                        const MergingStrategy &merging_strategy)
-        : TreeNode{std::move(storage)}, OrderingNode{merging_strategy}
+      : TreeNode{std::move(storage)}, OrderingNode{this->child(0).gridView(), merging_strategy}
     {
       for (std::size_t i = 0; i != this->degree(); ++i)
         assert(this->childStorage(i));
@@ -120,20 +121,20 @@ namespace Dune::PDELab::Impl
    * different type.
    *
    * @tparam MergingStrategy The merging strategy that defines how child indices are merged.
-   * @tparam ChildOrdering   Variadic template for the types of child orderings to store. Each must satisfy the
+   * @tparam ChildNode   Variadic template for the types of child orderings to store. Each must satisfy the
    *                         Concept::TreeNode concept.
    */
-  template <class MergingStrategy, Concept::TreeNode... ChildOrdering>
+  template <class MergingStrategy, Concept::TreeNode... ChildNode>
   class TupleTopologicAssociativityForest
-      : public TypeTree::CompositeNode<ChildOrdering...>,
+      : public TypeTree::CompositeNode<ChildNode...>,
         public TopologicAssociativityForestNode<
-            TupleTopologicAssociativityForest<MergingStrategy, ChildOrdering...>,
-            MergingStrategy>
+            TupleTopologicAssociativityForest<MergingStrategy, ChildNode...>,
+            std::common_type_t<typename ChildNode::GridView...>, MergingStrategy>
   {
-    using TreeNode = TypeTree::CompositeNode<ChildOrdering...>;
+    using TreeNode = TypeTree::CompositeNode<ChildNode...>;
     using OrderingNode =
-        TopologicAssociativityForestNode<TupleTopologicAssociativityForest<MergingStrategy, ChildOrdering...>,
-                                         MergingStrategy>;
+        TopologicAssociativityForestNode<TupleTopologicAssociativityForest<MergingStrategy, ChildNode...>,
+                                         std::common_type_t<typename ChildNode::GridView...>, MergingStrategy>;
 
   public:
 
@@ -145,7 +146,7 @@ namespace Dune::PDELab::Impl
      */
     TupleTopologicAssociativityForest(typename TreeNode::NodeStorage &&storage,
                                       const MergingStrategy &merging_strategy)
-        : TreeNode{std::move(storage)}, OrderingNode{merging_strategy}
+      : TreeNode{std::move(storage)}, OrderingNode{this->child(index_constant<0>()).gridView(), merging_strategy}
     {
     }
 

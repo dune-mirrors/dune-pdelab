@@ -30,6 +30,20 @@
 
 namespace Dune::PDELab::Impl {
 
+
+  //! Utility to allocate and assing storage of offsets
+  template<class Value>
+  auto make_span_storage(std::size_t size, Value value) {
+  #if __cpp_lib_smart_ptr_for_overwrite >= 202002L
+    std::unique_ptr<Value[]> storage = std::make_unique_for_overwrite<Value[]>(size);
+  #else
+    std::unique_ptr<Value[]> storage = std::unique_ptr<Value[]>(new Value[size]);
+  #endif
+    std::span<Value> span = {storage.get(), size};
+    std::uninitialized_fill_n(std::begin(span), size, value);
+    return std::make_tuple(std::move(storage), std::move(span));
+  }
+
  /**
  * @class TopologicAssociativityForestNode
  * @brief Represents a topological associativity forest for managing degrees of freedom in finite element spaces.
@@ -99,7 +113,7 @@ namespace Dune::PDELab::Impl {
  *
  * @todo Implement compile-time checks to ensure dense ordering is guaranteed when possible.
  */
-template<class Node, class MS>
+template<class Node, class GV, class MS>
 class TopologicAssociativityForestNode
 {
   // Notice that by this point `Node` is an incomplete type because it will only
@@ -107,16 +121,15 @@ class TopologicAssociativityForestNode
   // Therefore, we can only inquiry its contents after completion, which
   // is why we only deduce types on functions and not in the class scope.
 
+public:
+  using GridView = GV;
   // type of merging strategy
   using MergingStrategy = MS;
-protected:
   // index type
-  using SizeType = typename MergingStrategy::EntitySet::IndexSet::IndexType;
+  using SizeType = typename GridView::IndexSet::IndexType;
 private:
-  // type for entity sets
-  using EntitySet = typename MergingStrategy::EntitySet;
   // type for bitset information of used codimensions
-  using CodimFlag = std::bitset<EntitySet::dimensionworld+1>;
+  using CodimFlag = std::bitset<GridView::dimensionworld+1>;
   // key value to identify geometry types that are not mapped by this class
   static constexpr SizeType GT_UNUSED = std::numeric_limits<SizeType>::max();
 
@@ -127,14 +140,14 @@ private:
   //   DO NOT MODIFY OTHER NODE PRIVATE MEMBERS!
   //   Otherwise code becomes -more- unmaintainable and harder to reason about,
   //   instead create a function that describes the performed action
-  template<class Node_, class MS_>
+  template<class Node_, class GV_, class MS_>
   friend class TopologicAssociativityForestNode;
 
 public:
 
   /** @brief Construct a topologic associativity forest out of a merging strategy
    */
-  TopologicAssociativityForestNode(const MergingStrategy& merging_strategy);
+  TopologicAssociativityForestNode(const GridView& grid_view, const MergingStrategy& merging_strategy);
 
   TopologicAssociativityForestNode(const TopologicAssociativityForestNode&) = delete;
   TopologicAssociativityForestNode(TopologicAssociativityForestNode&&) = default;
@@ -152,10 +165,10 @@ public:
   [[nodiscard]] auto fixedSizePerGeometryType() const noexcept;
 
   // Entity set of the ordering
-  [[nodiscard]] const auto& entitySet() const noexcept;
+  [[nodiscard]] const auto& gridView() const noexcept;
 
   // Entity set of the ordering
-  [[nodiscard]] auto& entitySet() noexcept;
+  [[nodiscard]] auto& gridView() noexcept;
 
   //! Whether a geometry type is mapped to multi-indices within this object
   [[nodiscard]] bool containsGeometry(SizeType gt_index) const noexcept;
@@ -240,15 +253,11 @@ public:
                                           SizeType entity_index) const noexcept;
 
   /**
-   * @brief Updates the indices of the forest
-   * @details Calling this method produces a depth first algorithm:
-   * - Before every node: Allocate and set-up node.
-   * - Before/After children: Carry partial calculation of the children sizes
-   * - After every node: Calculate final sizes of children and accumulate to obtain offets.
-   * @warning This method only needs to be called from the final root node of the tree of forests.
+   * @brief Updates the grid view on all nodes of the tree
+   * @warning This does not update the indices, use `initializeIndices` to update other contents
    * @param entity_set    Entity set on from where to generate the forest
    */
-  void update(EntitySet entity_set);
+  void update(GridView entity_set);
 
 
   /**
@@ -259,7 +268,7 @@ public:
    * - After every node: Calculate final sizes of children and accumulate to obtain offets.
    * @warning This method only needs to be called from the final root node of the tree of forests.
    */
-  void update();
+  void initializeIndices();
 
   //! Number of blocks associated to a given entity at this tree level
   [[nodiscard]] auto blockCount(const SizeType gt_index,
@@ -330,9 +339,7 @@ private:
   //! Cast to node implementation (Barton–Nackman trick)
   Node& node() noexcept { return static_cast<Node&>(*this); }
 
-  //! Utility to allocate and assing storage of offsets
-  static void assign_storage(std::shared_ptr<SizeType[]>& storage, std::span<SizeType>& span, std::size_t size, SizeType value);
-
+  GridView _grid_view;
   CodimFlag _codim_used;
   std::vector<bool> _gt_used;
   MergingStrategy _merging_strategy;
@@ -379,9 +386,10 @@ private:
 };
 
 
-template<class Node, class MS>
-TopologicAssociativityForestNode<Node,MS>::TopologicAssociativityForestNode(const MergingStrategy& merging_strategy)
-  : _merging_strategy{ merging_strategy }
+template<class Node, class GV, class MS>
+TopologicAssociativityForestNode<Node,GV,MS>::TopologicAssociativityForestNode(const GridView& grid_view, const MergingStrategy& merging_strategy)
+  : _grid_view{ grid_view }
+  , _merging_strategy{ merging_strategy }
   , _fixed_size{ fixedSizePerGeometryTypeStatic() }
   , _fixed_size_possible{ true }
 {
@@ -389,15 +397,15 @@ TopologicAssociativityForestNode<Node,MS>::TopologicAssociativityForestNode(cons
   // Note that entity sets are not comparable in general.
   if constexpr (Concept::ParentTreeNode<Node>)
     Dune::PDELab::forEachChild(this->node(), [&]<class T>(const T& node) {
-      static_assert(std::is_same_v<EntitySet, typename T::EntitySet>);
-      if constexpr (std::equality_comparable<EntitySet>)
-        assert(entitySet() == node.entitySet());
+      static_assert(std::is_same_v<GridView, typename T::GridView>);
+      if constexpr (std::equality_comparable<GridView>)
+        assert(gridView() == node.gridView());
     });
 }
 
-template<class Node, class MS>
+template<class Node, class GV, class MS>
 constexpr std::size_t
-TopologicAssociativityForestNode<Node,MS>::maxContainerDepth()
+TopologicAssociativityForestNode<Node,GV,MS>::maxContainerDepth()
 {
   if constexpr (Concept::LeafTreeNode<Node>) {
     return 1;
@@ -424,8 +432,8 @@ TopologicAssociativityForestNode<Node,MS>::maxContainerDepth()
 }
 
 
-template<class Node, class MS>
-constexpr auto TopologicAssociativityForestNode<Node,MS>::fixedSizePerGeometryTypeStatic()
+template<class Node, class GV, class MS>
+constexpr auto TopologicAssociativityForestNode<Node,GV,MS>::fixedSizePerGeometryTypeStatic()
 {
   if constexpr (Concept::LeafTreeNode<Node>) {
     // base case: query information from finite element map
@@ -447,8 +455,8 @@ constexpr auto TopologicAssociativityForestNode<Node,MS>::fixedSizePerGeometryTy
   }
 }
 
-template<class Node, class MS>
-auto TopologicAssociativityForestNode<Node,MS>::fixedSizePerGeometryType() const noexcept
+template<class Node, class GV, class MS>
+auto TopologicAssociativityForestNode<Node,GV,MS>::fixedSizePerGeometryType() const noexcept
 {
   if constexpr (fixedSizePerGeometryTypeStatic())
     return std::true_type{};
@@ -456,46 +464,46 @@ auto TopologicAssociativityForestNode<Node,MS>::fixedSizePerGeometryType() const
     return _fixed_size;
 }
 
-template<class Node, class MS>
-const auto& TopologicAssociativityForestNode<Node,MS>::entitySet() const noexcept
+template<class Node, class GV, class MS>
+const auto& TopologicAssociativityForestNode<Node,GV,MS>::gridView() const noexcept
 {
-  return _merging_strategy.entitySet();
+  return _grid_view;
 }
 
-template<class Node, class MS>
-auto& TopologicAssociativityForestNode<Node,MS>::entitySet() noexcept
+template<class Node, class GV, class MS>
+auto& TopologicAssociativityForestNode<Node,GV,MS>::gridView() noexcept
 {
-  return _merging_strategy.entitySet();
+  return _grid_view;
 }
 
-template<class Node, class MS>
-bool TopologicAssociativityForestNode<Node,MS>::containsGeometry(SizeType gt_index) const noexcept
+template<class Node, class GV, class MS>
+bool TopologicAssociativityForestNode<Node,GV,MS>::containsGeometry(SizeType gt_index) const noexcept
 {
   return _gt_used[gt_index];
 }
 
-template<class Node, class MS>
-bool TopologicAssociativityForestNode<Node,MS>::containsGeometry(const GeometryType& gt) const noexcept
+template<class Node, class GV, class MS>
+bool TopologicAssociativityForestNode<Node,GV,MS>::containsGeometry(const GeometryType& gt) const noexcept
 {
   return containsGeometry(GlobalGeometryTypeIndex::index(gt));
 }
 
-template<class Node, class MS>
-bool TopologicAssociativityForestNode<Node,MS>::containsCodim(SizeType codim) const noexcept
+template<class Node, class GV, class MS>
+bool TopologicAssociativityForestNode<Node,GV,MS>::containsCodim(SizeType codim) const noexcept
 {
   return codimClosure().test(codim);
 }
 
-template<class Node, class MS>
-typename TopologicAssociativityForestNode<Node,MS>::CodimFlag
-TopologicAssociativityForestNode<Node,MS>::codimClosure() const noexcept
+template<class Node, class GV, class MS>
+typename TopologicAssociativityForestNode<Node,GV,MS>::CodimFlag
+TopologicAssociativityForestNode<Node,GV,MS>::codimClosure() const noexcept
 {
   assert(maxCodimCount() >= _codim_used.count());
   return _codim_used;
 }
 
-template<class Node, class MS>
-auto TopologicAssociativityForestNode<Node,MS>::singleCodim() const noexcept
+template<class Node, class GV, class MS>
+auto TopologicAssociativityForestNode<Node,GV,MS>::singleCodim() const noexcept
 {
   if constexpr (maxCodimCount() == 1)
     return std::true_type{};
@@ -503,8 +511,8 @@ auto TopologicAssociativityForestNode<Node,MS>::singleCodim() const noexcept
     return (_codim_used.count() == 1);
 }
 
-template<class Node, class MS>
-auto TopologicAssociativityForestNode<Node,MS>::disjointCodimClosure() const noexcept
+template<class Node, class GV, class MS>
+auto TopologicAssociativityForestNode<Node,GV,MS>::disjointCodimClosure() const noexcept
 {
   if constexpr (maxCodimCount() == 1)
     return std::integral_constant<bool, mayContainCodim(Indices::_0)>{};
@@ -512,18 +520,18 @@ auto TopologicAssociativityForestNode<Node,MS>::disjointCodimClosure() const noe
     return (_codim_used.count() == 1 and _codim_used[0]);
 }
 
-template<class Node, class MS>
-typename TopologicAssociativityForestNode<Node,MS>::SizeType
-TopologicAssociativityForestNode<Node,MS>::maxLocalCount() const noexcept
+template<class Node, class GV, class MS>
+typename TopologicAssociativityForestNode<Node,GV,MS>::SizeType
+TopologicAssociativityForestNode<Node,GV,MS>::maxLocalCount() const noexcept
 {
   return _max_local_coeff_count;
 }
 
-template<class Node, class MS>
-void TopologicAssociativityForestNode<Node,MS>::debugInfo() const {
+template<class Node, class GV, class MS>
+void TopologicAssociativityForestNode<Node,GV,MS>::debugInfo() const {
   using FEM = typename Node::ProtoBasis::FiniteElementMap;
   constexpr std::size_t fem_dim = FEM::Traits::FiniteElement::Traits::LocalBasisType::Traits::dimDomain;
-  constexpr std::size_t fem_codim = EntitySet::dimension - fem_dim;
+  constexpr std::size_t fem_codim = GridView::dimension - fem_dim;
 
   std::cout << "Fixed Size per Geometry Type: " << bool(fixedSizePerGeometryType()) << "\n";
   std::cout << "Blocked: " << bool(containerBlocked()) << "\n";
@@ -533,8 +541,8 @@ void TopologicAssociativityForestNode<Node,MS>::debugInfo() const {
     std::cout << "  # Geometry Type, Entity Index, DOF Count ==\n";
 
   assert(Concept::LeafTreeNode<Node>); // TODO implement other nodes...
-  for (std::size_t codim = fem_codim; codim <= EntitySet::dimension; ++codim) {
-    for (const auto& gt : entitySet().indexSet().types(codim)) {
+  for (std::size_t codim = fem_codim; codim <= GridView::dimension; ++codim) {
+    for (const auto& gt : gridView().indexSet().types(codim)) {
       const auto gt_index = GlobalGeometryTypeIndex::index(gt);
       if (fixedSizePerGeometryType()) {
         std::cout << "  " << gt << ", " << blockCount(gt_index) << " \n";
@@ -548,9 +556,9 @@ void TopologicAssociativityForestNode<Node,MS>::debugInfo() const {
   }
 }
 
-template<class Node, class MS>
-typename TopologicAssociativityForestNode<Node,MS>::SizeType
-TopologicAssociativityForestNode<Node,MS>::dimension() const noexcept
+template<class Node, class GV, class MS>
+typename TopologicAssociativityForestNode<Node,GV,MS>::SizeType
+TopologicAssociativityForestNode<Node,GV,MS>::dimension() const noexcept
 {
   SizeType dof_count = 0;
   forEachLeafNode(
@@ -558,9 +566,9 @@ TopologicAssociativityForestNode<Node,MS>::dimension() const noexcept
   return dof_count;
 }
 
-template<class Node, class MS>
+template<class Node, class GV, class MS>
 template<Concept::MultiIndex CompositionSuffix>
-auto TopologicAssociativityForestNode<Node,MS>::containerIndexRange(
+auto TopologicAssociativityForestNode<Node,GV,MS>::containerIndexRange(
   CompositionSuffix comp_suff,
   SizeType gt_index,
   SizeType entity_index) const noexcept
@@ -604,8 +612,8 @@ auto TopologicAssociativityForestNode<Node,MS>::containerIndexRange(
   }
 }
 
-template<class Node, class MS>
-constexpr auto TopologicAssociativityForestNode<Node,MS>::containerBlocked()
+template<class Node, class GV, class MS>
+constexpr auto TopologicAssociativityForestNode<Node,GV,MS>::containerBlocked()
 {
   // the blocking structure of a local space is given by the tag of its
   // children
@@ -633,10 +641,10 @@ constexpr auto TopologicAssociativityForestNode<Node,MS>::containerBlocked()
   }
 }
 
-template<class Node, class MS>
+template<class Node, class GV, class MS>
 template<Concept::MultiIndex ContainerSuffix>
 std::size_t
-TopologicAssociativityForestNode<Node,MS>::containerSize(const ContainerSuffix& cs,
+TopologicAssociativityForestNode<Node,GV,MS>::containerSize(const ContainerSuffix& cs,
                                                          SizeType gt_index,
                                                          SizeType entity_index) const noexcept
 {
@@ -705,18 +713,16 @@ TopologicAssociativityForestNode<Node,MS>::containerSize(const ContainerSuffix& 
   }
 }
 
-template<class Node, class MS>
-void TopologicAssociativityForestNode<Node,MS>::update(EntitySet entity_set)
+template<class Node, class GV, class MS>
+void TopologicAssociativityForestNode<Node,GV,MS>::update(GridView grid_view)
 {
-  forEachNode(node(), [&entity_set](auto& node) {
-    node._merging_strategy.update(entity_set);
+  forEachNode(node(), [&grid_view](auto& c) {
+    node._grid_view = grid_view;
   });
-
-  update();
 }
 
-template<class Node, class MS>
-void TopologicAssociativityForestNode<Node,MS>::update()
+template<class Node, class GV, class MS>
+void TopologicAssociativityForestNode<Node,GV,MS>::initializeIndices()
 {
   updateFixedSizeOrderings();
   if (not fixedSizePerGeometryTypeStatic())
@@ -725,8 +731,8 @@ void TopologicAssociativityForestNode<Node,MS>::update()
   shareChildenData();
 }
 
-template<class Node, class MS>
-auto TopologicAssociativityForestNode<Node,MS>::blockCount(const SizeType gt_index,
+template<class Node, class GV, class MS>
+auto TopologicAssociativityForestNode<Node,GV,MS>::blockCount(const SizeType gt_index,
                               const SizeType entity_index) const noexcept
 {
   if constexpr (containerBlocked()) {
@@ -747,8 +753,8 @@ auto TopologicAssociativityForestNode<Node,MS>::blockCount(const SizeType gt_ind
   }
 }
 
-template<class Node, class MS>
-auto TopologicAssociativityForestNode<Node,MS>::blockCount(std::size_t gt_index) const noexcept
+template<class Node, class GV, class MS>
+auto TopologicAssociativityForestNode<Node,GV,MS>::blockCount(std::size_t gt_index) const noexcept
 {
   assert(fixedSizePerGeometryType());
   if constexpr (containerBlocked()) {
@@ -764,8 +770,8 @@ auto TopologicAssociativityForestNode<Node,MS>::blockCount(std::size_t gt_index)
   }
 }
 
-template<class Node, class MS>
-auto TopologicAssociativityForestNode<Node,MS>::blockCount() const noexcept
+template<class Node, class GV, class MS>
+auto TopologicAssociativityForestNode<Node,GV,MS>::blockCount() const noexcept
 {
   if constexpr (containerBlocked()) {
     static_assert(not Concept::LeafTreeNode<Node>);
@@ -776,12 +782,12 @@ auto TopologicAssociativityForestNode<Node,MS>::blockCount() const noexcept
 }
 
 
-template<class Node, class MS>
+template<class Node, class GV, class MS>
 template<class EntityCodim>
-constexpr auto TopologicAssociativityForestNode<Node,MS>::mayContainCodim(EntityCodim entity_codim)
+constexpr auto TopologicAssociativityForestNode<Node,GV,MS>::mayContainCodim(EntityCodim entity_codim)
 {
   if constexpr (Concept::LeafTreeNode<Node>) {
-    constexpr std::size_t entity_dim = EntitySet::dimension - entity_codim;
+    constexpr std::size_t entity_dim = GridView::dimension - entity_codim;
     // dimension of the finite element domain (perhaps embedded on sub entities)
     using FEM = typename Node::ProtoBasis::FiniteElementMap;
     constexpr std::size_t fem_dim = FEM::Traits::FiniteElement::Traits::LocalBasisType::Traits::dimDomain;
@@ -812,10 +818,10 @@ constexpr auto TopologicAssociativityForestNode<Node,MS>::mayContainCodim(Entity
   }
 }
 
-template<class Node, class MS>
-auto constexpr TopologicAssociativityForestNode<Node,MS>::maxCodimCount()
+template<class Node, class GV, class MS>
+auto constexpr TopologicAssociativityForestNode<Node,GV,MS>::maxCodimCount()
 {
-  auto sequence = std::make_index_sequence<1 + EntitySet::dimension>{};
+  auto sequence = std::make_index_sequence<1 + GridView::dimension>{};
 
   constexpr std::size_t count = Dune::unpackIntegerSequence(
     [&](auto... codim) {
@@ -826,10 +832,10 @@ auto constexpr TopologicAssociativityForestNode<Node,MS>::maxCodimCount()
   return std::integral_constant<std::size_t, count>{};
 }
 
-template<class Node, class MS>
-void TopologicAssociativityForestNode<Node,MS>::updateFixedSizeOrderings()
+template<class Node, class GV, class MS>
+void TopologicAssociativityForestNode<Node,GV,MS>::updateFixedSizeOrderings()
 {
-  const std::size_t dim = EntitySet::dimension;
+  const std::size_t dim = GridView::dimension;
 
   _fixed_size = fixedSizePerGeometryTypeStatic();
   _max_local_coeff_count = 0;
@@ -841,7 +847,7 @@ void TopologicAssociativityForestNode<Node,MS>::updateFixedSizeOrderings()
     const auto gt_count = GlobalGeometryTypeIndex::size(dim);
     _gt_used.assign(gt_count, false);
     std::size_t sz = gt_count * std::max<std::size_t>(1, node().degree());
-    assign_storage(_gt_dof_offsets_storage, _gt_dof_offsets, sz, 0);
+    std::tie(_gt_dof_offsets_storage, _gt_dof_offsets) = make_span_storage(sz, SizeType{0});
   }
 
   // fill out flags and offsets depending on the node type
@@ -849,26 +855,26 @@ void TopologicAssociativityForestNode<Node,MS>::updateFixedSizeOrderings()
 
     using FEM = typename Node::ProtoBasis::FiniteElementMap;
     constexpr std::size_t fem_dim = FEM::Traits::FiniteElement::Traits::LocalBasisType::Traits::dimDomain;
-    constexpr std::size_t fem_codim = EntitySet::dimension - fem_dim;
+    constexpr std::size_t fem_codim = GridView::dimension - fem_dim;
 
     if constexpr (fixedSizePerGeometryTypeStatic()) {
-      for (std::size_t codim = fem_codim; codim <= EntitySet::dimension; ++codim) {
-        for (const auto& gt : entitySet().indexSet().types(codim)) {
+      for (std::size_t codim = fem_codim; codim <= GridView::dimension; ++codim) {
+        for (const auto& gt : gridView().indexSet().types(codim)) {
           SizeType size = node().protoBasis().finiteElementMap().size(gt);
           const auto gt_index = GlobalGeometryTypeIndex::index(gt);
           _gt_dof_offsets[gt_index] = size;
           _gt_used[gt_index] = size > 0;
-          _block_count += size * entitySet().size(gt);
+          _block_count += size * gridView().size(gt);
           assert(codim == dim - gt.dim());
           _codim_used[codim] = _codim_used[codim] or (size > 0);
         }
       }
       // collect max entity sides on fem dimension for an entity of codimension 0
       int max_sub_entities = 0;
-      for (const auto& gt : entitySet().indexSet().types(0)) {
+      for (const auto& gt : gridView().indexSet().types(0)) {
         using Dune::referenceElement;
-        auto ref_el = referenceElement<double, EntitySet::dimension>(gt);
-        max_sub_entities = std::max(max_sub_entities, ref_el.size(EntitySet::dimension - fem_dim));
+        auto ref_el = referenceElement<double, GridView::dimension>(gt);
+        max_sub_entities = std::max(max_sub_entities, ref_el.size(GridView::dimension - fem_dim));
       }
       node().setMaxSubEntities(max_sub_entities);
       _max_local_coeff_count = max_sub_entities * node().protoBasis().finiteElementMap().maxLocalSize();
@@ -911,22 +917,22 @@ void TopologicAssociativityForestNode<Node,MS>::updateFixedSizeOrderings()
   }
 }
 
-template<class Node, class MS>
-void TopologicAssociativityForestNode<Node,MS>::allocateVariableSizeOrdering()
+template<class Node, class GV, class MS>
+void TopologicAssociativityForestNode<Node,GV,MS>::allocateVariableSizeOrdering()
 {
   static_assert(not fixedSizePerGeometryTypeStatic());
   _codim_used.reset();
-  const auto gt_count = GlobalGeometryTypeIndex::size(EntitySet::dimension);
+  const auto gt_count = GlobalGeometryTypeIndex::size(GridView::dimension);
   std::size_t sz = gt_count * std::max<std::size_t>(1, node().degree());
 
   _gt_used.assign(gt_count, false);
-  assign_storage(_gt_entity_offsets_storage, _gt_entity_offsets, gt_count + 1, 0);
-  assign_storage(_gt_dof_offsets_storage, _gt_dof_offsets, sz, GT_UNUSED);
+  std::tie(_gt_entity_offsets_storage, _gt_entity_offsets) = make_span_storage(gt_count + 1, SizeType{0});
+  std::tie(_gt_dof_offsets_storage, _gt_dof_offsets) = make_span_storage(sz, GT_UNUSED);
 }
 
-template<class Node, class MS>
+template<class Node, class GV, class MS>
 template<class Entity>
-void TopologicAssociativityForestNode<Node,MS>::collectLeafGeometryTypes(const Entity& entity)
+void TopologicAssociativityForestNode<Node,GV,MS>::collectLeafGeometryTypes(const Entity& entity)
 {
   static_assert(not fixedSizePerGeometryTypeStatic());
   static_assert(Concept::LeafTreeNode<Node>);
@@ -935,7 +941,7 @@ void TopologicAssociativityForestNode<Node,MS>::collectLeafGeometryTypes(const E
 
   using FEM = typename Node::ProtoBasis::FiniteElementMap;
   constexpr std::size_t fem_dim = FEM::Traits::FiniteElement::Traits::LocalBasisType::Traits::dimDomain;
-  constexpr std::size_t fem_codim = EntitySet::dimension - fem_dim;
+  constexpr std::size_t fem_codim = GridView::dimension - fem_dim;
 
   const FEM& fem = node().protoBasis().finiteElementMap();
   std::size_t max_coeff_count = 0;
@@ -958,8 +964,8 @@ void TopologicAssociativityForestNode<Node,MS>::collectLeafGeometryTypes(const E
   node().setMaxSubEntities(std::max<int>(node().maxSubEntities(), entity.subEntities(fem_codim)));
 }
 
-template<class Node, class MS>
-void TopologicAssociativityForestNode<Node,MS>::collectGeometryTypes()
+template<class Node, class GV, class MS>
+void TopologicAssociativityForestNode<Node,GV,MS>::collectGeometryTypes()
 {
   _fixed_size_possible = true;
 
@@ -969,7 +975,7 @@ void TopologicAssociativityForestNode<Node,MS>::collectGeometryTypes()
 
       if constexpr (not fixedSizePerGeometryTypeStatic()) {
         // properties contained in child nodes are also contained here
-        for (std::size_t codim = 0; codim <= EntitySet::dimension; ++codim)
+        for (std::size_t codim = 0; codim <= GridView::dimension; ++codim)
           _codim_used[codim] =
             _codim_used[codim] or child.containsCodim(codim);
 
@@ -981,24 +987,24 @@ void TopologicAssociativityForestNode<Node,MS>::collectGeometryTypes()
 
   // create offset of indices for contained geometry types
   if constexpr (not fixedSizePerGeometryTypeStatic()) {
-    for (std::size_t codim = 0; codim <= EntitySet::dimension; ++codim) {
-      for (const auto& gt : entitySet().indexSet().types(codim)) {
+    for (std::size_t codim = 0; codim <= GridView::dimension; ++codim) {
+      for (const auto& gt : gridView().indexSet().types(codim)) {
         const auto gt_index = GlobalGeometryTypeIndex::index(gt);
         if (containsGeometry(gt_index))
-          _gt_entity_offsets[gt_index + 1] = entitySet().indexSet().size(gt);
+          _gt_entity_offsets[gt_index + 1] = gridView().indexSet().size(gt);
       }
       std::partial_sum(std::begin(_gt_entity_offsets),
                         std::end(_gt_entity_offsets),
                         std::begin(_gt_entity_offsets));
       std::size_t sz = _gt_entity_offsets.back() * std::max<std::size_t>(node().degree(), 1);
-      assign_storage(_entity_dof_offsets_storage, _entity_dof_offsets, sz, 0);
+      std::tie(_entity_dof_offsets_storage, _entity_dof_offsets) = make_span_storage(sz, SizeType{0});
     }
   }
 }
 
-template<class Node, class MS>
+template<class Node, class GV, class MS>
 template<class Entity>
-void TopologicAssociativityForestNode<Node,MS>::collectEntitySizes(const Entity& entity, std::vector<SizeType>& gt_cache)
+void TopologicAssociativityForestNode<Node,GV,MS>::collectEntitySizes(const Entity& entity, std::vector<SizeType>& gt_cache)
 {
   static_assert(not fixedSizePerGeometryTypeStatic());
   static_assert(Concept::LeafTreeNode<Node>);
@@ -1007,7 +1013,7 @@ void TopologicAssociativityForestNode<Node,MS>::collectEntitySizes(const Entity&
 
   using FEM = typename Node::ProtoBasis::FiniteElementMap;
   constexpr std::size_t fem_dim = FEM::Traits::FiniteElement::Traits::LocalBasisType::Traits::dimDomain;
-  constexpr std::size_t fem_codim = EntitySet::dimension - fem_dim;
+  constexpr std::size_t fem_codim = GridView::dimension - fem_dim;
 
   const FEM& fem = node().protoBasis().finiteElementMap();
   for (std::size_t s = 0; s != entity.subEntities(fem_codim); ++s) {
@@ -1030,7 +1036,7 @@ void TopologicAssociativityForestNode<Node,MS>::collectEntitySizes(const Entity&
     for (std::size_t dof = 0; dof != coeffs.size(); ++dof) {
       const LocalKey& key = coeffs.localKey(dof);
       const SizeType gt_index = GlobalGeometryTypeIndex::index(ref_el.type(key.subEntity(), key.codim()));
-      const SizeType entity_index = entitySet().indexSet().subIndex(sub_entity, key.subEntity(), fem_codim + key.codim());
+      const SizeType entity_index = gridView().indexSet().subIndex(sub_entity, key.subEntity(), fem_codim + key.codim());
       const SizeType index = _gt_entity_offsets[gt_index] + entity_index;
       gt_cache[gt_index] = _entity_dof_offsets[index] = std::max<SizeType>(_entity_dof_offsets[index], key.index() + 1);
     }
@@ -1053,8 +1059,8 @@ void TopologicAssociativityForestNode<Node,MS>::collectEntitySizes(const Entity&
   }
 }
 
-template<class Node, class MS>
-void TopologicAssociativityForestNode<Node,MS>::accumulateEntityOffsets()
+template<class Node, class GV, class MS>
+void TopologicAssociativityForestNode<Node,GV,MS>::accumulateEntityOffsets()
 {
   _block_count = 0;
   if constexpr (Concept::LeafTreeNode<Node>) {
@@ -1066,13 +1072,13 @@ void TopologicAssociativityForestNode<Node,MS>::accumulateEntityOffsets()
       _fixed_size = true;
     }
     // mask out GT_UNUSED for geometry types that really weren't used
-    for (std::size_t codim = 0; codim <= EntitySet::dimension; ++codim) {
-      for (const auto& gt : entitySet().indexSet().types(codim)) {
+    for (std::size_t codim = 0; codim <= GridView::dimension; ++codim) {
+      for (const auto& gt : gridView().indexSet().types(codim)) {
         auto& size = _gt_dof_offsets[GlobalGeometryTypeIndex::index(gt)];
         if (size == GT_UNUSED)
           size = 0;
         if (_fixed_size)
-          _block_count += size * entitySet().size(gt);
+          _block_count += size * gridView().size(gt);
       }
     }
     if (not _fixed_size)
@@ -1087,18 +1093,18 @@ void TopologicAssociativityForestNode<Node,MS>::accumulateEntityOffsets()
       _max_local_coeff_count += child.maxLocalCount();
     });
 
-    const std::size_t dim = EntitySet::dimension;
+    const std::size_t dim = GridView::dimension;
     const std::size_t gt_count = GlobalGeometryTypeIndex::size(dim);
     if (_fixed_size_possible) {
       // we need to update gt sizes from children and convert them to offsets
       forEachChild(this->node(), [&](auto& child, auto i) {
-        for (std::size_t codim = 0; codim <= EntitySet::dimension; ++codim) {
-          for (const auto& gt : entitySet().indexSet().types(codim)) {
+        for (std::size_t codim = 0; codim <= GridView::dimension; ++codim) {
+          for (const auto& gt : gridView().indexSet().types(codim)) {
             const auto gt_index = GlobalGeometryTypeIndex::index(gt);
             const auto gt_offset = gt_index * node().degree() + i;
             const auto cb_count = child.blockCount(gt_index);
             _gt_dof_offsets[gt_offset] = cb_count;
-            _block_count += cb_count * entitySet().size(gt);
+            _block_count += cb_count * gridView().size(gt);
             if (i != 0)
               _gt_dof_offsets[gt_offset] = _gt_dof_offsets[gt_offset - 1] + cb_count;
           }
@@ -1130,8 +1136,8 @@ void TopologicAssociativityForestNode<Node,MS>::accumulateEntityOffsets()
   }
 }
 
-template<class Node, class MS>
-void TopologicAssociativityForestNode<Node,MS>::updateVariableSizeOrderings()
+template<class Node, class GV, class MS>
+void TopologicAssociativityForestNode<Node,GV,MS>::updateVariableSizeOrderings()
 {
 
   forEachNode(node(), []<class T>(T& node, auto path) {
@@ -1139,7 +1145,7 @@ void TopologicAssociativityForestNode<Node,MS>::updateVariableSizeOrderings()
       node.allocateVariableSizeOrdering();
   });
 
-  for (const auto& entity : elements(entitySet())) {
+  for (const auto& entity : elements(gridView())) {
     forEachLeafNode(node(), [&]<class T>(T& leaf, auto path) {
       if constexpr (not T::fixedSizePerGeometryTypeStatic())
         leaf.collectLeafGeometryTypes(entity);
@@ -1149,10 +1155,10 @@ void TopologicAssociativityForestNode<Node,MS>::updateVariableSizeOrderings()
   collectGeometryTypes();
 
   { // construct cache outside entity collection to avoid reallocation
-    const std::size_t dim = EntitySet::dimension;
+    const std::size_t dim = GridView::dimension;
     std::vector<SizeType> gt_cache(GlobalGeometryTypeIndex::size(dim), 0);
 
-    for (const auto& entity : elements(entitySet())) {
+    for (const auto& entity : elements(gridView())) {
       forEachLeafNode(node(), [&]<class T>(T& leaf, auto path) {
         if constexpr (not T::fixedSizePerGeometryTypeStatic())
           leaf.collectEntitySizes(entity, gt_cache);
@@ -1162,8 +1168,8 @@ void TopologicAssociativityForestNode<Node,MS>::updateVariableSizeOrderings()
   accumulateEntityOffsets();
 }
 
-template<class Node, class MS>
-void TopologicAssociativityForestNode<Node,MS>::shareChildenData() {
+template<class Node, class GV, class MS>
+void TopologicAssociativityForestNode<Node,GV,MS>::shareChildenData() {
   // in case of vector space (same underlying function space), enable sharing states in children nodes
   if constexpr (not Concept::LeafTreeNode<Node>) {
     // compare other nodes to the first one
@@ -1176,19 +1182,10 @@ void TopologicAssociativityForestNode<Node,MS>::shareChildenData() {
   }
 }
 
-template<class Node, class MS>
-void TopologicAssociativityForestNode<Node,MS>::assign_storage(std::shared_ptr<SizeType[]>& storage, std::span<SizeType>& span, std::size_t size, SizeType value) {
-#if __cpp_lib_smart_ptr_for_overwrite >= 202002L
-  storage = std::make_shared_for_overwrite<SizeType[]>(size);
-#else
-  storage = std::shared_ptr<SizeType[]>(new SizeType[size]);
-#endif
-  span = {storage.get(), size};
-  std::uninitialized_fill_n(std::begin(span), size, value);
-}
 
-template<class Node, class MS>
-void TopologicAssociativityForestNode<Node,MS>::useDataFromSibling(const auto& other) {
+
+template<class Node, class GV, class MS>
+void TopologicAssociativityForestNode<Node,GV,MS>::useDataFromSibling(const auto& other) {
   if (_gt_dof_offsets_storage and std::equal(_gt_dof_offsets.begin(), _gt_dof_offsets.end(), other._gt_dof_offsets.begin(), other._gt_dof_offsets.end())) {
     _gt_dof_offsets_storage = other._gt_dof_offsets_storage;
     _gt_dof_offsets = other._gt_dof_offsets;

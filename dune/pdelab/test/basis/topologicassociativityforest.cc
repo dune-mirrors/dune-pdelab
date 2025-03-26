@@ -19,11 +19,14 @@
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
 
-template<class MergingStragetgy, std::size_t k>
-auto makeQkProtoBasis(const MergingStragetgy& strategy, Dune::index_constant<k>) {
-  using Q1FEM = Dune::PDELab::QkLocalFiniteElementMap<typename MergingStragetgy::EntitySet, double, double, k>;
-  auto qkfem = std::make_shared<Q1FEM>(strategy.entitySet());
-  return makeProtoBasis(strategy, qkfem);
+template<std::size_t k, typename R=double, class MergingStragetgy>
+auto lagrange(const MergingStragetgy& strategy)
+{
+  return [=]<class GridView>(const GridView& grid_view) {
+    using QkFEM = Dune::PDELab::QkLocalFiniteElementMap<GridView, R, R, k>;
+    auto qkfem = std::make_shared<QkFEM>(grid_view);
+    return protoBasis(strategy, qkfem);
+  };
 }
 
 template<class Q1TopologicAssociativityForest>
@@ -47,8 +50,8 @@ void testQ1TopologicAssociativityForest(Dune::TestSuite& testSuite, Q1TopologicA
   auto gt_index = Dune::GlobalGeometryTypeIndex::index(Dune::GeometryTypes::vertex);
   testSuite.check(entity_ordering.blockCount(gt_index) == 1);
 
-  for(const auto& vertex : vertices(entity_ordering.entitySet())) {
-    auto entity_index = entity_ordering.entitySet().indexSet().index(vertex);
+  for(const auto& vertex : vertices(entity_ordering.gridView())) {
+    auto entity_index = entity_ordering.gridView().indexSet().index(vertex);
     testSuite.check(entity_ordering.blockCount(gt_index, entity_index) == 1);
     auto tpath = Dune::TypeTree::treePath();
     auto cir = entity_ordering.containerIndexRange(tpath, gt_index, entity_index);
@@ -58,7 +61,7 @@ void testQ1TopologicAssociativityForest(Dune::TestSuite& testSuite, Q1TopologicA
   }
 
   testSuite.check(entity_ordering.blockCount() == entity_ordering.dimension());
-  testSuite.check(entity_ordering.dimension() == entity_ordering.entitySet().indexSet().size(2));
+  testSuite.check(entity_ordering.dimension() == entity_ordering.gridView().indexSet().size(2));
 }
 
 void testQ1TopologicAssociativityForest() {
@@ -68,18 +71,18 @@ void testQ1TopologicAssociativityForest() {
   using GridView = typename YaspUnitSquare::LeafGridView;
   GridView entity_set{grid.leafGridView()};
   {
-    auto flat_strategy = Dune::PDELab::BasisFactory::flatByEntity(entity_set);
-    auto q1_proto_basis = makeQkProtoBasis(flat_strategy, Dune::Indices::_1);
+    auto flat_strategy = Dune::PDELab::BasisFactory::flatByEntity();
+    auto q1_proto_basis = lagrange<1>(flat_strategy)(entity_set);
     using ProtoBasis = decltype(q1_proto_basis);
-    using TopologicAssociativityForest = Dune::PDELab::Impl::LeafTopologicAssociativityForest<ProtoBasis>;
-    auto entity_ordering = std::make_shared<TopologicAssociativityForest>(q1_proto_basis);
-    entity_ordering->update();
+    using TopologicAssociativityForest = Dune::PDELab::Impl::LeafTopologicAssociativityForest<ProtoBasis, GridView>;
+    auto entity_ordering = std::make_shared<TopologicAssociativityForest>(q1_proto_basis, entity_set);
+    entity_ordering->initializeIndices();
     testQ1TopologicAssociativityForest(testSuite, *entity_ordering);
 
     using VectorTopologicAssociativityForest = Dune::PDELab::Impl::VectorTopologicAssociativityForest<decltype(flat_strategy), TopologicAssociativityForest>;
 
     VectorTopologicAssociativityForest p_entity_ordering{std::vector{entity_ordering,entity_ordering}, flat_strategy};
-    p_entity_ordering.update();
+    p_entity_ordering.initializeIndices();
     testQ1TopologicAssociativityForest(testSuite, p_entity_ordering.child(0));
     testSuite.check(p_entity_ordering.childStorage(0) == p_entity_ordering.childStorage(1));
 
@@ -103,8 +106,8 @@ void testQ1TopologicAssociativityForest() {
     auto gt_index = Dune::GlobalGeometryTypeIndex::index(Dune::GeometryTypes::vertex);
     testSuite.check(p_entity_ordering.blockCount(gt_index) == 2);
 
-    for(const auto& vertex : vertices(p_entity_ordering.entitySet())) {
-      auto entity_index = p_entity_ordering.entitySet().indexSet().index(vertex);
+    for(const auto& vertex : vertices(p_entity_ordering.gridView())) {
+      auto entity_index = p_entity_ordering.gridView().indexSet().index(vertex);
       testSuite.check(p_entity_ordering.blockCount(gt_index, entity_index) == 2);
       auto tpath0 = Dune::TypeTree::treePath(0);
 
@@ -120,23 +123,23 @@ void testQ1TopologicAssociativityForest() {
       testSuite.check(p_entity_ordering.containerSize(cir1[0], gt_index, entity_index) == 0);
     }
 
-    testSuite.check(p_entity_ordering.blockCount() == 2*p_entity_ordering.entitySet().indexSet().size(2));
+    testSuite.check(p_entity_ordering.blockCount() == 2*p_entity_ordering.gridView().indexSet().size(2));
     testSuite.check(p_entity_ordering.dimension() == p_entity_ordering.blockCount());
   }
 
   {
-    auto blocked_strategy = Dune::PDELab::BasisFactory::blockedByEntity(entity_set);
-    auto q1_proto_basis = makeQkProtoBasis(blocked_strategy, Dune::Indices::_1);
+    auto blocked_strategy = Dune::PDELab::BasisFactory::blockedByEntity();
+    auto q1_proto_basis = lagrange<1>(blocked_strategy)(entity_set);
     using ProtoBasis = decltype(q1_proto_basis);
-    using TopologicAssociativityForest = Dune::PDELab::Impl::LeafTopologicAssociativityForest<ProtoBasis>;
-    auto entity_ordering = std::make_shared<TopologicAssociativityForest>(q1_proto_basis);
-    entity_ordering->update();
+    using TopologicAssociativityForest = Dune::PDELab::Impl::LeafTopologicAssociativityForest<ProtoBasis, GridView>;
+    auto entity_ordering = std::make_shared<TopologicAssociativityForest>(q1_proto_basis, entity_set);
+    entity_ordering->initializeIndices();
     testQ1TopologicAssociativityForest(testSuite, *entity_ordering);
 
     using ArrayTopologicAssociativityForest = Dune::PDELab::Impl::ArrayTopologicAssociativityForest<decltype(blocked_strategy), TopologicAssociativityForest, 2>;
 
     ArrayTopologicAssociativityForest p_entity_ordering{std::array{entity_ordering,entity_ordering}, blocked_strategy};
-    p_entity_ordering.update();
+    p_entity_ordering.initializeIndices();
     testQ1TopologicAssociativityForest(testSuite, p_entity_ordering.child(0));
 
     static_assert(ArrayTopologicAssociativityForest::degree() == 2);
@@ -162,8 +165,8 @@ void testQ1TopologicAssociativityForest() {
     testSuite.check(gt_count == 2);
     static_assert(std::same_as<decltype(gt_count), std::integral_constant<std::size_t,2>>);
 
-    for(const auto& vertex : vertices(p_entity_ordering.entitySet())) {
-      auto entity_index = p_entity_ordering.entitySet().indexSet().index(vertex);
+    for(const auto& vertex : vertices(p_entity_ordering.gridView())) {
+      auto entity_index = p_entity_ordering.gridView().indexSet().index(vertex);
       testSuite.check(Dune::Hybrid::equal_to(p_entity_ordering.blockCount(gt_index, entity_index), Dune::Indices::_2));
 
       using namespace Dune::Indices;
@@ -191,7 +194,7 @@ void testQ1TopologicAssociativityForest() {
     auto count = p_entity_ordering.blockCount();
     testSuite.check(count == 2);
     static_assert(std::same_as<decltype(count), std::integral_constant<std::size_t,2>>);
-    testSuite.check(p_entity_ordering.dimension() == 2*p_entity_ordering.entitySet().indexSet().size(2));
+    testSuite.check(p_entity_ordering.dimension() == 2*p_entity_ordering.gridView().indexSet().size(2));
   }
 }
 
@@ -216,8 +219,8 @@ void testQ2TopologicAssociativityForest(Dune::TestSuite& testSuite, Q2TopologicA
   auto gt_index_vertex = Dune::GlobalGeometryTypeIndex::index(Dune::GeometryTypes::vertex);
   testSuite.check(entity_ordering.blockCount(gt_index_vertex) == 1);
 
-  for(const auto& vertex : vertices(entity_ordering.entitySet())) {
-    auto entity_index = entity_ordering.entitySet().indexSet().index(vertex);
+  for(const auto& vertex : vertices(entity_ordering.gridView())) {
+    auto entity_index = entity_ordering.gridView().indexSet().index(vertex);
     testSuite.check(entity_ordering.blockCount(gt_index_vertex, entity_index) == 1);
     auto tpath = Dune::TypeTree::treePath();
     auto cir = entity_ordering.containerIndexRange(tpath, gt_index_vertex, entity_index);
@@ -230,8 +233,8 @@ void testQ2TopologicAssociativityForest(Dune::TestSuite& testSuite, Q2TopologicA
   auto gt_index_edge = Dune::GlobalGeometryTypeIndex::index(Dune::GeometryTypes::line);
   testSuite.check(entity_ordering.blockCount(gt_index_edge) == 1);
 
-  for(const auto& edge : edges(entity_ordering.entitySet())) {
-    auto entity_index = entity_ordering.entitySet().indexSet().index(edge);
+  for(const auto& edge : edges(entity_ordering.gridView())) {
+    auto entity_index = entity_ordering.gridView().indexSet().index(edge);
     testSuite.check(entity_ordering.blockCount(gt_index_edge, entity_index) == 1);
     auto tpath = Dune::TypeTree::treePath();
     auto cir = entity_ordering.containerIndexRange(tpath, gt_index_edge, entity_index);
@@ -244,8 +247,8 @@ void testQ2TopologicAssociativityForest(Dune::TestSuite& testSuite, Q2TopologicA
   auto gt_index_quad = Dune::GlobalGeometryTypeIndex::index(Dune::GeometryTypes::quadrilateral);
   testSuite.check(entity_ordering.blockCount(gt_index_quad) == 1);
 
-  for(const auto& edge : edges(entity_ordering.entitySet())) {
-    auto entity_index = entity_ordering.entitySet().indexSet().index(edge);
+  for(const auto& edge : edges(entity_ordering.gridView())) {
+    auto entity_index = entity_ordering.gridView().indexSet().index(edge);
     testSuite.check(entity_ordering.blockCount(gt_index_quad, entity_index) == 1);
     auto tpath = Dune::TypeTree::treePath();
     auto cir = entity_ordering.containerIndexRange(tpath, gt_index_edge, entity_index);
@@ -256,9 +259,9 @@ void testQ2TopologicAssociativityForest(Dune::TestSuite& testSuite, Q2TopologicA
   }
 
   testSuite.check(entity_ordering.dimension() ==
-    entity_ordering.entitySet().indexSet().size(2) +
-    entity_ordering.entitySet().indexSet().size(1) +
-    entity_ordering.entitySet().indexSet().size(0)
+    entity_ordering.gridView().indexSet().size(2) +
+    entity_ordering.gridView().indexSet().size(1) +
+    entity_ordering.gridView().indexSet().size(0)
   );
   testSuite.check(entity_ordering.dimension() == entity_ordering.blockCount());
 }
@@ -271,11 +274,11 @@ void testQ2TopologicAssociativityForest() {
   using GridView = typename YaspUnitSquare::LeafGridView;
   GridView entity_set{grid.leafGridView()};
 
-  auto flat_strategy = Dune::PDELab::BasisFactory::flatByEntity(entity_set);
-  auto q2_pb = makeQkProtoBasis(flat_strategy, Dune::Indices::_2);
-  Dune::PDELab::Impl::LeafTopologicAssociativityForest entity_ordering{q2_pb};
+  auto flat_strategy = Dune::PDELab::BasisFactory::flatByEntity();
+  auto q2_pb = lagrange<2>(flat_strategy)(entity_set);
+  Dune::PDELab::Impl::LeafTopologicAssociativityForest entity_ordering{q2_pb, entity_set};
 
-  entity_ordering.update();
+  entity_ordering.initializeIndices();
   testQ2TopologicAssociativityForest(testSuite, entity_ordering);
 }
 
@@ -301,8 +304,8 @@ void testFixedMonomialTopologicAssociativityForest(Dune::TestSuite& testSuite, F
   auto gt_index = Dune::GlobalGeometryTypeIndex::index(Dune::GeometryTypes::quadrilateral);
   testSuite.check(entity_ordering.blockCount(gt_index) == 6);
 
-  for(const auto& element : elements(entity_ordering.entitySet())) {
-    auto entity_index = entity_ordering.entitySet().indexSet().index(element);
+  for(const auto& element : elements(entity_ordering.gridView())) {
+    auto entity_index = entity_ordering.gridView().indexSet().index(element);
     testSuite.check(entity_ordering.blockCount(gt_index, entity_index) == 6);
     auto tpath = Dune::TypeTree::treePath();
     auto cir = entity_ordering.containerIndexRange(tpath, gt_index, entity_index);
@@ -313,7 +316,7 @@ void testFixedMonomialTopologicAssociativityForest(Dune::TestSuite& testSuite, F
   }
 
   testSuite.check(entity_ordering.dimension() ==
-    entity_ordering.entitySet().indexSet().size(0) * entity_ordering.blockCount(gt_index)
+    entity_ordering.gridView().indexSet().size(0) * entity_ordering.blockCount(gt_index)
   );
   testSuite.check(entity_ordering.dimension() == entity_ordering.blockCount());
 }
@@ -332,21 +335,21 @@ void testFixedMonomialTopologicAssociativityForest() {
   using MonomFEM = Dune::PDELab::VariableMonomLocalFiniteElementMap<CellMapper, float, double, GridView::dimension>;
   auto monomfem = std::make_shared<MonomFEM>(cellmapper, Dune::GeometryTypes::quadrilateral, 2);
 
-  auto strategy = Dune::PDELab::BasisFactory::flatByEntity(entity_set);
-  auto monom_pb = makeProtoBasis(strategy, monomfem);
+  auto strategy = Dune::PDELab::BasisFactory::flatByEntity();
+  auto monom_pb = protoBasis(strategy, monomfem);
 
   using ProtoBasis = decltype(monom_pb);
-  using TopologicAssociativityForest = Dune::PDELab::Impl::LeafTopologicAssociativityForest<ProtoBasis>;
-  auto entity_ordering = std::make_shared<TopologicAssociativityForest>(monom_pb);
+  using TopologicAssociativityForest = Dune::PDELab::Impl::LeafTopologicAssociativityForest<ProtoBasis, GridView>;
+  auto entity_ordering = std::make_shared<TopologicAssociativityForest>(monom_pb, entity_set);
 
-  entity_ordering->update();
+  entity_ordering->initializeIndices();
 
   testFixedMonomialTopologicAssociativityForest(testSuite, *entity_ordering);
 
   using ArrayTopologicAssociativityForest = Dune::PDELab::Impl::ArrayTopologicAssociativityForest<decltype(strategy), TopologicAssociativityForest, 2>;
 
   ArrayTopologicAssociativityForest p_entity_ordering{std::array{entity_ordering,entity_ordering}, strategy};
-  p_entity_ordering.update();
+  p_entity_ordering.initializeIndices();
   testFixedMonomialTopologicAssociativityForest(testSuite, p_entity_ordering.child(0));
 
   static_assert(not p_entity_ordering.containerBlocked());
@@ -368,8 +371,8 @@ void testFixedMonomialTopologicAssociativityForest() {
   auto gt_index = Dune::GlobalGeometryTypeIndex::index(Dune::GeometryTypes::quadrilateral);
   testSuite.check(p_entity_ordering.blockCount(gt_index) == 2*6);
 
-  for(const auto& element : elements(p_entity_ordering.entitySet())) {
-    auto entity_index = p_entity_ordering.entitySet().indexSet().index(element);
+  for(const auto& element : elements(p_entity_ordering.gridView())) {
+    auto entity_index = p_entity_ordering.gridView().indexSet().index(element);
     testSuite.check(p_entity_ordering.blockCount(gt_index, entity_index) == 2*6);
 
     auto tpath0 = Dune::TypeTree::treePath(0);
@@ -388,7 +391,7 @@ void testFixedMonomialTopologicAssociativityForest() {
   }
 
   testSuite.check(p_entity_ordering.blockCount() ==
-    p_entity_ordering.entitySet().indexSet().size(0) * p_entity_ordering.blockCount(gt_index)
+    p_entity_ordering.gridView().indexSet().size(0) * p_entity_ordering.blockCount(gt_index)
   );
   testSuite.check(p_entity_ordering.dimension() == p_entity_ordering.blockCount());
 }
@@ -414,9 +417,9 @@ void testVariableMonomialTopologicAssociativityForest(Dune::TestSuite& testSuite
   auto gt_index = Dune::GlobalGeometryTypeIndex::index(Dune::GeometryTypes::quadrilateral);
 
   std::size_t order = 0;
-  for(const auto& element : elements(entity_ordering.entitySet())) {
+  for(const auto& element : elements(entity_ordering.gridView())) {
     auto& fe = entity_ordering.protoBasis().finiteElementMap().getFEM(order++ % 3);
-    auto entity_index = entity_ordering.entitySet().indexSet().index(element);
+    auto entity_index = entity_ordering.gridView().indexSet().index(element);
     testSuite.check(entity_ordering.blockCount(gt_index, entity_index) == fe.size());
     auto tpath = Dune::TypeTree::treePath();
     auto cir = entity_ordering.containerIndexRange(tpath, gt_index, entity_index);
@@ -426,7 +429,7 @@ void testVariableMonomialTopologicAssociativityForest(Dune::TestSuite& testSuite
     testSuite.check(entity_ordering.containerSize(cir[0], gt_index, entity_index) == 0);
   }
 
-  testSuite.check(entity_ordering.entitySet().indexSet().size(0) == 4);
+  testSuite.check(entity_ordering.gridView().indexSet().size(0) == 4);
 
   testSuite.check(entity_ordering.dimension() ==
     1 + 3 + 6 + 1
@@ -454,14 +457,14 @@ void testVariableMonomialTopologicAssociativityForest() {
   for (const auto &e : elements(entity_set))
     monomfem->setOrder(e, order++ % 3);
 
-  auto strategy = Dune::PDELab::BasisFactory::flatByEntity(entity_set);
-  auto monom_pb = makeProtoBasis(strategy, monomfem);
+  auto strategy = Dune::PDELab::BasisFactory::flatByEntity();
+  auto monom_pb = protoBasis(strategy, monomfem);
 
   using ProtoBasis = decltype(monom_pb);
-  using TopologicAssociativityForest = Dune::PDELab::Impl::LeafTopologicAssociativityForest<ProtoBasis>;
-  auto entity_ordering = std::make_shared<TopologicAssociativityForest>(monom_pb);
+  using TopologicAssociativityForest = Dune::PDELab::Impl::LeafTopologicAssociativityForest<ProtoBasis, GridView>;
+  auto entity_ordering = std::make_shared<TopologicAssociativityForest>(monom_pb, entity_set);
 
-  entity_ordering->update();
+  entity_ordering->initializeIndices();
 
   testVariableMonomialTopologicAssociativityForest(testSuite, *entity_ordering);
 
@@ -469,7 +472,7 @@ void testVariableMonomialTopologicAssociativityForest() {
   using TupleTopologicAssociativityForest = Dune::PDELab::Impl::TupleTopologicAssociativityForest<decltype(strategy), TopologicAssociativityForest, TopologicAssociativityForest>;
 
   TupleTopologicAssociativityForest p_entity_ordering{std::tuple{entity_ordering,entity_ordering}, strategy};
-  p_entity_ordering.update();
+  p_entity_ordering.initializeIndices();
   testVariableMonomialTopologicAssociativityForest(testSuite, p_entity_ordering.child(_0));
   testVariableMonomialTopologicAssociativityForest(testSuite, p_entity_ordering.child(_1));
 
@@ -492,9 +495,9 @@ void testVariableMonomialTopologicAssociativityForest() {
   auto gt_index = Dune::GlobalGeometryTypeIndex::index(Dune::GeometryTypes::quadrilateral);
 
   order = 0;
-  for(const auto& element : elements(p_entity_ordering.entitySet())) {
+  for(const auto& element : elements(p_entity_ordering.gridView())) {
     auto& fe = p_entity_ordering.child(_0).protoBasis().finiteElementMap().getFEM(order++ % 3);
-    auto entity_index = p_entity_ordering.entitySet().indexSet().index(element);
+    auto entity_index = p_entity_ordering.gridView().indexSet().index(element);
     testSuite.check(p_entity_ordering.blockCount(gt_index, entity_index) == 2*fe.size());
 
     testSuite.check(p_entity_ordering.child(_0).blockCount(gt_index, entity_index) == fe.size());

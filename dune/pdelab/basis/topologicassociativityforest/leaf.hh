@@ -31,28 +31,24 @@ namespace Dune::PDELab::Impl {
  * @tparam ProtoBasisLeaf The type containing a finite element map and a merging strategy. This type defines
  *                        the characteristics of the finite elements and how they are merged within the forest.
  */
-template <Concept::Impl::ProtoBasisLeaf ProtoBasisLeaf>
+template <Concept::Impl::ProtoBasisLeaf ProtoBasisLeaf, class GridView>
 class LeafTopologicAssociativityForest
     : public TypeTree::LeafNode,
-      public TopologicAssociativityForestNode<LeafTopologicAssociativityForest<ProtoBasisLeaf>,
-                                              typename ProtoBasisLeaf::MergingStrategy>
+      public TopologicAssociativityForestNode<LeafTopologicAssociativityForest<ProtoBasisLeaf,GridView>,
+                                              GridView, typename ProtoBasisLeaf::MergingStrategy>
 {
   using TreeNode = TypeTree::LeafNode;
   using OrderingNode =
-      TopologicAssociativityForestNode<LeafTopologicAssociativityForest<ProtoBasisLeaf>,
-                                       typename ProtoBasisLeaf::MergingStrategy>;
-  using FE = typename ProtoBasisLeaf::FiniteElementMap::Traits::FiniteElement;
-  using ES = typename ProtoBasisLeaf::MergingStrategy::EntitySet;
-  static constexpr std::size_t fem_dim = FE::Traits::LocalBasisType::Traits::dimDomain;
-  static constexpr std::size_t fem_codim = ES::dimension - fem_dim;
+      TopologicAssociativityForestNode<LeafTopologicAssociativityForest<ProtoBasisLeaf, GridView>,
+                                       GridView, typename ProtoBasisLeaf::MergingStrategy>;
 
 public:
   using ProtoBasis = ProtoBasisLeaf;
   using SizeType = typename OrderingNode::SizeType;
 
   //! @brief Constructs a LeafTopologicAssociativityForest with a given proto-basis.
-  LeafTopologicAssociativityForest(const ProtoBasis &proto_basis)
-      : TreeNode{}, OrderingNode{proto_basis.mergingStrategy()}, _proto_basis{proto_basis}
+  LeafTopologicAssociativityForest(const ProtoBasis &proto_basis, const GridView& grid_view)
+      : TreeNode{}, OrderingNode{grid_view, proto_basis.mergingStrategy()}, _proto_basis{proto_basis}
   {
   }
 
@@ -64,9 +60,6 @@ public:
 
   //! @brief Accesses the proto-basis associated with this leaf node.
   const ProtoBasis &protoBasis() const { return _proto_basis; }
-
-  //! @brief Accesses the proto-basis associated with this leaf node.
-  ProtoBasis &protoBasis() { return _proto_basis; }
 
   //! @brief Gets the maximum number of sub-entities.
   [[nodiscard]] int maxSubEntities() const { return _max_sub_entities; }
@@ -88,8 +81,8 @@ private:
   int _max_sub_entities = 0;
 };
 
-template<Concept::Impl::ProtoBasisLeaf ProtoBasisLeaf>
-constexpr std::optional<std::size_t> LeafTopologicAssociativityForest<ProtoBasisLeaf>::commonSizePerGeometryType() {
+template<Concept::Impl::ProtoBasisLeaf ProtoBasisLeaf, class GridView>
+constexpr std::optional<std::size_t> LeafTopologicAssociativityForest<ProtoBasisLeaf,GridView>::commonSizePerGeometryType() {
   using FEM = typename ProtoBasis::FiniteElementMap;
   std::size_t size = 0;
   const auto fem_size = [](auto gt) constexpr {

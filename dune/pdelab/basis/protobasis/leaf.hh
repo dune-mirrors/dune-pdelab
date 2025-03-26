@@ -19,7 +19,7 @@ namespace Dune::PDELab {
  * @tparam CON  Constraints operator
  */
 template<class MergingStrategy_, class FiniteElementMap_, class ConstraintsOperator_ = NoConstraints>
-class ProtoBasis
+class LeafProtoBasis
   : public TypeTree::LeafNode
   , public ProtoBasisNode<MergingStrategy_>
 {
@@ -39,7 +39,7 @@ public:
    * @param fem               Pointer to a finite element map
    * @param constraints_op    constraints operator
    */
-  ProtoBasis(const MergingStrategy& merging_strategy,
+  LeafProtoBasis(const MergingStrategy& merging_strategy,
             std::shared_ptr<const FiniteElementMap> fem,
             const ConstraintsOperator& constraints_op = {})
     : BaseNode{ merging_strategy }
