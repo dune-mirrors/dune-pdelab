@@ -1,6 +1,8 @@
 #ifndef DUNE_PDELAB_BASIS_NODE_HH
 #define DUNE_PDELAB_BASIS_NODE_HH
 
+#include <dune/pdelab/basis/protobasis.hh>
+
 #include <dune/functions/functionspacebases/nodes.hh>
 
 namespace Dune::PDELab {
@@ -74,6 +76,8 @@ namespace Dune::PDELab {
       } else {
         _fe_view = &finite_element;
       }
+
+      Functions::LeafBasisNode::setSize(finiteElement().size());
     }
 
     //! Binds a view on the entity. Internally, we keep a reference the object

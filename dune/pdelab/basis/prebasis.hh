@@ -1,35 +1,123 @@
 #ifndef DUNE_PDELAB_BASIS_PREBASIS_HH
 #define DUNE_PDELAB_BASIS_PREBASIS_HH
 
+#include <dune/pdelab/basis/containerdescriptors.hh>
+#include <dune/pdelab/basis/localbasis.hh>
 #include <dune/pdelab/basis/topologicassociativityforest.hh>
 
-#include <dune/pdelab/basis/nodes.hh>
+#include <dune/pdelab/basis/merging_strategy.hh>
+
+#include <dune/functions/functionspacebases/containerdescriptors.hh>
 
 namespace Dune::PDELab {
 
 template<class ProtoBasisTree, class GV>
-class PreBasis {
+class EntityInterleavedPreBasis {
   using TopologicAssociativityForest = Impl::TopologicAssociativityForest<ProtoBasisTree, GV>;
   using Element = GV::Traits::template Codim<0>::Entity;
 public:
+
   using size_type = typename TopologicAssociativityForest::SizeType;
   static constexpr size_type maxMultiIndexSize = TopologicAssociativityForest::maxContainerDepth();
   static constexpr size_type minMultiIndexSize = TopologicAssociativityForest::maxContainerDepth();
   static constexpr size_type multiIndexBufferSize = TopologicAssociativityForest::maxContainerDepth();
   using SizePrefix = Dune::PDELab::MultiIndex<size_type,maxMultiIndexSize>;
-  using Node = LocalBasisViewTree<Element, ProtoBasisTree>;
   using GridView = GV;
 
-  PreBasis(const ProtoBasisTree& proto_basis, GridView grid_view)
+  class Node : public LocalBasisViewTree<Element, ProtoBasisTree> {
+  public:
+    Node(LocalBasisViewTree<Element, ProtoBasisTree>&& super, GridView grid_view, const TopologicAssociativityForest& taf)
+      : LocalBasisViewTree<Element, ProtoBasisTree>{std::move(super)}
+      , grid_view_{grid_view}
+      , taf_{taf}
+    {}
+
+    template<class AssemblyEntity>
+    void bind(AssemblyEntity&& entity) noexcept {
+
+      if (not grid_view_.contains(entity)) {
+        return;
+      }
+
+      // Here we transform (if necessary) the assembly entity into the entity
+      // used for the ordering. This allows orderings to have a different
+      // entity types than the grid used for assembly
+      // (e.g. dune-multidomaingrid or dune-grid-glue) Both types, however,
+      // still need to have the same dimension
+      decltype(auto) casted_entity = entityCast(std::forward<AssemblyEntity>(entity));
+      if constexpr (std::is_rvalue_reference_v<decltype(casted_entity)&&>) {
+        // the caller/cast assigned the ownership to us
+        entity_store_.emplace(std::move(casted_entity));
+        _entity_view = &(entity_store_.value());
+      } else {
+        // ownership is managed elsewhere
+        _entity_view = &casted_entity;
+      }
+
+      // find the sub entities with topological associativity
+      if (taf_.disjointCodimClosure()) {
+        // DG/FV branch
+        size_type gt_index = GlobalGeometryTypeIndex::index(_entity_view->type());
+        size_type entity_index = grid_view_.indexSet().index(*_entity_view);
+        index_cache_.assign(1, {gt_index, entity_index});
+      } else {
+        std::fill(std::begin(codim_offsets_), std::end(codim_offsets_), 0);
+        Hybrid::forEach(range(index_constant<Element::dimension+1>{}), [&](auto codim) {
+          if (codim == 0 or (TopologicAssociativityForest::mayContainCodim(codim) and taf_.containsCodim(codim))) {
+            std::size_t sub_entities = _entity_view->subEntities(codim);
+            index_cache_.resize(index_cache_.size() + sub_entities);
+            std::size_t codim_offset = codim_offsets_[codim];
+            for (std::size_t s = 0; s != sub_entities; ++s) {
+              const auto& sub_entity = _entity_view->template subEntity<codim>(s);
+              size_type gt_index = GlobalGeometryTypeIndex::index(sub_entity.type());
+              size_type entity_index = grid_view_.indexSet().index(sub_entity);
+              index_cache_[codim_offset + s] = {gt_index, entity_index};
+            }
+          }
+          codim_offsets_[codim+1] = index_cache_.size();
+        });
+      }
+
+      PDELab::forEachLeafNode(*this, [&]<class LeafNode>(LeafNode& leaf_node, const auto& path) {
+
+        const auto& fem = TypeTree::child(taf_.protoBasis(),path).finiteElementMap();
+        leaf_node.bindElement(_entity_view);
+        leaf_node.bindFiniteElement(fem.find(leaf_node.element()));
+      });
+    }
+
+
+  private:
+    friend EntityInterleavedPreBasis;
+
+    template<class AssemblyEntity>
+    decltype(auto) entityCast(AssemblyEntity&& source_entity) {
+      // multidomain to subdomain conversion
+      if constexpr (requires { grid_view_.grid().subDomainEntity(std::forward<AssemblyEntity>(source_entity)); } )
+        return grid_view_.grid().subDomainEntity(std::forward<AssemblyEntity>(source_entity));
+      else
+        return source_entity;
+    }
+
+    GridView grid_view_;
+    std::optional<const Element> entity_store_;
+    Element const * _entity_view;
+    std::vector<std::array<size_type,2>> index_cache_;
+    std::array<std::size_t,Element::dimension+2> codim_offsets_;
+    const TopologicAssociativityForest& taf_;
+
+  };
+
+  EntityInterleavedPreBasis(const ProtoBasisTree& proto_basis, GridView grid_view)
     : taf_{Impl::makeTopologicAssociativityForest(proto_basis, grid_view)}
   {}
 
-  GridView gridView() const {
-    return taf_.entitySet();
+  const GridView& gridView() const {
+    return taf_.gridView();
   }
 
   Node makeNode() const {
-    return makeLocalBasisView<Element>(taf_.protoBasis());
+    return Node{makeLocalBasisView<Element>(taf_.protoBasis()), gridView(), taf_};
   }
 
   size_type size() const {
@@ -38,14 +126,17 @@ public:
 
   size_type size(auto multi_index) const {
     // Note: Multi-index is read Outer->Inner
-    return containerSize(reverse(multi_index));
+    SizePrefix prefix;
+    prefix.resize(multi_index.size());
+    std::reverse_copy(multi_index.begin(), multi_index.end(), prefix.begin());
+    return containerSize(prefix);
   }
 
   [[nodiscard]] size_type dimension() const noexcept {
-    if (taf_.fixedSize())
-      return _gt_dof_offsets->back();
+    if (taf_.fixedSizePerGeometryType())
+      return _gt_dof_offsets.back();
     else
-      return _entity_dof_offsets->back();
+      return _entity_dof_offsets.back();
   }
 
   size_type maxNodeSize() const {
@@ -55,59 +146,28 @@ public:
   template<typename It>
   It indices(const Node& node, It it) const {
 
-    std::array<std::size_t,Node::Element::dimension+2> _codim_offsets;
-    std::vector<std::array<size_type,2>> _index_cache; // TODO: move to the node
+    PDELab::forEachLeafNode(node, [&]<class LeafNode>(const LeafNode& leaf_node, const auto& path) {
 
-    // find the sub entities with topological associativity
-    if (taf_.disjointCodimClosure()) {
-      // DG/FV branch
-      size_type gt_index = GlobalGeometryTypeIndex::index(node.element().type());
-      size_type entity_index = gridView().indexSet().index(node.element());
-      _index_cache.assign(1, {gt_index, entity_index});
-    } else {
-      std::fill(std::begin(_codim_offsets), std::end(_codim_offsets), 0);
-      Hybrid::forEach(range(index_constant<Node::Element::dimension+1>{}), [&](auto codim) {
-        if (codim == 0 or (TopologicAssociativityForest::mayContainCodim(codim) and taf_.containsCodim(codim))) {
-          std::size_t sub_entities = node.element().subEntities(codim);
-          _index_cache.resize(_index_cache.size() + sub_entities);
-          std::size_t codim_offset = _codim_offsets[codim];
-          for (std::size_t s = 0; s != sub_entities; ++s) {
-            const auto& sub_entity = node.element().template subEntity<codim>(s);
-            size_type gt_index = GlobalGeometryTypeIndex::index(sub_entity.type());
-            size_type entity_index = gridView().indexSet().index(sub_entity);
-            _index_cache[codim_offset + s] = {gt_index, entity_index};
-          }
-        }
-        _codim_offsets[codim+1] = _index_cache.size();
-      });
-    }
-
-    PDELab::forEachLeafNode(node, [&]<class LeafNode>(LeafNode& leaf_node, const auto& path) {
-
-      const auto& fem = taf_.protoBasis(path).finiteElementMap();
-      leaf_node.bindFiniteElement(fem.find(leaf_node.element()));
       const auto& fe = leaf_node.finiteElement();
       assert(fe.type() == leaf_node.element().type());
 
-      if (leaf_node.disjointCodimClosure()) {
+      if (TypeTree::child(taf_, path).disjointCodimClosure()) {
         // DG/FV branch
-        const auto [gt_index, entity_index] = _index_cache[0];
+        const auto [gt_index, entity_index] = node.index_cache_[0];
         assert(fe.size() == taf_.blockCount(gt_index, entity_index));
         // In this case, we know that indices are contiguous and can be
         //   reconstructed from the local index. Thus, there is no need to
         //   fill the whole vector.
         auto cir = containerIndexRange(path, gt_index, entity_index);
-        // notice that the other indices are garbage!
-        // but we need them for the size to be correct
-        if constexpr (not std::decay_t<LeafNode>::optimizeFastDG()) {
-          // This the observed behavior for non-optimizaed cases:
-          const auto& coeffs = fe.localCoefficients();
-          assert(coeffs.localKey(0).index() == 0 && "Indices in DG/FV elements shall be ordered");
-          for (std::size_t dof = 0; dof != fe.size(); ++dof) {
-            assert(coeffs.localKey(dof).index() == dof && "Indices in DG/FV elements shall be ordered");
-            *it = cir[dof];
-            ++it;
-          }
+        const auto& coeffs = fe.localCoefficients();
+        assert(coeffs.localKey(0).index() == 0 && "Indices in DG/FV elements shall be ordered");
+        for (std::size_t dof = 0; dof != fe.size(); ++dof) {
+          assert(coeffs.localKey(dof).index() == dof && "Indices in DG/FV elements shall be ordered");
+          auto ci = cir[dof];
+          it->resize(ci.size());
+          for (std::size_t i = 0; i != ci.size(); ++i)
+            (*it)[i] = ci[i];
+          ++it;
         }
       } else {
         const auto& coeffs = fe.localCoefficients();
@@ -116,14 +176,17 @@ public:
           const auto& key = coeffs.localKey(dof);
           assert(taf_.containsCodim(key.codim()));
           const auto [gt_index, entity_index] = [&]{
-            auto offset = _codim_offsets[key.codim()];
+            auto offset = node.codim_offsets_[key.codim()];
             offset += key.subEntity();
-            assert(offset < _index_cache.size());
-            return _index_cache[offset];
+            assert(offset < node.index_cache_.size());
+            return node.index_cache_[offset];
           }();
           auto cir = containerIndexRange(path, gt_index, entity_index);
           assert(key.index() < taf_.blockCount(gt_index, entity_index));
-          *it = cir[key.index()];
+          auto ci = cir[key.index()];
+          it->resize(ci.size());
+          for (std::size_t i = 0; i != ci.size(); ++i)
+            (*it)[i] = ci[i];
           ++it;
         }
       }
@@ -138,7 +201,7 @@ public:
   void initializeIndices()
   {
     taf_.initializeIndices();
-    if (taf_.fixedSize())
+    if (taf_.fixedSizePerGeometryType())
       updateFixedSizeOrdering();
     else
       updateVariableSizeOrdering();
@@ -150,7 +213,7 @@ public:
 private:
 
   static constexpr auto containerBlocked() {
-    return std::integral_constant<bool,TopologicAssociativityForest::MergingStrategy::Blocked>{};
+    return std::integral_constant<bool,TopologicAssociativityForest::treesBlocked()>{};
   }
 
   auto containerIndexRange(auto path, const size_type& gt_index, const size_type& e_index) const noexcept {
@@ -161,20 +224,20 @@ private:
     auto offset = blockOffset(gt_index, e_index);
 
     if constexpr (containerBlocked())
-      return transformedRangeView(lcir, [](auto mi){ return push_front(mi, offset); });
+      return transformedRangeView(lcir, [offset](auto mi){ return push_front(mi, offset); });
     else
-      return transformedRangeView(lcir, [](auto mi){ return accumulate_front(mi, offset); });
+      return transformedRangeView(lcir, [offset](auto mi){ return accumulate_front(mi, offset); });
   }
 
   auto getGeometryEntityIndex(size_type i) const {
     // we just need to make the inverse computation of the mapIndex funtion to find the entity index
     size_type gt_index, entity_index;
-    auto dof_begin = std::begin(taf_.fixedSize() ? _gt_dof_offsets : _entity_dof_offsets);
-    auto dof_end = std::end(taf_.fixedSize() ? _gt_dof_offsets : _entity_dof_offsets);
+    auto dof_begin = std::begin(taf_.fixedSizePerGeometryType() ? _gt_dof_offsets : _entity_dof_offsets);
+    auto dof_end = std::end(taf_.fixedSizePerGeometryType() ? _gt_dof_offsets : _entity_dof_offsets);
     auto dof_it = std::prev(std::upper_bound(dof_begin, dof_end, i));
     auto dof_dist = std::distance(dof_begin, dof_it);
 
-    if (taf_.fixedSize()) {
+    if (taf_.fixedSizePerGeometryType()) {
       gt_index = dof_dist;
       entity_index = i - *dof_it;
       entity_index /= taf_.blockCount(gt_index);
@@ -190,7 +253,7 @@ private:
 
 
   size_type blockOffset(size_type geometry_index, size_type entity_index) const {
-    if (taf_.fixedSize()) {
+    if (taf_.fixedSizePerGeometryType()) {
       const auto& gt_offset = _gt_dof_offsets[geometry_index];
       if constexpr (containerBlocked())
         return gt_offset + entity_index;
@@ -228,7 +291,7 @@ private:
   }
 
   void updateFixedSizeOrdering() {
-    assert(taf_.fixedSize());
+    assert(taf_.fixedSizePerGeometryType());
 
     const size_type gt_count = GlobalGeometryTypeIndex::size(GridView::dimension);
     std::tie(_gt_dof_offsets_storage, _gt_dof_offsets) = Impl::make_span_storage(gt_count + 1, size_type{0});
@@ -252,7 +315,7 @@ private:
 
   void updateVariableSizeOrdering() {
     // in this case, we need to count the number of _used_ sub blocks
-    assert(not taf_.fixedSize());
+    assert(not taf_.fixedSizePerGeometryType());
     const size_type gt_count = GlobalGeometryTypeIndex::size(GridView::dimension);
     std::tie(_gt_entity_offsets_storage, _gt_entity_offsets) = Impl::make_span_storage(gt_count + 1, size_type{0});
 
@@ -266,7 +329,7 @@ private:
     }
 
     std::partial_sum(std::begin(_gt_entity_offsets), std::end(_gt_entity_offsets), std::begin(_gt_entity_offsets));
-    std::tie(_entity_dof_offsets_storage, _entity_dof_offsets) = Impl::make_span_storage(_gt_entity_offsets->back()+1, size_type{0});
+    std::tie(_entity_dof_offsets_storage, _entity_dof_offsets) = Impl::make_span_storage(_gt_entity_offsets.back()+1, size_type{0});
 
     size_type carry_block = 0;
     size_type index = 0;

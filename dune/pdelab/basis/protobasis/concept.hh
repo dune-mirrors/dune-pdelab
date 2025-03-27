@@ -6,7 +6,9 @@
 
 #include <concepts>
 
-namespace Dune::PDELab::Concept::Impl {
+namespace Dune::PDELab::Concept {
+
+namespace Impl {
 
 template<class Node>
 concept ProtoBasisNode = requires(Node node)
@@ -42,6 +44,14 @@ concept ProtoBasisTree = requires(PBT pre_basis_tree)
       if constexpr (Concept::LeafTreeNode<decltype(node)>)
         Impl::requireProtoBasisLeaf(node);
     });
+};
+
+}
+
+template<class Factory>
+concept ProtoBasisFactory = requires(Factory factory)
+{
+  registerProtoBasisFactory(factory);
 };
 
 } // namespace Dune::PDELab::Concept::Impl
