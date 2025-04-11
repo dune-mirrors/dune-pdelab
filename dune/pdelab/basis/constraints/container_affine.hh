@@ -423,7 +423,14 @@ namespace Impl {
     }
 
     // print all local offests in the terminal
-    void debug() {
+    void debug() const {
+      std::cout << "\nGlobal Constraints " << _map.size() << std::endl;
+      for (auto [ci, con] : _map) {
+        std::cout << ci << ": [" << con.first << "]" << std::endl;
+        for (auto [cci, val] : con.second)
+          std::cout << "\t" << cci << ": " << val << std::endl;
+      }
+
       std::cout << "\nLEO " << _local_entity_offset.size() << std::endl;
       for (std::size_t i = 0; i != _local_entity_offset.size(); ++i)
         std::cout << i << ": " << _local_entity_offset[i][0] << " " << _local_entity_offset[i][1] << std::endl;
