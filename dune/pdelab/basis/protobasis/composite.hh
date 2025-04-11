@@ -29,11 +29,11 @@ template<class MergingStrategy,
          std::size_t degree>
 class ProtoBasisArray
   : public TypeTree::PowerNode<Node, degree>
-  , public ProtoBasisNode<ProtoBasisNodeTraits<MergingStrategy>>
+  , public ProtoBasisNode<MergingStrategy>
 {
 private:
   using TreeNode = TypeTree::PowerNode<Node, degree>;
-  using BaseNode = ProtoBasisNode<ProtoBasisNodeTraits<MergingStrategy>>;
+  using BaseNode = ProtoBasisNode<MergingStrategy>;
 
 public:
   ProtoBasisArray(
@@ -75,11 +75,11 @@ composite(const MergingStrategy& merging_strategy, const std::array<Node, degree
 template<class MergingStrategy, Concept::Impl::ProtoBasisNode Node>
 class ProtoBasisVector
   : public TypeTree::DynamicPowerNode<Node>
-  , public ProtoBasisNode<ProtoBasisNodeTraits<MergingStrategy>>
+  , public ProtoBasisNode<MergingStrategy>
 {
 private:
   using TreeNode = TypeTree::DynamicPowerNode<Node>;
-  using BaseNode = ProtoBasisNode<ProtoBasisNodeTraits<MergingStrategy>>;
+  using BaseNode = ProtoBasisNode<MergingStrategy>;
 
 public:
 
@@ -120,11 +120,11 @@ composite(const MergingStrategy& merging_strategy, const std::vector<Node>& node
 template<class MergingStrategy, Concept::Impl::ProtoBasisNode... Nodes>
 class ProtoBasisTuple
   : public TypeTree::CompositeNode<Nodes...>
-  , public ProtoBasisNode<ProtoBasisNodeTraits<MergingStrategy>>
+  , public ProtoBasisNode<MergingStrategy>
 {
 private:
   using TreeNode = TypeTree::CompositeNode<Nodes...>;
-  using BaseNode = ProtoBasisNode<ProtoBasisNodeTraits<MergingStrategy>>;
+  using BaseNode = ProtoBasisNode<MergingStrategy>;
 
 public:
   ProtoBasisTuple(const MergingStrategy& merging_strategy, const std::tuple<std::shared_ptr<Nodes>...>& nodes)

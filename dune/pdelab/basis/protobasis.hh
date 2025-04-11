@@ -2,6 +2,7 @@
 #define DUNE_PDELAB_BASIS_PROTOBASIS_HH
 
 #include <dune/pdelab/basis/protobasis/leaf.hh>
+#include <dune/pdelab/basis/protobasis/composite.hh>
 #include <dune/pdelab/constraints/noconstraints.hh>
 
 #include <memory>
