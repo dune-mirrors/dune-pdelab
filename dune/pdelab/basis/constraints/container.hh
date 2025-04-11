@@ -148,6 +148,10 @@ namespace Dune::PDELab::inline Experimental {
       return *_tree;
     }
 
+    const ConstraintsContainerTree& tree() const {
+      return *_tree;
+    }
+
     template<Concept::Tree SourceTree, Concept::MultiIndex SubBasisPath>
     class LocalView {
 
