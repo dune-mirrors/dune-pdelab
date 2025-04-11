@@ -19,7 +19,8 @@ include(DuneAddGTest)
 # create main testing library
 add_library(dunepdelab-test INTERFACE)
 # add test target to dune packages so that dune_add_test links agains it
-set_property(GLOBAL APPEND PROPERTY ALL_PKG_LIBS dunepdelab-test)
+link_libraries(dunepdelab-test)
+dune_target_enable_all_packages(dunepdelab-test)
 
 target_compile_options(dunepdelab-test
   INTERFACE
