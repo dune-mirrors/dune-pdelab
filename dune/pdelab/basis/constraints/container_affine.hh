@@ -79,7 +79,7 @@ namespace Impl {
             // (move to dynamic multi-index to make comparison easier)
             return Dune::PDELab::MultiIndex(l.first) < r;
           });
-          if ((iit == end(lcoef)) or (iit->first == cci)) // new constraint
+          if ((iit == end(lcoef)) and (iit->first != cci)) // new constraint
             lcoef.insert(iit, {cci, coeff});
           else if (FloatCmp::ne<double>(iit->second, coeff)) // repeated constraint with different weight
             DUNE_THROW(RangeError, "Constraint [" << ci << "] -> [" << cci <<  "] added twice with different weight");
