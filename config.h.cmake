@@ -50,6 +50,11 @@
 #cmakedefine HAVE_EIGEN ENABLE_EIGEN
 #endif
 
+// memory_resource on MacOS has a minimum runtime target of MacOS >= 14 (see https://developer.apple.com/xcode/cpp/)
+#if defined(__cpp_lib_memory_resource) && ((defined(__MAC_OS_X_VERSION_MIN_REQUIRED)  && __MAC_OS_X_VERSION_MIN_REQUIRED  < 140000) || (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED < 170000))
+#undef __cpp_lib_memory_resource
+#endif
+
 /* Define to 1 if sequential UG has been found */
 #cmakedefine PDELAB_SEQUENTIAL_UG 1
 
