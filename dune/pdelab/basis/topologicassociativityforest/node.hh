@@ -225,8 +225,8 @@ public:
     SizeType gt_index,
     SizeType entity_index) const noexcept;
 
-  //! Whether the resulting container has blocks at this node level
-  [[nodiscard]] static constexpr auto containerBlocked();
+  //! Whether the forest trees shall be blocked
+  [[nodiscard]] static constexpr auto treesBlocked();
 
   /**
    * @brief Calculates the total number of indices for any suffix of the multi-indices in the tree of blocks.
@@ -280,13 +280,13 @@ public:
   //! Total number of blocks on all entities at this tree level
   [[nodiscard]] auto blockCount() const noexcept;
 
-private:
-
   //! Priory compile-time information if a given codimension may contain DOFs wrt a grid entity
   //! @details If false, there is a guarantee that this map will never contain such a codimension.
   //! If true, codimension may or may not be used at run-time.
   template<class EntityCodim>
   [[nodiscard]] static constexpr auto mayContainCodim(EntityCodim entity_codim);
+
+private:
 
   //! Compile-time information of maximum codimensions used by this map
   //! @note Less codimenions may be actually used at run-time.
@@ -424,7 +424,7 @@ TopologicAssociativityForestNode<Node,GV,MS>::maxContainerDepth()
           std::make_index_sequence<Node::degree()>{});
       }
     }();
-    if constexpr (containerBlocked())
+    if constexpr (MergingStrategy::Blocked)
       return child_depth + 1;
     else
       return child_depth;
@@ -534,7 +534,7 @@ void TopologicAssociativityForestNode<Node,GV,MS>::debugInfo() const {
   constexpr std::size_t fem_codim = GridView::dimension - fem_dim;
 
   std::cout << "Fixed Size per Geometry Type: " << bool(fixedSizePerGeometryType()) << "\n";
-  std::cout << "Blocked: " << bool(containerBlocked()) << "\n";
+  std::cout << "Blocked: " << bool(MergingStrategy::Blocked) << "\n";
   if (fixedSizePerGeometryType())
     std::cout << "  # Geometry Type, DOF Count\n";
   else
@@ -593,7 +593,7 @@ auto TopologicAssociativityForestNode<Node,GV,MS>::containerIndexRange(
     const auto child = front(comp_suff);
     // (continue recursion) get container index of the child node.
     const auto cir = node().child(child).containerIndexRange(pop_front(comp_suff), gt_index, entity_index);
-    if constexpr (containerBlocked()) {
+    if constexpr (MergingStrategy::Blocked) {
       // blocked merging: simply push front the child index
       return transformedRangeView(std::move(cir), [child](auto ci){ return push_front(ci, child); });
     } else {
@@ -613,24 +613,24 @@ auto TopologicAssociativityForestNode<Node,GV,MS>::containerIndexRange(
 }
 
 template<class Node, class GV, class MS>
-constexpr auto TopologicAssociativityForestNode<Node,GV,MS>::containerBlocked()
+constexpr auto TopologicAssociativityForestNode<Node,GV,MS>::treesBlocked()
 {
   // the blocking structure of a local space is given by the tag of its
   // children
   if constexpr (Concept::LeafTreeNode<Node>) {
-    return std::false_type{};
+    return Node::MergingStrategy::Blocked;
   } else if constexpr (Concept::ArrayTreeNode<Node> ||
                        Concept::VectorTreeNode<Node>) {
-    constexpr bool child_blocked = Node::ChildType::MergingStrategy::Blocked;
+    constexpr bool child_blocked = Node::ChildType::treesBlocked();
     return std::integral_constant<bool, child_blocked>{};
   } else if constexpr (Concept::TupleTreeNode<Node>) {
     auto unfold_children = [&](auto... i) {
       constexpr bool any_blocked =
-        (TypeTree::template Child<Node, i>::MergingStrategy::Blocked || ...);
+        (TypeTree::template Child<Node, i>::treesBlocked() || ...);
       constexpr bool all_blocked =
-        (TypeTree::template Child<Node, i>::MergingStrategy::Blocked && ...);
+        (TypeTree::template Child<Node, i>::treesBlocked() && ...);
       static_assert(all_blocked == any_blocked,
-                    "All static children of a Space grouped "
+                    "All leaf nodes of of basis grouped "
                     "by entity must have the same blocking requirements");
       return std::integral_constant<bool, any_blocked>{};
     };
@@ -686,7 +686,7 @@ TopologicAssociativityForestNode<Node,GV,MS>::containerSize(const ContainerSuffi
     // the next index to find out its size
     auto back_index = back(rcs);
     // task: find child the child node for whom this index corresponds
-    if constexpr (containerBlocked()) {
+    if constexpr (MergingStrategy::Blocked) {
       // easy case, the back_index is exactly the index of the child node
       return childContainerSize(back_index, pop_back(rcs));
     } else {
@@ -716,7 +716,7 @@ TopologicAssociativityForestNode<Node,GV,MS>::containerSize(const ContainerSuffi
 template<class Node, class GV, class MS>
 void TopologicAssociativityForestNode<Node,GV,MS>::update(GridView grid_view)
 {
-  forEachNode(node(), [&grid_view](auto& c) {
+  forEachNode(node(), [&grid_view](auto& node) {
     node._grid_view = grid_view;
   });
 }
@@ -735,8 +735,16 @@ template<class Node, class GV, class MS>
 auto TopologicAssociativityForestNode<Node,GV,MS>::blockCount(const SizeType gt_index,
                               const SizeType entity_index) const noexcept
 {
-  if constexpr (containerBlocked()) {
-    static_assert(not Concept::LeafTreeNode<Node>);
+  if constexpr (Concept::LeafTreeNode<Node>) {
+    if constexpr (fixedSizePerGeometryTypeStatic())
+      return std::integral_constant<SizeType, Node::commonSizePerGeometryType().value()>();
+    else if (fixedSizePerGeometryType()) {
+      return blockCount(gt_index);
+    } else {
+      auto gt_offset = _gt_entity_offsets[gt_index] + entity_index;
+      return _entity_dof_offsets[gt_offset];
+    }
+  } else if constexpr (MergingStrategy::Blocked) {
     return node().degree();
   } else {
     assert(containsGeometry(gt_index));
@@ -744,12 +752,8 @@ auto TopologicAssociativityForestNode<Node,GV,MS>::blockCount(const SizeType gt_
       return SizeType{ blockCount(gt_index) };
 
     auto gt_offset = _gt_entity_offsets[gt_index] + entity_index;
-    if constexpr (Concept::LeafTreeNode<Node>) {
-      return _entity_dof_offsets[gt_offset];
-    } else {
-      const auto degree = node().degree();
-      return _entity_dof_offsets[gt_offset * degree + degree - 1];
-    }
+    const auto degree = node().degree();
+    return _entity_dof_offsets[gt_offset * degree + degree - 1];
   }
 }
 
@@ -757,24 +761,23 @@ template<class Node, class GV, class MS>
 auto TopologicAssociativityForestNode<Node,GV,MS>::blockCount(std::size_t gt_index) const noexcept
 {
   assert(fixedSizePerGeometryType());
-  if constexpr (containerBlocked()) {
-    static_assert(not Concept::LeafTreeNode<Node>);
+  if constexpr (Concept::LeafTreeNode<Node>) {
+    if constexpr (fixedSizePerGeometryTypeStatic())
+      return std::integral_constant<SizeType, Node::commonSizePerGeometryType().value()>();
+    else
+      return _gt_dof_offsets[gt_index];
+  } else if constexpr (MergingStrategy::Blocked) {
     return node().degree();
   } else {
-    if constexpr (Concept::LeafTreeNode<Node>) {
-      return _gt_dof_offsets[gt_index];
-    } else {
-      const auto degree = node().degree();
-      return _gt_dof_offsets[gt_index * degree + degree - 1];
-    }
+    const auto degree = node().degree();
+    return _gt_dof_offsets[gt_index * degree + degree - 1];
   }
 }
 
 template<class Node, class GV, class MS>
 auto TopologicAssociativityForestNode<Node,GV,MS>::blockCount() const noexcept
 {
-  if constexpr (containerBlocked()) {
-    static_assert(not Concept::LeafTreeNode<Node>);
+  if constexpr (MergingStrategy::Blocked and not Concept::LeafTreeNode<Node>) {
     return node().degree();
   } else {
     return _block_count;
@@ -898,7 +901,7 @@ void TopologicAssociativityForestNode<Node,GV,MS>::updateFixedSizeOrderings()
 
         _max_local_coeff_count += child.maxLocalCount();
 
-        if (not containerBlocked())
+        if (not MergingStrategy::Blocked)
           _block_count += child.blockCount();
 
         // get size of child nodes
@@ -1129,7 +1132,7 @@ void TopologicAssociativityForestNode<Node,GV,MS>::accumulateEntityOffsets()
             carry += child.blockCount(gt, e_index);
             _entity_dof_offsets[index++] = carry;
           });
-          _block_count += containerBlocked() ? (carry != 0) : carry;
+          _block_count += MergingStrategy::Blocked ? (carry != 0) : carry;
         }
       }
     }

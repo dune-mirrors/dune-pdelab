@@ -31,7 +31,6 @@ auto lagrange(const MergingStragetgy& strategy)
 
 template<class Q1TopologicAssociativityForest>
 void testQ1TopologicAssociativityForest(Dune::TestSuite& testSuite, Q1TopologicAssociativityForest& entity_ordering) {
-  static_assert(not Q1TopologicAssociativityForest::containerBlocked());
   static_assert(Q1TopologicAssociativityForest::fixedSizePerGeometryTypeStatic());
   testSuite.check(entity_ordering.fixedSizePerGeometryType());
 
@@ -87,7 +86,7 @@ void testQ1TopologicAssociativityForest() {
     testSuite.check(p_entity_ordering.childStorage(0) == p_entity_ordering.childStorage(1));
 
     testSuite.check(p_entity_ordering.degree() == 2);
-    static_assert(not VectorTopologicAssociativityForest::containerBlocked());
+    static_assert(not VectorTopologicAssociativityForest::MergingStrategy::Blocked);
     static_assert(VectorTopologicAssociativityForest::fixedSizePerGeometryTypeStatic());
     testSuite.check(p_entity_ordering.fixedSizePerGeometryType());
 
@@ -143,7 +142,7 @@ void testQ1TopologicAssociativityForest() {
     testQ1TopologicAssociativityForest(testSuite, p_entity_ordering.child(0));
 
     static_assert(ArrayTopologicAssociativityForest::degree() == 2);
-    static_assert(ArrayTopologicAssociativityForest::containerBlocked());
+    static_assert(ArrayTopologicAssociativityForest::MergingStrategy::Blocked);
     static_assert(ArrayTopologicAssociativityForest::fixedSizePerGeometryTypeStatic());
     testSuite.check(p_entity_ordering.fixedSizePerGeometryType());
 
@@ -200,7 +199,7 @@ void testQ1TopologicAssociativityForest() {
 
 template<class Q2TopologicAssociativityForest>
 void testQ2TopologicAssociativityForest(Dune::TestSuite& testSuite, Q2TopologicAssociativityForest& entity_ordering) {
-  static_assert(not Q2TopologicAssociativityForest::containerBlocked());
+  static_assert(not Q2TopologicAssociativityForest::MergingStrategy::Blocked);
   static_assert(Q2TopologicAssociativityForest::fixedSizePerGeometryTypeStatic());
   testSuite.check(entity_ordering.fixedSizePerGeometryType());
 
@@ -285,7 +284,7 @@ void testQ2TopologicAssociativityForest() {
 
 template<class FixedMonomialTopologicAssociativityForest>
 void testFixedMonomialTopologicAssociativityForest(Dune::TestSuite& testSuite, FixedMonomialTopologicAssociativityForest& entity_ordering) {
-  static_assert(not FixedMonomialTopologicAssociativityForest::containerBlocked());
+  static_assert(not FixedMonomialTopologicAssociativityForest::MergingStrategy::Blocked);
   static_assert(not FixedMonomialTopologicAssociativityForest::fixedSizePerGeometryTypeStatic());
   testSuite.check(entity_ordering.fixedSizePerGeometryType());
 
@@ -352,7 +351,7 @@ void testFixedMonomialTopologicAssociativityForest() {
   p_entity_ordering.initializeIndices();
   testFixedMonomialTopologicAssociativityForest(testSuite, p_entity_ordering.child(0));
 
-  static_assert(not p_entity_ordering.containerBlocked());
+  static_assert(not ArrayTopologicAssociativityForest::MergingStrategy::Blocked);
   static_assert(not p_entity_ordering.fixedSizePerGeometryTypeStatic());
   testSuite.check(p_entity_ordering.fixedSizePerGeometryType());
 
@@ -398,7 +397,7 @@ void testFixedMonomialTopologicAssociativityForest() {
 
 template<class VariableMonomialTopologicAssociativityForest>
 void testVariableMonomialTopologicAssociativityForest(Dune::TestSuite& testSuite, VariableMonomialTopologicAssociativityForest& entity_ordering) {
-  static_assert(not VariableMonomialTopologicAssociativityForest::containerBlocked());
+  static_assert(not VariableMonomialTopologicAssociativityForest::MergingStrategy::Blocked);
   static_assert(not VariableMonomialTopologicAssociativityForest::fixedSizePerGeometryTypeStatic());
   testSuite.check(not entity_ordering.fixedSizePerGeometryType());
 
@@ -476,7 +475,7 @@ void testVariableMonomialTopologicAssociativityForest() {
   testVariableMonomialTopologicAssociativityForest(testSuite, p_entity_ordering.child(_0));
   testVariableMonomialTopologicAssociativityForest(testSuite, p_entity_ordering.child(_1));
 
-  static_assert(not TupleTopologicAssociativityForest::containerBlocked());
+  static_assert(not TupleTopologicAssociativityForest::MergingStrategy::Blocked);
   static_assert(not TupleTopologicAssociativityForest::fixedSizePerGeometryTypeStatic());
   testSuite.check(not p_entity_ordering.fixedSizePerGeometryType());
 
