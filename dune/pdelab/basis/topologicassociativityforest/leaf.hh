@@ -1,5 +1,5 @@
-#ifndef DUNE_PDELAB_BASIS_ORDERING_TOPOLOGIC_ASSOCIATIVITY_FOREST_LEAF_HH
-#define DUNE_PDELAB_BASIS_ORDERING_TOPOLOGIC_ASSOCIATIVITY_FOREST_LEAF_HH
+#ifndef DUNE_PDELAB_BASIS_TOPOLOGIC_ASSOCIATIVITY_FOREST_LEAF_HH
+#define DUNE_PDELAB_BASIS_TOPOLOGIC_ASSOCIATIVITY_FOREST_LEAF_HH
 
 #include <dune/pdelab/basis/protobasis/concept.hh>
 #include <dune/pdelab/basis/topologicassociativityforest/node.hh>
@@ -118,4 +118,4 @@ constexpr std::optional<std::size_t> LeafTopologicAssociativityForest<ProtoBasis
 
 } // namespace Dune::PDELab::Impl
 
-#endif // DUNE_PDELAB_BASIS_ORDERING_TOPOLOGIC_ASSOCIATIVITY_FOREST_LEAF_HH
+#endif // DUNE_PDELAB_BASIS_TOPOLOGIC_ASSOCIATIVITY_FOREST_LEAF_HH

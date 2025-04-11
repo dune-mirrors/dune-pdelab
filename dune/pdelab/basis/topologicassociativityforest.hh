@@ -1,5 +1,5 @@
-#ifndef DUNE_PDELAB_BASIS_ORDERING_TOPOLOGIC_ASSOCIATIVITY_FOREST_HH
-#define DUNE_PDELAB_BASIS_ORDERING_TOPOLOGIC_ASSOCIATIVITY_FOREST_HH
+#ifndef DUNE_PDELAB_BASIS_TOPOLOGIC_ASSOCIATIVITY_FOREST_HH
+#define DUNE_PDELAB_BASIS_TOPOLOGIC_ASSOCIATIVITY_FOREST_HH
 
 #include <dune/pdelab/basis/topologicassociativityforest/node.hh>
 #include <dune/pdelab/basis/topologicassociativityforest/leaf.hh>
@@ -57,4 +57,4 @@ using TopologicAssociativityForest = decltype(makeTopologicAssociativityForest(s
 
 } // namespace Dune::PDELab::Impl
 
-#endif // DUNE_PDELAB_BASIS_ORDERING_TOPOLOGIC_ASSOCIATIVITY_FOREST_HH
+#endif // DUNE_PDELAB_BASIS_TOPOLOGIC_ASSOCIATIVITY_FOREST_HH
