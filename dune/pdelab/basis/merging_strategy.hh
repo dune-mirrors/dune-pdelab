@@ -21,7 +21,7 @@ namespace Dune::PDELab::BasisFactory {
 template<bool CB>
 struct EntityInterleaving
 {
-  static constexpr bool Blocked = CB;
+  static constexpr std::integral_constant<bool,CB> Blocked = {};
 };
 
 template<bool CB>
