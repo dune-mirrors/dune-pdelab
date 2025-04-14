@@ -1,6 +1,8 @@
 #ifndef DUNE_PDELAB_COMMON_PARTITION_COLORING_HH
 #define DUNE_PDELAB_COMMON_PARTITION_COLORING_HH
 
+#include <dune-pdelab-config.hh>
+
 #include <dune/pdelab/common/partition/halo.hh>
 #include <dune/pdelab/concepts/entityset_partition.hh>
 
