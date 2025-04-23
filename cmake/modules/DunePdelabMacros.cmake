@@ -1,4 +1,5 @@
 include(UseEigen)
+include(UsePetsc)
 
 # Trying to run a sequential UG in a parallel PDELab application
 # will result in very subtle errors. We therefore issue a warning

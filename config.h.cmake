@@ -39,8 +39,7 @@
 /* Define to the revision of dune-pdelab */
 #define DUNE_PDELAB_VERSION_REVISION ${DUNE_PDELAB_VERSION_REVISION}
 
-/* This is only true if PETSc was found by configure _and_ if the application
-   uses the UG_CPPFLAGS */
+/* This is only true if PETSc was found by configure */
 #ifndef HAVE_PETSC
 #cmakedefine HAVE_PETSC ENABLE_PETSC
 #endif
