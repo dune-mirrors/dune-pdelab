@@ -213,9 +213,8 @@ namespace Impl {
 
       std::size_t operator()(const TypeTree::HybridTreePath<T...>& mi) const {
         std::size_t hash = 9999;
-        using Tuple = typename TypeTree::HybridTreePath<T...>::Data;
         Hybrid::forEach(mi.enumerate(), [&](auto i) {
-          using Index = std::tuple_element_t<i, Tuple>;
+          using Index = decltype(mi[i]);
           if constexpr (not Dune::IsIntegralConstant<Index>::value) {
             hash_combine(hash, mi[i]);
           }
