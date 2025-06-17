@@ -54,9 +54,9 @@
 #ifdef __has_include
 # if __has_include(<version>)
 #  include <version>
-#   if defined(__cpp_lib_memory_resource) && ((defined(__MAC_OS_X_VERSION_MIN_REQUIRED)  && __MAC_OS_X_VERSION_MIN_REQUIRED  < 140000) || (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED < 170000))
+//#   if defined(__cpp_lib_memory_resource) && ((defined(__MAC_OS_X_VERSION_MIN_REQUIRED)  && __MAC_OS_X_VERSION_MIN_REQUIRED  < 140000) || (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED < 170000))
 #    undef __cpp_lib_memory_resource
-#   endif
+//#   endif
 # endif
 #endif
 
