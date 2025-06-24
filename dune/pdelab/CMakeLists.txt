@@ -1,5 +1,6 @@
 add_subdirectory(adaptivity)
 add_subdirectory(backend)
+add_subdirectory(basis)
 add_subdirectory(boilerplate)
 add_subdirectory(common)
 add_subdirectory(constraints)
