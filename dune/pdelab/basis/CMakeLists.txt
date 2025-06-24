@@ -1,2 +1,3 @@
 install(FILES mergingstrategy.hh
+              topologicalinterleaving.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/pdelab/basis)
