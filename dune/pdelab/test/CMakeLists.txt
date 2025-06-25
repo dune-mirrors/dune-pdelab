@@ -2,6 +2,7 @@
 link_libraries(Dune::PDELab)
 
 add_subdirectory(common)
+add_subdirectory(basis)
 add_subdirectory(fem)
 add_subdirectory(matrixfree)
 

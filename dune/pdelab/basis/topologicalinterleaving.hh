@@ -13,6 +13,8 @@
 #include <dune/geometry/typeindex.hh>
 #include <dune/geometry/referenceelements.hh>
 
+#include <dune/common/typetree/nodeconcepts.hh>
+#include <dune/common/typetree/traversal.hh>
 #include <dune/common/rangeutilities.hh>
 #include <dune/common/hybridmultiindex.hh>
 #include <dune/common/typetree/traversal.hh>
@@ -475,14 +477,14 @@ constexpr std::size_t BasisTopologicalInterleaving<Node>::minMultiIndexSize() {
 template<class Node>
 constexpr std::size_t BasisTopologicalInterleaving<Node>::multiIndexSize(auto f)
 {
-  if constexpr (Node::isLeaf) {
+  if constexpr (TypeTree::Concept::LeafTreeNode<Node>) {
     return 1;
   } else {
     auto child_depth = [&]() {
-      if constexpr (Node::isPower) {
+      if constexpr (TypeTree::Concept::UniformInnerTreeNode<Node>) {
         return Node::ChildType::multiIndexSize(f);
       } else {
-        static_assert(Node::isComposite);
+        static_assert(TypeTree::Concept::StaticDegreeInnerTreeNode<Node>);
         return unpackIntegerSequence(
           [f](auto... i) {
             return f(TypeTree::template Child<Node, i>::multiIndexSize(f)...);
@@ -500,15 +502,15 @@ constexpr std::size_t BasisTopologicalInterleaving<Node>::multiIndexSize(auto f)
 template<class Node>
 constexpr auto BasisTopologicalInterleaving<Node>::fixedSizePerGeometryTypeStatic()
 {
-  if constexpr (Node::isLeaf) {
+  if constexpr (TypeTree::Concept::LeafTreeNode<Node>) {
     // base case: query information from finite element map
     return Node::commonSizePerGeometryType().has_value();
-  } else if constexpr (Node::isPower) {
+  } else if constexpr (TypeTree::Concept::UniformInnerTreeNode<Node>) {
     // all children have the same type so we inherit their fixed size
     return Node::ChildType::fixedSizePerGeometryTypeStatic();
   } else {
     // make a conjunction of all the children types
-    static_assert(Node::isComposite);
+    static_assert(TypeTree::Concept::StaticDegreeInnerTreeNode<Node>);
     auto unfold_children = [&](auto... i) {
       constexpr bool all_fixed_size =
         (TypeTree::template Child<Node, i>::fixedSizePerGeometryTypeStatic() && ...);
@@ -654,7 +656,7 @@ template<class TreePath>
     // Simply return iota (in form of a multi-index of size 1) from 0 to the block size of this node.
     return transformedRangeView(range(localTreeDegree(gt_index, entity_index)), [](auto i){ return HybridMultiIndex(i); });
   } else {
-    static_assert(not Node::isLeaf);
+    static_assert(not TypeTree::Concept::LeafTreeNode<Node>);
     const auto child = front(tree_path);
     // (continue recursion) get container index of the child node.
     const auto cir = node().child(child).localTreeIndices(gt_index, entity_index, pop_front(tree_path));
@@ -683,11 +685,11 @@ constexpr auto BasisTopologicalInterleaving<Node>::mergedLocalTrees()
 {
   // the blocking structure of a local space is given by the tag of its
   // children
-  if constexpr (Node::isLeaf) {
+  if constexpr (TypeTree::Concept::LeafTreeNode<Node>) {
     return std::false_type{};
-  } else if constexpr (Node::isPower) {
+  } else if constexpr (TypeTree::Concept::UniformInnerTreeNode<Node>) {
     return std::bool_constant<not Node::ChildType::isIndexBlocked>{};
-  } else if constexpr (Node::isComposite) {
+  } else if constexpr (TypeTree::Concept::StaticDegreeInnerTreeNode<Node>) {
     auto unfold_children = [&](auto... i) {
       constexpr bool any_blocked =
         (TypeTree::template Child<Node, i>::isIndexBlocked || ...);
@@ -716,17 +718,17 @@ BasisTopologicalInterleaving<Node>::localTreeDegree(size_type gt_index,
   if (loca_tree_path.size() == 0)
     return node().localTreeDegree(gt_index, entity_index);
 
-  if constexpr (Node::isLeaf) {
+  if constexpr (TypeTree::Concept::LeafTreeNode<Node>) {
     assert(loca_tree_path.size() == 1);
     return 0; // leaf nodes have no children, so no size
   } else {
 
     // helper to return from any child with a dynamic child index
     auto childContainerSize = [&](std::size_t child_i, auto next_suffix) -> size_type {
-      if constexpr (Node::isPower) {
+      if constexpr (TypeTree::Concept::UniformInnerTreeNode<Node>) {
         return node().child(child_i).localTreeDegree(gt_index, entity_index, next_suffix);
       } else {
-        static_assert(Node::isComposite);
+        static_assert(TypeTree::Concept::StaticDegreeInnerTreeNode<Node>);
         // at this point we recoverd the index, but there is no way to
         // propagate its static information outside of this function (i.e. a
         // return type that depends on the child index)
@@ -786,7 +788,7 @@ void BasisTopologicalInterleaving<Node>::initializeIndices()
 template<class Node>
 auto BasisTopologicalInterleaving<Node>::localTreeDegree(const size_type gt_index, const size_type entity_index) const noexcept
 {
-  if constexpr (Node::isLeaf) {
+  if constexpr (TypeTree::Concept::LeafTreeNode<Node>) {
     if constexpr (fixedSizePerGeometryTypeStatic())
       return std::integral_constant<size_type, Node::commonSizePerGeometryType().value()>();
     else if (fixedSizePerGeometryType()) {
@@ -814,7 +816,7 @@ template<class Node>
 auto BasisTopologicalInterleaving<Node>::localTreeDegree(std::size_t gt_index) const noexcept
 {
   assert(fixedSizePerGeometryType());
-  if constexpr (Node::isLeaf) {
+  if constexpr (TypeTree::Concept::LeafTreeNode<Node>) {
     if constexpr (fixedSizePerGeometryTypeStatic())
       return std::integral_constant<size_type, Node::commonSizePerGeometryType().value()>();
     else
@@ -830,7 +832,7 @@ auto BasisTopologicalInterleaving<Node>::localTreeDegree(std::size_t gt_index) c
 template<class Node>
 auto BasisTopologicalInterleaving<Node>::blockCount() const noexcept
 {
-  if constexpr (Node::isIndexBlocked and not Node::isLeaf) {
+  if constexpr (Node::isIndexBlocked and not TypeTree::Concept::LeafTreeNode<Node>) {
     return node().degree();
   } else {
     return _block_count;
@@ -842,7 +844,7 @@ template<class Node>
 template<class EntityCodim>
 constexpr auto BasisTopologicalInterleaving<Node>::mayContainCodim(EntityCodim entity_codim)
 {
-  if constexpr (Node::isLeaf) {
+  if constexpr (TypeTree::Concept::LeafTreeNode<Node>) {
     constexpr std::size_t entity_dim = Node::GridView::dimension - entity_codim;
     // dimension of the finite element domain (perhaps embedded on sub entities)
     using FEM = typename Node::FiniteElementMap;
@@ -858,9 +860,9 @@ constexpr auto BasisTopologicalInterleaving<Node>::mayContainCodim(EntityCodim e
     } else {
       return std::true_type{};
     }
-  } else if constexpr (Node::isPower) {
+  } else if constexpr (TypeTree::Concept::UniformInnerTreeNode<Node>) {
     return Node::ChildType::mayContainCodim(entity_codim);
-  } else if constexpr (Node::isComposite) {
+  } else if constexpr (TypeTree::Concept::StaticDegreeInnerTreeNode<Node>) {
     auto unfold_children = [&](auto... i) {
       constexpr bool has_dofs =
         (TypeTree::template Child<Node, i>::mayContainCodim(entity_codim) || ...);
@@ -910,7 +912,7 @@ void BasisTopologicalInterleaving<Node>::updateFixedSizeOrderings()
   }
 
   // fill out flags and offsets depending on the node type
-  if constexpr (Node::isLeaf) {
+  if constexpr (TypeTree::Concept::LeafTreeNode<Node>) {
 
     using FEM = typename Node::FiniteElementMap;
     constexpr std::size_t fem_dim = FEM::Traits::FiniteElement::Traits::LocalBasisType::Traits::dimDomain;
@@ -996,7 +998,7 @@ template<class Entity>
 void BasisTopologicalInterleaving<Node>::collectLeafGeometryTypes(const Entity& entity)
 {
   static_assert(not fixedSizePerGeometryTypeStatic());
-  static_assert(Node::isLeaf);
+  static_assert(TypeTree::Concept::LeafTreeNode<Node>);
   static_assert(Dune::Concept::EntityExtended<Entity>);
   assert(not fixedSizePerGeometryType());
 
@@ -1029,7 +1031,7 @@ void BasisTopologicalInterleaving<Node>::collectGeometryTypes()
 {
   _bitfield[BF_FIXED_SIZE_POSSIBLE] = true;
 
-  if constexpr (not Node::isLeaf) {
+  if constexpr (not TypeTree::Concept::LeafTreeNode<Node>) {
     forEachChild([&](auto& child, auto i) {
       child.collectGeometryTypes();
 
@@ -1074,7 +1076,7 @@ template<class Entity>
 void BasisTopologicalInterleaving<Node>::collectEntitySizes(const Entity& entity, std::vector<size_type>& gt_cache)
 {
   static_assert(not fixedSizePerGeometryTypeStatic());
-  static_assert(Node::isLeaf);
+  static_assert(TypeTree::Concept::LeafTreeNode<Node>);
   if (_bitfield[BF_FIXED_SIZE_POSSIBLE])
     std::fill(gt_cache.begin(), gt_cache.end(), asSizeType(DOF_UNUSED));
 
@@ -1137,7 +1139,7 @@ template<class Node>
 void BasisTopologicalInterleaving<Node>::accumulateGeometryTypeOffsets()
 {
   _block_count = 0;
-  if constexpr (Node::isLeaf) {
+  if constexpr (TypeTree::Concept::LeafTreeNode<Node>) {
     // if we did't discard fixed size by this point, we can use the
     // fixed size geometry type sizes
     if (_bitfield[BF_FIXED_SIZE_POSSIBLE]) {
@@ -1255,7 +1257,7 @@ void BasisTopologicalInterleaving<Node>::updateVariableSizeOrderings()
 template<class Node>
 void BasisTopologicalInterleaving<Node>::shareChildenData() {
   // in case of vector space (same underlying function space), enable sharing states in children nodes
-  if constexpr (not Node::isLeaf) {
+  if constexpr (not TypeTree::Concept::LeafTreeNode<Node>) {
     // compare other nodes to the first one
     const auto& ref_node = node().child(Dune::Indices::_0);
     forEachChild([&](auto& child, auto i) {
