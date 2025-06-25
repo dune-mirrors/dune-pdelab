@@ -10,6 +10,15 @@
     @defgroup Ordering Ordering
     @ingroup  GridFunctionSpace
 
+    @defgroup FunctionSpaceBases Function space bases
+    @{
+      @ingroup  GridFunctionSpace
+      @brief Function space bases with dune-functions interface
+
+      The objects here are a reimplementation and clean up of the GridFunctionSpace
+      class but with the dune-functions interface.
+    @}
+
   @defgroup PDELab_Function PDELab Function
   @ingroup  PDELab
 
