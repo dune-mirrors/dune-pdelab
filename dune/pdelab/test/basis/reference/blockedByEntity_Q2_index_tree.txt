@@ -1,0 +1,103 @@
+digraph {
+  "(0,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(1,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(2,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(3,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(4,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(5,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(6,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(7,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(8,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(9,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(10,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(11,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(12,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(13,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(14,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(15,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(16,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(17,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(18,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(19,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(20,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(21,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(22,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(23,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(24,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "()" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "()" -> "(0)"
+  "(0)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(0)" -> "(0,0)"
+  "()" -> "(1)"
+  "(1)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(1)" -> "(1,0)"
+  "()" -> "(2)"
+  "(2)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(2)" -> "(2,0)"
+  "()" -> "(3)"
+  "(3)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(3)" -> "(3,0)"
+  "()" -> "(4)"
+  "(4)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(4)" -> "(4,0)"
+  "()" -> "(5)"
+  "(5)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(5)" -> "(5,0)"
+  "()" -> "(6)"
+  "(6)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(6)" -> "(6,0)"
+  "()" -> "(7)"
+  "(7)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(7)" -> "(7,0)"
+  "()" -> "(8)"
+  "(8)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(8)" -> "(8,0)"
+  "()" -> "(9)"
+  "(9)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(9)" -> "(9,0)"
+  "()" -> "(10)"
+  "(10)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(10)" -> "(10,0)"
+  "()" -> "(11)"
+  "(11)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(11)" -> "(11,0)"
+  "()" -> "(12)"
+  "(12)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(12)" -> "(12,0)"
+  "()" -> "(13)"
+  "(13)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(13)" -> "(13,0)"
+  "()" -> "(14)"
+  "(14)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(14)" -> "(14,0)"
+  "()" -> "(15)"
+  "(15)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(15)" -> "(15,0)"
+  "()" -> "(16)"
+  "(16)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(16)" -> "(16,0)"
+  "()" -> "(17)"
+  "(17)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(17)" -> "(17,0)"
+  "()" -> "(18)"
+  "(18)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(18)" -> "(18,0)"
+  "()" -> "(19)"
+  "(19)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(19)" -> "(19,0)"
+  "()" -> "(20)"
+  "(20)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(20)" -> "(20,0)"
+  "()" -> "(21)"
+  "(21)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(21)" -> "(21,0)"
+  "()" -> "(22)"
+  "(22)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(22)" -> "(22,0)"
+  "()" -> "(23)"
+  "(23)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(23)" -> "(23,0)"
+  "()" -> "(24)"
+  "(24)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(24)" -> "(24,0)"
+}

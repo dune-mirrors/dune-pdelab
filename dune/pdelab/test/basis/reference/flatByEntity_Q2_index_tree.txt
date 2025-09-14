@@ -1,0 +1,53 @@
+digraph {
+  "(0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(2)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(3)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(4)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(5)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(6)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(7)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(8)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(9)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(10)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(11)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(12)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(13)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(14)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(15)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(16)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(17)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(18)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(19)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(20)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(21)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(22)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(23)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(24)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "()" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "()" -> "(0)"
+  "()" -> "(1)"
+  "()" -> "(2)"
+  "()" -> "(3)"
+  "()" -> "(4)"
+  "()" -> "(5)"
+  "()" -> "(6)"
+  "()" -> "(7)"
+  "()" -> "(8)"
+  "()" -> "(9)"
+  "()" -> "(10)"
+  "()" -> "(11)"
+  "()" -> "(12)"
+  "()" -> "(13)"
+  "()" -> "(14)"
+  "()" -> "(15)"
+  "()" -> "(16)"
+  "()" -> "(17)"
+  "()" -> "(18)"
+  "()" -> "(19)"
+  "()" -> "(20)"
+  "()" -> "(21)"
+  "()" -> "(22)"
+  "()" -> "(23)"
+  "()" -> "(24)"
+}
