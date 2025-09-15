@@ -90,6 +90,19 @@ namespace Dune::PDELab
       return std::integral_constant<std::size_t, 0>{};
     }
 
+    //! @brief Returns a container descriptor for a given geometry type and entity index
+    auto containerDescriptor(size_type gt_index, size_type e_index) const
+    {
+      // common size for all geometry types
+      constexpr auto gt_common_size = commonSizePerGeometryType();
+      using namespace Dune::PDELab::ContainerDescriptors;
+
+      if constexpr (gt_common_size)
+        return FlatArray<gt_common_size.value()>();
+      else
+        return FlatVector(this->localTreeDegree(gt_index, e_index));
+    }
+
     /**
      * @brief Gets a common size for all active geometry types if available at compile time.
      *
@@ -215,6 +228,53 @@ namespace Dune::PDELab
     ProtoBasisChild &child(std::size_t i)
     {
       return _nodes[i];
+    }
+
+    //! @brief Returns a container descriptor for a given geometry type and entity index
+    auto containerDescriptor(size_type gt_index, std::size_t e_index) const
+    {
+      using namespace Dune::PDELab::ContainerDescriptors;
+      auto descriptor0 = child(0).containerDescriptor(gt_index, e_index);
+      using ChildDescriptor = std::remove_cvref_t<decltype(descriptor0)>;
+      if constexpr (std::same_as<ChildDescriptor, Unknown>)
+        return Unknown{};
+      else if constexpr (Base::mergedLocalTrees()) {
+        using Block = BlockType<ChildDescriptor>;
+        if constexpr (requires{ { ChildDescriptor::size() } -> std::convertible_to<std::size_t>; } ) {
+          if constexpr (IsCompileTimeUniform<ChildDescriptor>)
+            return UniformArray<Block, ChildDescriptor::size() * degree()>(descriptor0[0]);
+          else {
+            Array<Block, ChildDescriptor::size() * degree()> array;
+            for (std::size_t i = 0; i < degree(); ++i) {
+              auto desc = child(i).containerDescriptor(gt_index, e_index);
+              for (std::size_t j = 0; j < desc.size(); ++j)
+                array[i * desc.size() + j] = std::move(desc[j]);
+            }
+            return array;
+          }
+        } else {
+          if constexpr (IsCompileTimeUniform<ChildDescriptor>)
+            return UniformVector<Block>(descriptor0.size() * degree(), descriptor0[0]);
+          else {
+            Vector<Block> vector;
+            for (std::size_t i = 0; i < degree(); ++i) {
+              auto desc = child(i).containerDescriptor(gt_index, e_index);
+              for (std::size_t j = 0; j < desc.size(); ++j)
+                vector.emplace_back(std::move(desc[j]));
+            }
+            return vector;
+          }
+        }
+      } else {
+        if constexpr (IsCompileTimeUniform<ChildDescriptor> )
+          return UniformArray<ChildDescriptor, degree()>(descriptor0);
+        else {
+          Array<ChildDescriptor, degree()> array;
+          for (std::size_t i = 0; i < degree(); ++i)
+            array[i] = child(i).containerDescriptor(gt_index, e_index);
+          return array;
+        }
+      }
     }
 
   private:
@@ -397,6 +457,61 @@ namespace Dune::PDELab
     auto &child(index_constant<i> = {})
     {
       return std::get<i>(_nodes);
+    }
+
+    //! @brief Returns a container descriptor for a given geometry type and entity index
+    auto containerDescriptor(size_type gt_index, std::size_t e_index) const
+    {
+      using namespace Dune::PDELab::ContainerDescriptors;
+      auto childDescriptors = std::apply([=](const auto&... child_i){
+        return std::tuple<std::remove_cvref_t<decltype(child_i.containerDescriptor(gt_index, e_index))>...>{
+          child_i.containerDescriptor(gt_index, e_index)...
+        };
+      }, _nodes);
+
+      if constexpr (std::apply([&]<class... Desc>(const Desc&... descriptors) {
+                               return (std::same_as<Desc, Unknown> || ...);
+                             },
+                             childDescriptors))
+        return Unknown{};
+      else if constexpr (Base::mergedLocalTrees()) {
+        return std::apply(
+          [&]<class... Descriptors>(const Descriptors&... descriptors) {
+            if constexpr (requires { std::common_type_t<BlockType<Descriptors>...>(); }) {
+              using Block = std::common_type_t<BlockType<Descriptors>...>;
+              if constexpr (requires{ { (Descriptors::size() + ...) } -> std::convertible_to<std::size_t>; } ) {
+                if constexpr (IsCompileTimeUniform<Block>)
+                  return UniformArray<Block, (Descriptors::size() + ...)>(std::get<0>(childDescriptors)[Indices::_0]);
+                else {
+                  Array<Block, (Descriptors::size() + ...)> array;
+                  Hybrid::forEach([&](auto i){
+                    auto& desc = std::get<i>(childDescriptors);
+                    for (std::size_t j = 0; j < desc.size(); ++j)
+                      array[i * desc.size() + j] = std::move(desc[j]);
+                  }, range(degree()));
+                  return array;
+                }
+              } else {
+                if constexpr (IsCompileTimeUniform<Block>)
+                  return UniformVector<Block>((descriptors.size() + ...), std::get<0>(childDescriptors)[Indices::_0]);
+                else {
+                  Vector<Block> vector;
+                  Hybrid::forEach([&](auto i){
+                    auto& desc = std::get<i>(childDescriptors);
+                    for (std::size_t j = 0; j < desc.size(); ++j)
+                      vector.emplace_back(std::move(desc[j]));
+                  }, range(degree()));
+                  return vector;
+                }
+              }
+            } else {
+              return Unknown();
+            }
+          },
+          childDescriptors);
+      } else {
+        return TupleVector{childDescriptors};
+      }
     }
 
   private:

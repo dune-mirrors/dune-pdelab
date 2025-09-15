@@ -155,6 +155,59 @@ namespace Dune::PDELab
     void initializeIndices();
 
     /**
+     * @brief Returns a container descriptor for the entire pre-basis.
+     *
+     * The returned descriptor describes how the pre-basis coefficients can be organized in memory.
+     */
+    auto containerDescriptor() const {
+
+      const auto& entity_it = gridView().template begin<0>();
+      size_type gt_index0{0}, e_index0{0};
+      if (entity_it != gridView().template end<0>()) {
+        gt_index0 = GlobalGeometryTypeIndex::index(entity_it->type());
+        e_index0 = _proto_basis.gridView().indexSet().index(*entity_it);
+      }
+      auto descriptor0 = protoBasis().containerDescriptor(gt_index0, e_index0);
+
+      using ProtoBasisDescriptor = std::remove_cvref_t<decltype(descriptor0)>;
+      using namespace Dune::PDELab::ContainerDescriptors;
+      if constexpr (std::same_as<ProtoBasisDescriptor, Unknown>)
+        return Unknown{};
+      else if constexpr (ProtoBasis::isIndexBlocked) {
+        if constexpr (IsCompileTimeUniform<ProtoBasisDescriptor>)
+          return UniformVector<ProtoBasisDescriptor>(size(), descriptor0);
+        else {
+          Vector<ProtoBasisDescriptor> vector;
+          for (auto&& element : elements(gridView())) {
+            size_type gt_index = GlobalGeometryTypeIndex::index(element.type());
+            size_type e_index = _proto_basis.gridView().indexSet().index(element);
+            auto desc = protoBasis().containerDescriptor(gt_index, e_index);
+            vector.emplace_back(std::move(desc));
+          }
+          return vector;
+        }
+      } else {
+        using BlockType = BlockType<ProtoBasisDescriptor>;
+        if constexpr (std::same_as<BlockType, Unknown>)
+          return Unknown{};
+        else if constexpr (IsCompileTimeUniform<ProtoBasisDescriptor>)
+          return UniformVector<BlockType>(size(), descriptor0[0]);
+        else {
+          Vector<BlockType> vector;
+          for (auto&& element : elements(gridView())) {
+            size_type gt_index = GlobalGeometryTypeIndex::index(element.type());
+            size_type e_index = _proto_basis.gridView().indexSet().index(element);
+            auto desc = protoBasis().containerDescriptor(gt_index, e_index);
+            Hybrid::forEach(range(Hybrid::size(desc)), [&](auto i){
+              vector.emplace_back(std::move(desc[i]));
+            });
+          }
+          return vector;
+        }
+      }
+    }
+
+    /**
      * @brief Returns the underlying proto-basis.
      */
     const ProtoBasis &protoBasis() const;

@@ -2,6 +2,7 @@
 #define DUNE_PDELAB_BASIS_UTILITY_HH
 
 #include <dune/functions/functionspacebases/concepts.hh>
+#include <dune/functions/functionspacebases/containerdescriptors.hh>
 
 #include <ostream>
 #include <fstream>
@@ -114,6 +115,72 @@ namespace Dune::PDELab
     out << "}" << std::endl;
     out.close();
   }
+
+  namespace ContainerDescriptors
+  {
+
+    using namespace Dune::Functions::ContainerDescriptors;
+
+    namespace Impl
+    {
+
+      template <class, class = void>
+      struct BlockType
+      {
+        using type = Unknown;
+      };
+
+      template <class ChildDescriptor>
+      struct BlockType<Vector<ChildDescriptor>> : std::type_identity<ChildDescriptor>
+      {
+      };
+
+      template <class ChildDescriptor>
+      struct BlockType<UniformVector<ChildDescriptor>> : std::type_identity<ChildDescriptor>
+      {
+      };
+
+      template <class ChildDescriptor, std::size_t i>
+      struct BlockType<Array<ChildDescriptor, i>> : std::type_identity<ChildDescriptor>
+      {
+      };
+
+      template <class ChildDescriptor, std::size_t i>
+      struct BlockType<UniformArray<ChildDescriptor, i>> : std::type_identity<ChildDescriptor>
+      {
+      };
+
+      template <class... ChildDescriptors>
+      struct BlockType<Tuple<ChildDescriptors...>, std::void_t<std::common_type_t<ChildDescriptors...>>>
+          : std::type_identity<std::common_type_t<ChildDescriptors...>>
+      {
+      };
+
+      template <class Descriptor>
+      struct IsCompileTimeUniform : std::false_type
+      {
+      };
+
+      template <>
+      struct IsCompileTimeUniform<Value> : std::true_type
+      {
+      };
+
+      template <class Child, std::size_t n>
+      struct IsCompileTimeUniform<UniformArray<Child, n>> : std::true_type
+      {
+      };
+    }
+
+    //! The block type of a descriptor is the type of a single block of the descriptor, if any.
+    template <class Descriptor>
+    using BlockType = typename Impl::BlockType<Descriptor>::type;
+
+    //! Whether the descriptor has compile-time uniform size.
+    template <class Descriptor>
+    constexpr bool IsCompileTimeUniform = Impl::IsCompileTimeUniform<Descriptor>::value;
+
+  } // namespace ContainerDescriptors
 
 } // namespace Dune::PDELab
 
