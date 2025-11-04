@@ -8,6 +8,7 @@ install(FILES benchmarkhelper.hh
               crossproduct.hh
               dofindex.hh
               elementmapper.hh
+              entitymutexes.hh
               exceptions.hh
               function.hh
               functionutilities.hh
@@ -26,6 +27,7 @@ install(FILES benchmarkhelper.hh
               range.hh
               referenceelements.hh
               simpledofindex.hh
+              spinlocks.hh
               topologyutility.hh
               typetraits.hh
               utility.hh
