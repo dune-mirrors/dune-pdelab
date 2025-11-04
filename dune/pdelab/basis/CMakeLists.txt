@@ -1,5 +1,6 @@
 install(FILES lagrange.hh
               localview.hh
+              locallock.hh
               mergingstrategy.hh
               prebasis.hh
               protobasis.hh
