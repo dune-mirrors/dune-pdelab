@@ -63,9 +63,9 @@ struct DefaultPreBasisFactory;
  */
 template<class FiniteElementMap>
 auto makeProtoBasis(const FiniteElementMap& finite_element_map, FlatTopologicalInterleaving = {})  {
-  return DefaultPreBasisFactory{[finite_element_map]<class GridView>(const GridView& grid_view) {
-    using ProtoBasis = ProtoBasisLeaf<GridView, FiniteElementMap, false>;
-    return ProtoBasis{grid_view, finite_element_map};
+  return DefaultPreBasisFactory{[finite_element_map]<class GridView, class SubDomain>(const GridView& grid_view, const SubDomain& sub_domain) {
+    using ProtoBasis = ProtoBasisLeaf<GridView, FiniteElementMap, false, SubDomain>;
+    return ProtoBasis{grid_view, finite_element_map, sub_domain};
   }};
 }
 
@@ -101,8 +101,8 @@ auto makeProtoBasis(const FiniteElementMap& finite_element_map, BlockedTopologic
  */
 template<std::size_t k, class Factory>
 auto power(Factory&& factory, FlatTopologicalInterleaving) {
-  return DefaultPreBasisFactory{[factory = std::forward<Factory>(factory)](const auto& grid_view){
-    auto proto_basis = factory.protoBasis(grid_view);
+  return DefaultPreBasisFactory{[factory = std::forward<Factory>(factory)](const auto& grid_view, const auto& sub_domain){
+    auto proto_basis = factory.protoBasis(grid_view, sub_domain);
     using ProtoBasis = decltype(proto_basis);
     std::array<ProtoBasis, k> nodes = unpackIntegerSequence([&](auto... i) {
       return std::array<ProtoBasis, k>{ ((void)i, proto_basis)... };
@@ -151,8 +151,8 @@ auto power(Factory&& factory, BlockedTopologicalInterleaving) {
  */
 template<class Factory>
 auto power(Factory&& factory, std::size_t k, FlatTopologicalInterleaving = {}) {
-  return DefaultPreBasisFactory{[factory = std::forward<Factory>(factory), k](const auto& grid_view){
-    auto proto_basis = factory.protoBasis(grid_view);
+  return DefaultPreBasisFactory{[factory = std::forward<Factory>(factory), k](const auto& grid_view, const auto& sub_domain){
+    auto proto_basis = factory.protoBasis(grid_view, sub_domain);
     using ProtoBasis = decltype(proto_basis);
     std::vector<ProtoBasis> nodes;
     for (std::size_t i = 0; i < k; ++i)
@@ -213,12 +213,12 @@ auto composite(DefaultPreBasisFactory<Callable0>&& factory0, Args&&... args)
   using MergingStrategy = std::tuple_element_t<sizeof...(Args), ArgsTuple>;
   constexpr bool isIndexBlocked = std::is_same_v<MergingStrategy, BlockedTopologicalInterleaving>;
 
-  return DefaultPreBasisFactory{[=](const auto& grid_view){
+  return DefaultPreBasisFactory{[=](const auto& grid_view, const auto& sub_domain){
     auto sequence = std::make_index_sequence<sizeof...(Args)>{};
     return unpackIntegerSequence(
       [&](auto... i) {
-        std::tuple storage = { std::get<i>(argsTuple).protoBasis(grid_view)... };
-        return ProtoBasisTuple<isIndexBlocked, decltype(std::get<i>(argsTuple).protoBasis(grid_view))...>{storage};
+        std::tuple storage = { std::get<i>(argsTuple).protoBasis(grid_view, sub_domain)... };
+        return ProtoBasisTuple<isIndexBlocked, decltype(std::get<i>(argsTuple).protoBasis(grid_view, sub_domain))...>{storage};
       },
       sequence);
   }};
@@ -251,16 +251,55 @@ auto composite(const DefaultPreBasisFactory<Callable0>& factory0, Args&&... args
   using MergingStrategy = std::tuple_element_t<sizeof...(Args), ArgsTuple>;
   constexpr bool isIndexBlocked = std::is_same_v<MergingStrategy, BlockedTopologicalInterleaving>;
 
-  return DefaultPreBasisFactory{[=](const auto& grid_view){
+  return DefaultPreBasisFactory{[=](const auto& grid_view, const auto& sub_domain){
     auto sequence = std::make_index_sequence<sizeof...(Args)>{};
     return unpackIntegerSequence(
       [&](auto... i) {
-        std::tuple storage = { std::get<i>(argsTuple).protoBasis(grid_view)... };
-        return ProtoBasisTuple<isIndexBlocked, decltype(std::get<i>(argsTuple).protoBasis(grid_view))...>{storage};
+        std::tuple storage = { std::get<i>(argsTuple).protoBasis(grid_view, sub_domain)... };
+        return ProtoBasisTuple<isIndexBlocked, decltype(std::get<i>(argsTuple).protoBasis(grid_view, sub_domain))...>{storage};
       },
       sequence);
   }};
 }
+
+/**
+ * @brief Restrict a proto-basis factory to a sub-domain.
+ *
+ * This allows you to create a basis that is only defined on a specific sub-domain
+ * of the grid, e.g. for domain decomposition or multi-domain problems.
+ *
+ * @tparam Factory Type of the child proto-basis factory.
+ * @tparam SubDomain Type of the sub-domain (must implement `contains` method).
+ * @param factory Factory for the child proto-basis.
+ * @param sub_domain The sub-domain to restrict the basis to.
+ * @return A DefaultPreBasisFactory for the restricted basis.
+ */
+template<class Factory, class SubDomain>
+auto restrict(PreBasisFactory<Factory>&& factory, const SubDomain& sub_domain) {
+  return DefaultPreBasisFactory{[factory = static_cast<Factory&&>(factory), sub_domain](const auto& grid_view, EntireDomain){
+    return factory.protoBasis(grid_view, sub_domain);
+  }};
+}
+
+/**
+ * @brief Restrict a proto-basis factory to a sub-domain.
+ *
+ * This allows you to create a basis that is only defined on a specific sub-domain
+ * of the grid, e.g. for domain decomposition or multi-domain problems.
+ *
+ * @tparam Factory Type of the child proto-basis factory.
+ * @tparam SubDomain Type of the sub-domain (must implement `contains` method).
+ * @param factory Factory for the child proto-basis.
+ * @param sub_domain The sub-domain to restrict the basis to.
+ * @return A DefaultPreBasisFactory for the restricted basis.
+ */
+template<class Factory, class SubDomain>
+auto restrict(const PreBasisFactory<Factory>& factory, const SubDomain& sub_domain) {
+  return DefaultPreBasisFactory{[factory = static_cast<const Factory&>(factory), sub_domain](const auto& grid_view, EntireDomain){
+    return factory.protoBasis(grid_view, sub_domain);
+  }};
+}
+
 
 /**
  * @brief Factory for constructing PDELab PreBasis objects
@@ -280,7 +319,7 @@ struct PreBasisFactory {
    * @return A PreBasis object.
    */
   auto operator()(const auto& grid_view) && {
-    return PreBasis{impl().protoBasis(grid_view)};
+    return PreBasis{impl().protoBasis(grid_view, EntireDomain{})};
   }
 
   /**
@@ -289,7 +328,7 @@ struct PreBasisFactory {
    * @return A PreBasis object.
    */
   auto operator()(const auto& grid_view) const & {
-    return PreBasis{impl().protoBasis(grid_view)};
+    return PreBasis{impl().protoBasis(grid_view, EntireDomain{})};
   }
 
   //! @brief Creates a power basis factory from a proto-basis factory and a compile-time degree.
@@ -312,6 +351,18 @@ struct PreBasisFactory {
   //! @brief Creates a power basis factory from a proto-basis factory and a runtime degree.
   auto operator^(std::size_t k) const & {
     return power(impl(), k, flatByEntity());
+  }
+
+  //! @brief Restricts the proto-basis to a given sub-domain
+  template<class SubDomain>
+  auto operator|(const SubDomain& sub_domain) && {
+    return restrict(impl(), sub_domain);
+  }
+
+  //! @brief Restricts the proto-basis to a given sub-domain
+  template<class SubDomain>
+  auto operator|(const SubDomain& sub_domain) const & {
+    return restrict(impl(), sub_domain);
   }
 
   //! @brief Creates a composite basis factory from two pre-basis factories.
@@ -362,7 +413,8 @@ private:
 /**
  * @brief Default implementation of a ProtoBasis factory.
  *
- * This class wraps a callable object that constructs ProtoBasis objects.
+ * This class wraps a callable object that constructs ProtoBasis objects
+ * for given grid views and sub-domains.
  *
  * @tparam Callable The callable type that constructs ProtoBasis objects.
  */
@@ -384,10 +436,11 @@ struct DefaultPreBasisFactory : public PreBasisFactory<DefaultPreBasisFactory<Ca
   /**
    * @brief Access the underlying ProtoBasis for a given grid view.
    * @param grid_view The grid view to build the proto-basis for.
+   * @param sub_domain The sub-domain to restrict the basis to.
    * @return A ProtoBasis object.
    */
-  auto protoBasis(const auto& grid_view) const {
-    return proto_basis_factory_(grid_view);
+  auto protoBasis(const auto& grid_view, const auto& sub_domain) const {
+    return proto_basis_factory_(grid_view, sub_domain);
   }
 
 private:

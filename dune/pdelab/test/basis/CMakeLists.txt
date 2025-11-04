@@ -1,5 +1,6 @@
 dune_add_test(SOURCES testtopologicalinterleaving.cc)
 dune_add_test(SOURCES testlagrangebasis.cc)
+dune_add_test(SOURCES testmultidomainbasis.cc)
 
 # Test for comparing testlagrangebasis output files to reference files
 set(TEST_LAGRANGE_INDEX_TREE_OUTPUT_FILES
@@ -35,3 +36,11 @@ foreach(output_file IN LISTS TEST_LAGRANGE_INDEX_TREE_OUTPUT_FILES)
     )
     set_tests_properties(compare_${output_file} PROPERTIES DEPENDS testlagrangebasis)
 endforeach()
+
+add_test(
+    NAME compare_multidomain_index_tree.txt
+    COMMAND ${CMAKE_COMMAND} -E compare_files
+        ${CMAKE_CURRENT_BINARY_DIR}/multidomain_index_tree.txt
+        ${CMAKE_CURRENT_SOURCE_DIR}/reference/multidomain_index_tree.txt
+)
+set_tests_properties(compare_multidomain_index_tree.txt PROPERTIES DEPENDS testmultidomainbasis)

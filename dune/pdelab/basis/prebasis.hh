@@ -312,10 +312,13 @@ namespace Dune::PDELab
       [&]<class Node>(Node &node, const auto &path) {
         Accessor::setElementView(node, &entity);
         Accessor::setOffset(node, offset);
-        const auto& pb_leaf = TypeTree::child(_proto_basis, path);
-        const auto& fem = pb_leaf.finiteElementMap();
-        Accessor::setFiniteElement(node, fem.find(node.element()));
-        Accessor::setSize(node, node.finiteElement().size());
+        if (TypeTree::child(_proto_basis, path).subDomain().contains(entity)) {
+          Accessor::setFiniteElement(node, TypeTree::child(_proto_basis, path).finiteElementMap().find(node.element()));
+          Accessor::setSize(node, node.finiteElement().size());
+        } else {
+          Accessor::setFiniteElement(node, nullptr);
+          Accessor::setSize(node, 0);
+        }
         offset += node.size();
       },
       /* post-inner node visit */

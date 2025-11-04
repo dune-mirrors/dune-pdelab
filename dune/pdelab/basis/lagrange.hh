@@ -25,9 +25,9 @@ template<std::size_t k = 1, class MergingStrategy = FlatTopologicalInterleaving>
 requires std::same_as<MergingStrategy, FlatTopologicalInterleaving> ||
          std::same_as<MergingStrategy, BlockedTopologicalInterleaving>
 auto makeQkProtoBasis(MergingStrategy strategy = {}) {
-  return DefaultPreBasisFactory{[strategy]<class GridView>(GridView grid_view) {
+  return DefaultPreBasisFactory{[strategy]<class GridView>(GridView grid_view, const auto& sub_domain) {
     using QkFEM = Dune::PDELab::QkLocalFiniteElementMap<GridView, double, double, k>;
-    return makeProtoBasis(QkFEM(grid_view), strategy).protoBasis(grid_view);
+    return makeProtoBasis(QkFEM(grid_view), strategy).protoBasis(grid_view, sub_domain);
   }};
 }
 
@@ -43,9 +43,9 @@ template<std::size_t k = 1, class MergingStrategy = FlatTopologicalInterleaving>
 requires std::same_as<MergingStrategy, FlatTopologicalInterleaving> ||
          std::same_as<MergingStrategy, BlockedTopologicalInterleaving>
 auto makePkProtoBasis(MergingStrategy strategy = {}) {
-  return DefaultPreBasisFactory{[strategy]<class GridView>(GridView grid_view) {
+  return DefaultPreBasisFactory{[strategy]<class GridView>(GridView grid_view, const auto& sub_domain) {
     using PkFEM = Dune::PDELab::PkLocalFiniteElementMap<GridView, double, double, k>;
-    return makeProtoBasis(PkFEM(grid_view), strategy).protoBasis(grid_view);
+    return makeProtoBasis(PkFEM(grid_view), strategy).protoBasis(grid_view, sub_domain);
   }};
 }
 
@@ -73,14 +73,14 @@ template <Dune::GeometryType::Id G, std::size_t Degree = 1, class MergingStrateg
 requires std::same_as<MergingStrategy, FlatTopologicalInterleaving> ||
          std::same_as<MergingStrategy, BlockedTopologicalInterleaving>
 auto FiniteElement(LagrangeFiniteElementFamily, std::integral_constant<GeometryType::Id, G>, index_constant<Degree> = {}, MergingStrategy strategy = {}) {
-  return DefaultPreBasisFactory{[strategy]<class GridView>(GridView grid_view) {
+  return DefaultPreBasisFactory{[strategy]<class GridView>(GridView grid_view, const auto& sub_domain) {
     static_assert(Dune::GeometryType(G).dim() == GridView::dimension, "Geometry dimension and grid dimension do not match");
     if constexpr (Dune::GeometryType(G).isSimplex()) {
       using PkFEM = Dune::PDELab::PkLocalFiniteElementMap<GridView, double, double, Degree>;
-      return makeProtoBasis(PkFEM(grid_view), strategy).protoBasis(grid_view);
+      return makeProtoBasis(PkFEM(grid_view), strategy).protoBasis(grid_view, sub_domain);
     } else if constexpr (Dune::GeometryType(G).isCube()) {
       using QkFEM = Dune::PDELab::QkLocalFiniteElementMap<GridView, double, double, Degree>;
-      return makeProtoBasis(QkFEM(grid_view), strategy).protoBasis(grid_view);
+      return makeProtoBasis(QkFEM(grid_view), strategy).protoBasis(grid_view, sub_domain);
     } else {
       static_assert(AlwaysFalse<GridView>{}, "Lagrange finite elements are only implemented for simplex and cube geometries");
     }

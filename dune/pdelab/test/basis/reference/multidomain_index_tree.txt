@@ -1,0 +1,273 @@
+digraph {
+  "(0,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(1,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(2,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(2,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(2,2)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(3,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(3,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(4,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(4,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(5,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(6,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(7,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(7,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(7,2)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(8,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(8,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(9,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(9,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(10,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(10,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(11,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(11,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(12,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(12,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(12,2)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(12,3)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(13,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(13,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(14,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(14,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(15,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(16,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(17,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(18,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(19,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(20,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(21,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(22,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(23,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(23,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(24,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(24,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(25,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(26,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(27,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(27,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(28,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(28,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(29,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(30,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(31,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(31,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(32,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(32,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(33,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(34,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(35,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(35,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(35,2)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(36,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(36,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(37,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(37,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(38,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(39,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(40,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(40,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(40,2)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(41,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(41,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(42,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(42,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(43,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(44,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(45,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(45,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(46,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(46,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(47,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(48,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(49,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(49,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(50,0)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "(50,1)" [style=filled, fillcolor=darkolivegreen2, shape=box] 
+  "()" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "()" -> "(0)"
+  "(0)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(0)" -> "(0,0)"
+  "()" -> "(1)"
+  "(1)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(1)" -> "(1,0)"
+  "()" -> "(2)"
+  "(2)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(2)" -> "(2,0)"
+  "(2)" -> "(2,1)"
+  "(2)" -> "(2,2)"
+  "()" -> "(3)"
+  "(3)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(3)" -> "(3,0)"
+  "(3)" -> "(3,1)"
+  "()" -> "(4)"
+  "(4)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(4)" -> "(4,0)"
+  "(4)" -> "(4,1)"
+  "()" -> "(5)"
+  "(5)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(5)" -> "(5,0)"
+  "()" -> "(6)"
+  "(6)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(6)" -> "(6,0)"
+  "()" -> "(7)"
+  "(7)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(7)" -> "(7,0)"
+  "(7)" -> "(7,1)"
+  "(7)" -> "(7,2)"
+  "()" -> "(8)"
+  "(8)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(8)" -> "(8,0)"
+  "(8)" -> "(8,1)"
+  "()" -> "(9)"
+  "(9)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(9)" -> "(9,0)"
+  "(9)" -> "(9,1)"
+  "()" -> "(10)"
+  "(10)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(10)" -> "(10,0)"
+  "(10)" -> "(10,1)"
+  "()" -> "(11)"
+  "(11)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(11)" -> "(11,0)"
+  "(11)" -> "(11,1)"
+  "()" -> "(12)"
+  "(12)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(12)" -> "(12,0)"
+  "(12)" -> "(12,1)"
+  "(12)" -> "(12,2)"
+  "(12)" -> "(12,3)"
+  "()" -> "(13)"
+  "(13)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(13)" -> "(13,0)"
+  "(13)" -> "(13,1)"
+  "()" -> "(14)"
+  "(14)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(14)" -> "(14,0)"
+  "(14)" -> "(14,1)"
+  "()" -> "(15)"
+  "(15)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(15)" -> "(15,0)"
+  "()" -> "(16)"
+  "(16)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(16)" -> "(16,0)"
+  "()" -> "(17)"
+  "(17)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(17)" -> "(17,0)"
+  "()" -> "(18)"
+  "(18)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(18)" -> "(18,0)"
+  "()" -> "(19)"
+  "(19)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(19)" -> "(19,0)"
+  "()" -> "(20)"
+  "(20)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(20)" -> "(20,0)"
+  "()" -> "(21)"
+  "(21)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(21)" -> "(21,0)"
+  "()" -> "(22)"
+  "(22)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(22)" -> "(22,0)"
+  "()" -> "(23)"
+  "(23)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(23)" -> "(23,0)"
+  "(23)" -> "(23,1)"
+  "()" -> "(24)"
+  "(24)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(24)" -> "(24,0)"
+  "(24)" -> "(24,1)"
+  "()" -> "(25)"
+  "(25)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(25)" -> "(25,0)"
+  "()" -> "(26)"
+  "(26)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(26)" -> "(26,0)"
+  "()" -> "(27)"
+  "(27)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(27)" -> "(27,0)"
+  "(27)" -> "(27,1)"
+  "()" -> "(28)"
+  "(28)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(28)" -> "(28,0)"
+  "(28)" -> "(28,1)"
+  "()" -> "(29)"
+  "(29)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(29)" -> "(29,0)"
+  "()" -> "(30)"
+  "(30)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(30)" -> "(30,0)"
+  "()" -> "(31)"
+  "(31)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(31)" -> "(31,0)"
+  "(31)" -> "(31,1)"
+  "()" -> "(32)"
+  "(32)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(32)" -> "(32,0)"
+  "(32)" -> "(32,1)"
+  "()" -> "(33)"
+  "(33)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(33)" -> "(33,0)"
+  "()" -> "(34)"
+  "(34)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(34)" -> "(34,0)"
+  "()" -> "(35)"
+  "(35)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(35)" -> "(35,0)"
+  "(35)" -> "(35,1)"
+  "(35)" -> "(35,2)"
+  "()" -> "(36)"
+  "(36)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(36)" -> "(36,0)"
+  "(36)" -> "(36,1)"
+  "()" -> "(37)"
+  "(37)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(37)" -> "(37,0)"
+  "(37)" -> "(37,1)"
+  "()" -> "(38)"
+  "(38)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(38)" -> "(38,0)"
+  "()" -> "(39)"
+  "(39)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(39)" -> "(39,0)"
+  "()" -> "(40)"
+  "(40)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(40)" -> "(40,0)"
+  "(40)" -> "(40,1)"
+  "(40)" -> "(40,2)"
+  "()" -> "(41)"
+  "(41)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(41)" -> "(41,0)"
+  "(41)" -> "(41,1)"
+  "()" -> "(42)"
+  "(42)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(42)" -> "(42,0)"
+  "(42)" -> "(42,1)"
+  "()" -> "(43)"
+  "(43)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(43)" -> "(43,0)"
+  "()" -> "(44)"
+  "(44)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(44)" -> "(44,0)"
+  "()" -> "(45)"
+  "(45)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(45)" -> "(45,0)"
+  "(45)" -> "(45,1)"
+  "()" -> "(46)"
+  "(46)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(46)" -> "(46,0)"
+  "(46)" -> "(46,1)"
+  "()" -> "(47)"
+  "(47)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(47)" -> "(47,0)"
+  "()" -> "(48)"
+  "(48)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(48)" -> "(48,0)"
+  "()" -> "(49)"
+  "(49)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(49)" -> "(49,0)"
+  "(49)" -> "(49,1)"
+  "()" -> "(50)"
+  "(50)" [style=filled, fillcolor=deepskyblue, shape=box] 
+  "(50)" -> "(50,0)"
+  "(50)" -> "(50,1)"
+}

@@ -17,6 +17,19 @@ namespace Dune::PDELab
   //! \ingroup FunctionSpaceBases
   //! \{
 
+  //! \brief Represents the entire computational domain.
+  //! This class can be used as a sub-domain that includes all entities of the grid view.
+  //! It provides a method to check if an entity belongs to the domain (always true).
+  class EntireDomain
+  {
+  public:
+    template <class Entity>
+    constexpr static auto contains(const Entity&)
+    {
+      return std::true_type();
+    }
+  };
+
   /**
    * @brief Leaf proto-basis node
    *
@@ -78,6 +91,12 @@ namespace Dune::PDELab
       return _grid_view;
     }
 
+    //! @brief Gets the sub-domain associated with this leaf node
+    const SubDomain& subDomain() const
+    {
+      return _sub_domain;
+    }
+
     //! @brief Updates the grid view
     void update(GridView grid_view)
     {
@@ -112,6 +131,8 @@ namespace Dune::PDELab
      */
     static constexpr std::optional<std::size_t> commonSizePerGeometryType()
     {
+      if constexpr (not std::same_as<SubDomain, EntireDomain>)
+        return std::nullopt;
       std::size_t size = 0;
       const auto fem_size = [](auto gt) constexpr
       {

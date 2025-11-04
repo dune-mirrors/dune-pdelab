@@ -1009,6 +1009,8 @@ void BasisTopologicalInterleaving<Node>::collectLeafGeometryTypes(const Entity& 
   const FEM& fem = node().finiteElementMap();
   std::size_t max_coeff_count = 0;
   for (const auto& sub_entity : subEntities(entity, Dune::Codim<fem_codim>{})) {
+    if (not node().subDomain().contains(sub_entity))
+      continue;
     const auto& finite_element = fem.find(sub_entity);
     using FEM = typename Node::FiniteElementMap;
     using FESwitch = FiniteElementInterfaceSwitch<typename FEM::Traits::FiniteElement>;
