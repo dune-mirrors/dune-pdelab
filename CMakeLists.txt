@@ -22,6 +22,8 @@ include(DuneMacros)
 # deactivate global include-directories
 if (dune-common_VERSION VERSION_GREATER_EQUAL 2.11)
   dune_policy(SET DP_DEFAULT_INCLUDE_DIRS NEW)
+  dune_policy(SET DP_TEST_ADD_ALL_FLAGS NEW)
+  dune_policy(SET DP_SUGGESTED_MODULE_DEPENDENCIES_REQUIRED_DOWNSTREAM NEW)
 endif()
 
 # start a dune project with information from dune.module
@@ -29,7 +31,7 @@ dune_project()
 
 # Create a target for dune-pdelab with a Dune::PDELab alias
 dune_add_library(dunepdelab EXPORT_NAME PDELab)
-target_link_libraries(dunepdelab PUBLIC ${DUNE_LIBS})
+target_link_libraries(dunepdelab PUBLIC Dune::Grid Dune::LocalFunctions Dune::TypeTree Dune::Functions Dune::ISTL)
 
 # set include directories to target
 if (dune-common_VERSION VERSION_GREATER_EQUAL 2.11)

@@ -1,5 +1,5 @@
 # All libraries unders this directory use pdelab
-link_libraries(Dune::PDELab)
+link_libraries(Dune::PDELab ${DUNE_LIBS})
 
 add_subdirectory(common)
 add_subdirectory(fem)
@@ -11,15 +11,19 @@ dune_add_test(SOURCES testchecklopinterface.cc)
 
 dune_add_test(SOURCES testconvectiondiffusiondg.cc
               CMAKE_GUARD SUPERLU_FOUND)
+add_dune_superlu_flags(testconvectiondiffusiondg)
 
 dune_add_test(SOURCES testnewton.cc
               CMAKE_GUARD SUPERLU_FOUND)
+add_dune_superlu_flags(testnewton)
 
 dune_add_test(SOURCES testoldnewton.cc
               CMAKE_GUARD SUPERLU_FOUND)
+add_dune_superlu_flags(testoldnewton)
 
 dune_add_test(SOURCES testinstationary.cc
               CMAKE_GUARD SUPERLU_FOUND)
+add_dune_superlu_flags(testinstationary)
 
 dune_add_test(SOURCES testanalytic.cc)
 
@@ -32,12 +36,14 @@ dune_add_test(NAME testcomplexnumbers-istl
               COMPILE_DEFINITIONS SUPERLU_NTYPE=3
                                   USE_ISTL
               CMAKE_GUARD SUPERLU_FOUND)
+add_dune_superlu_flags(testcomplexnumbers-istl)
 
 dune_add_test(NAME testcomplexnumbers-istlbackend
               SOURCES testcomplexnumbers.cc
               COMPILE_DEFINITIONS SUPERLU_NTYPE=3
                                   USE_ISTL_BACKEND
               CMAKE_GUARD SUPERLU_FOUND)
+add_dune_superlu_flags(testcomplexnumbers-istlbackend)
 
 dune_add_test(SOURCES testconstraints.cc
               COMPILE_DEFINITIONS GRIDSDIR=\"${CMAKE_CURRENT_SOURCE_DIR}/grids\")
@@ -45,10 +51,12 @@ dune_add_test(SOURCES testconstraints.cc
 dune_add_test(SOURCES testdunefunctionsgfs.cc
               MPI_RANKS 1 2 4
               TIMEOUT 300)
+add_dune_mpi_flags(testdunefunctionsgfs)
 
 dune_add_test(SOURCES testelectrodynamic.cc
               CMD_ARGS "${CMAKE_CURRENT_SOURCE_DIR}/grids/circ_in_rect.msh"
               CMAKE_GUARD dune-alugrid_FOUND SUPERLU_FOUND)
+add_dune_superlu_flags(testelectrodynamic)
 
 dune_add_test(SOURCES testfunction.cc)
 
@@ -69,6 +77,9 @@ dune_add_test(SOURCES testgeneo.cc
               TIMEOUT 300
               CMAKE_GUARD SuiteSparse_UMFPACK_FOUND ARPACKPP_FOUND
               )
+add_dune_mpi_flags(testgeneo)
+add_dune_suitesparse_flags(testgeneo)
+add_dune_arpackpp_flags(testgeneo)
 
 dune_add_test(SOURCES testdglegendre.cc)
 
@@ -144,6 +155,7 @@ dune_add_test(SOURCES test-transport-ccfv.cc
 dune_add_test(SOURCES testeigenbackend.cc
               COMPILE_DEFINITIONS GRIDSDIR=\"${CMAKE_CURRENT_SOURCE_DIR}/grids\"
               CMAKE_GUARD EIGEN3_FOUND)
+add_dune_eigen_flags(testeigenbackend)
 
 dune_add_test(SOURCES testordering.cc)
 
@@ -152,12 +164,15 @@ dune_add_test(SOURCES testloadbalancing.cc
               MPI_RANKS 2
               TIMEOUT 300
               CMAKE_GUARD dune-alugrid_FOUND)
+add_dune_mpi_flags(testloadbalancing)
 
 dune_add_test(SOURCES testopbfem.cc
               CMAKE_GUARD GMP_FOUND)
+add_dune_gmp_flags(testopbfem)
 
 dune_add_test(SOURCES test-dg-amg.cc
               CMAKE_GUARD GMP_FOUND)
+add_dune_gmp_flags(test-dg-amg)
 
 # Include periodic tests. Must run in parallel.
 foreach(degree IN ITEMS 1 2)
@@ -167,12 +182,14 @@ foreach(degree IN ITEMS 1 2)
                   MPI_RANKS 1 2
                   COMPILE_DEFINITIONS DEGREE=${degree} DG=${dg}
                   TIMEOUT 300)
+    add_dune_mpi_flags(testpoisson-periodic-2d-deg${degree}-dg${dg}-parallel)
 
     dune_add_test(NAME testpoisson-periodic-3d-deg${degree}-dg${dg}-parallel
                   SOURCES testpoisson-periodic-3d.cc
                   MPI_RANKS 1 4
                   COMPILE_DEFINITIONS DEGREE=${degree} DG=${dg}
                   TIMEOUT 300)
+    add_dune_mpi_flags(testpoisson-periodic-3d-deg${degree}-dg${dg}-parallel)
   endforeach()
 endforeach()
 
@@ -180,6 +197,7 @@ dune_add_test(NAME testnonoverlappingsinglephaseflow-yasp
               SOURCES testnonoverlappingsinglephaseflow.cc
               MPI_RANKS 1 2
               TIMEOUT 300)
+add_dune_mpi_flags(testnonoverlappingsinglephaseflow-yasp)
 
 dune_add_test(NAME testnonoverlappingsinglephaseflow-ug
               SOURCES testnonoverlappingsinglephaseflow.cc
@@ -187,12 +205,14 @@ dune_add_test(NAME testnonoverlappingsinglephaseflow-ug
               MPI_RANKS 1 2
               TIMEOUT 300
               CMAKE_GUARD dune-uggrid_FOUND)
+add_dune_mpi_flags(testnonoverlappingsinglephaseflow-ug)
 
 dune_add_test(SOURCES testnonoverlappingsinglephaseflow-boilerplate.cc
               COMPILE_DEFINITIONS GRIDSDIR=\"${CMAKE_CURRENT_SOURCE_DIR}/grids\"
               MPI_RANKS 2
               TIMEOUT 300
               CMAKE_GUARD dune-uggrid_FOUND)
+add_dune_mpi_flags(testnonoverlappingsinglephaseflow-boilerplate)
 
 dune_add_test(SOURCES testadaptivity.cc
               CMAKE_GUARD dune-uggrid_FOUND)
@@ -205,6 +225,7 @@ dune_add_test(SOURCES testnonoverlapping.cc
 dune_add_test(SOURCES testranktransmission.cc
               MPI_RANKS 2
               TIMEOUT 300)
+add_dune_mpi_flags(testranktransmission)
 
 dune_add_test(SOURCES testl2.cc)
 
@@ -212,6 +233,9 @@ dune_add_test(SOURCES test-blocked-istl-ordering.cc)
 
 dune_add_test(SOURCES testtimedependentboundary_ovlpqk.cc)
 
-dune_add_test(SOURCES testnewton-printparameters.cc)
+dune_add_test(SOURCES testnewton-printparameters.cc
+              CMAKE_GUARD SuiteSparse_UMFPACK_FOUND)
+add_dune_suitesparse_flags(testnewton-printparameters)
+
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vtk)
