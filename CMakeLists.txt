@@ -29,6 +29,7 @@ set(DUNE_TEST_MAGIC OFF)
 
 # Create a target for dune-pdelab with a Dune::PDELab alias
 dune_add_library(dunepdelab EXPORT_NAME PDELab)
+dune_default_include_directories(dunepdelab PUBLIC)
 
 target_link_libraries(dunepdelab
   PUBLIC
