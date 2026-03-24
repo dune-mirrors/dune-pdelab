@@ -148,6 +148,8 @@ void forEach(const PDELab::Execution::ParallelPolicy&, Container&& container, Ca
     } else {
       static_assert(AlwaysFalse<Container>{});
     }
+
+    task_group.wait();
   }
 }
 
