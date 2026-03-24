@@ -390,7 +390,7 @@ namespace Impl {
       std::size_t _local_offset_begin = _local_offset.size();
       std::size_t node_offset = 0;
       // lbasis_tree may have children nodes if it refers to skeleton finite elements
-      forEachLeafNode(lbasis_tree, [&](const auto& lbasis_leaf) {
+      Dune::PDELab::forEachLeafNode(lbasis_tree, [&](const auto& lbasis_leaf) {
         for (std::size_t dof = 0; dof != lbasis_leaf.size(); ++dof) {
           auto gdof = lbasis_leaf.index(dof);
           auto it = _map.find(gdof);

@@ -54,8 +54,8 @@ struct FullVolumePattern {
     const Dune::PDELab::Concept::LocalBasis            auto& ltest,
                                                        auto& lpattern)
   {
-    forEachLeafNode(ltrial.tree(), [&](auto& ltrial_node){
-      forEachLeafNode(ltest.tree(), [&](auto& ltest_node){
+    Dune::PDELab::forEachLeafNode(ltrial.tree(), [&](auto& ltrial_node){
+      Dune::PDELab::forEachLeafNode(ltest.tree(), [&](auto& ltest_node){
         for (std::size_t i = 0; i != ltrial_node.size(); ++i)
           for (std::size_t j = 0; j != ltest_node.size(); ++j)
             lpattern.addLink(ltrial_node, i, ltrial_node, j);

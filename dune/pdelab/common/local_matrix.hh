@@ -8,7 +8,7 @@
 #include <dune/pdelab/common/local_container_entry.hh>
 #include <dune/pdelab/common/container_entry.hh>
 
-#include <dune/typetree/treecontainer.hh>
+#include <dune/common/typetree/treecontainer.hh>
 
 #include <functional>
 #include <mutex>
@@ -126,7 +126,7 @@ public:
         }
       }();
 
-      forEachLeafNode(ltest.tree(), [&](const auto& ltest_node, auto test_path) {
+      Dune::PDELab::forEachLeafNode(ltest.tree(), [&](const auto& ltest_node, auto test_path) {
         const auto& ltest_constrain = containerEntry(_ltest_constraints.tree(), test_path);
         for (std::size_t test_dof = 0; test_dof != ltest_node.size(); ++test_dof) {
           if (ltest_constrain.isConstrained(test_dof)) {
@@ -146,7 +146,7 @@ public:
               DUNE_THROW(NotImplemented, "Hanging nodes not implemented yet");
             }
           } else {
-            forEachLeafNode(ltrial.tree(), [&](const auto& ltrial_node, auto trial_path) {
+            Dune::PDELab::forEachLeafNode(ltrial.tree(), [&](const auto& ltrial_node, auto trial_path) {
               for (std::size_t trial_dof = 0; trial_dof != ltrial_node.size(); ++trial_dof) {
                 const auto& val = _lcontainer[ltest_node.path()][ltrial_node.path()][ltrial_node.size()*test_dof + trial_dof];
                 using value_type = std::remove_cvref_t<decltype(val)>;
@@ -164,8 +164,8 @@ public:
   }
 
   void clear(const Concept::LocalBasis auto& ltest, const Concept::LocalBasis auto& ltrial) {
-    forEachLeafNode(ltest.tree(), [&](const auto& ltest_node, auto) {
-      forEachLeafNode(ltrial.tree(), [&](const auto& ltrial_node, auto) {
+    Dune::PDELab::forEachLeafNode(ltest.tree(), [&](const auto& ltest_node, auto) {
+      Dune::PDELab::forEachLeafNode(ltrial.tree(), [&](const auto& ltrial_node, auto) {
         auto& container = _lcontainer[ltest_node.path()][ltrial_node.path()];
         using value_type = std::remove_cvref_t<decltype(container[0])>;
         container.assign(ltest_node.size()*ltrial_node.size(), value_type{0.});

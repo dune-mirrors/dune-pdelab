@@ -8,7 +8,7 @@
 
 #include <dune/pdelab/pattern/local_sparsity_pattern.hh>
 
-#include <dune/typetree/treecontainer.hh>
+#include <dune/common/typetree/treecontainer.hh>
 
 #include <dune/grid/common/mcmgmapper.hh>
 

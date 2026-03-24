@@ -7,7 +7,7 @@
 
 #include <dune/pdelab/common/local_container_entry.hh>
 
-#include <dune/typetree/treecontainer.hh>
+#include <dune/common/typetree/treecontainer.hh>
 #include <dune/typetree/childextraction.hh>
 
 #include <cassert>
@@ -129,7 +129,7 @@ public:
   {
     this->clear(lspace);
     _lconstraints.bind(lspace.element());
-    forEachLeafNode(lspace.tree(), [&](const auto& lspace_node, auto path) {
+    Dune::PDELab::forEachLeafNode(lspace.tree(), [&](const auto& lspace_node, auto path) {
       const auto& lconstraints_node = PDELab::containerEntry(_lconstraints.tree(), path);
       auto data_ptr = data(lspace_node.path());
       for (std::size_t dof = 0; dof < lspace_node.size(); ++dof) {
@@ -212,7 +212,7 @@ private:
     _offsets.resize(lspace.tree());
     std::size_t max_field_size = 0;
     std::size_t alignement_padding = 0;
-    forEachLeafNode(lspace.tree(), [&]<class Node>(const Node& lspace_node) {
+    Dune::PDELab::forEachLeafNode(lspace.tree(), [&]<class Node>(const Node& lspace_node) {
       using Field = typename LeafToField<Node>::Field;
       max_field_size = std::max<std::size_t>(max_field_size, sizeof(Field));
       alignement_padding += alignof(Field) - 1;
@@ -224,7 +224,7 @@ private:
   void resize(const Concept::LocalIndexSet auto& lspace) noexcept {
     void* head = _buffer.data();
     std::size_t space = _buffer.size();
-    forEachLeafNode(lspace.tree(), [&]<class Node>(const Node& lspace_node) {
+    Dune::PDELab::forEachLeafNode(lspace.tree(), [&]<class Node>(const Node& lspace_node) {
       using Field = typename LeafToField<Node>::Field;
       std::size_t size = lspace_node.size();
       head = std::align(alignof(Field), size*sizeof(Field), head, space);
@@ -285,11 +285,11 @@ private:
         else
           return std::unique_lock{lspace, std::defer_lock};
       }();
-      forEachLeafNode(lspace.tree(), for_each_entry(fapply));
+      Dune::PDELab::forEachLeafNode(lspace.tree(), for_each_entry(fapply));
     } else if (lspace.partitionRegion() == EntitySetPartitioner::shared_region) {
-      forEachLeafNode(lspace.tree(), for_each_entry(fapply_atomic));
+      Dune::PDELab::forEachLeafNode(lspace.tree(), for_each_entry(fapply_atomic));
     } else {
-      forEachLeafNode(lspace.tree(), for_each_entry(fapply));
+      Dune::PDELab::forEachLeafNode(lspace.tree(), for_each_entry(fapply));
     }
 
     _lconstraints.unbind();

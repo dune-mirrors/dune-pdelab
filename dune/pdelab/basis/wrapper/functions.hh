@@ -8,7 +8,7 @@
 
 #include <dune/pdelab/basis/constraints/container.hh>
 
-#include <dune/typetree/treecontainer.hh>
+#include <dune/common/typetree/treecontainer.hh>
 #include <dune/typetree/leafnode.hh>
 #include <dune/typetree/powernode.hh>
 #include <dune/typetree/compositenode.hh>

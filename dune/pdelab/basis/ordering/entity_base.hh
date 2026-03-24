@@ -122,7 +122,7 @@ public:
   {
     // all the entity sets below this node shall be the equal to each other
     if constexpr (std::equality_comparable<EntitySet>)
-      forEachLeafNode(node(), [&](auto& leaf, auto path) {
+      Dune::PDELab::forEachLeafNode(node(), [&](auto& leaf, auto path) {
         assert(entitySet() == leaf.entitySet());
       });
 
@@ -134,7 +134,7 @@ public:
         // compare other nodes to the first one
         const auto& model_node = node().child(0);
         bool vector_space = true;
-        forEachLeafNode(model_node, [&](auto& leaf_node, auto& path) {
+        Dune::PDELab::forEachLeafNode(model_node, [&](auto& leaf_node, auto& path) {
           for (std::size_t i = 1; i < node().degree(); ++i)
             vector_space &=
               (leaf_node.space() ==
@@ -366,7 +366,7 @@ public:
   [[nodiscard]] SizeType dimension() const noexcept
   {
     SizeType dof_count = 0;
-    forEachLeafNode(
+    Dune::PDELab::forEachLeafNode(
       node(), [&](auto& leaf, auto path) { dof_count += leaf.blockCount(); });
     return dof_count;
   }
@@ -964,13 +964,13 @@ private:
   void updateVariableSizeOrderings()
   {
 
-    forEachNode(node(), []<class T>(T& node, auto path) {
+    Dune::PDELab::forEachNode(node(), []<class T>(T& node, auto path) {
       if constexpr (not T::prioryFixedSize())
         node.allocateVariableSizeOrdering();
     });
 
     for (const auto& entity : elements(entitySet())) {
-      forEachLeafNode(node(), [&]<class T>(T& leaf, auto path) {
+      Dune::PDELab::forEachLeafNode(node(), [&]<class T>(T& leaf, auto path) {
         if constexpr (not T::prioryFixedSize())
           leaf.collectLeafGeometryTypes(entity);
       });
@@ -983,7 +983,7 @@ private:
       std::vector<SizeType> gt_cache(GlobalGeometryTypeIndex::size(dim), 0);
 
       for (const auto& entity : elements(entitySet())) {
-        forEachLeafNode(node(), [&]<class T>(T& leaf, auto path) {
+        Dune::PDELab::forEachLeafNode(node(), [&]<class T>(T& leaf, auto path) {
           if constexpr (not T::prioryFixedSize())
             leaf.collectEntitySizes(entity, gt_cache);
         });

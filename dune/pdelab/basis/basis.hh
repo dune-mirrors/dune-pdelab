@@ -520,7 +520,7 @@ namespace Dune::PDELab::inline Experimental {
         return false;
 
       bool same_leafs = true;
-      forEachLeafNode(*lhs._ordering, [&](const auto& lhs_ordering, auto path){
+      Dune::PDELab::forEachLeafNode(*lhs._ordering, [&](const auto& lhs_ordering, auto path){
         same_leafs &= (&lhs_ordering == &PDELab::containerEntry(*rhs._ordering, path));
       });
       return same_leafs;

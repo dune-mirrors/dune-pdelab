@@ -5,7 +5,7 @@
 
 #include <dune/pdelab/common/tree_traversal.hh>
 
-#include <dune/typetree/treecontainer.hh>
+#include <dune/common/typetree/treecontainer.hh>
 
 namespace Dune::PDELab::inline Experimental {
 

@@ -196,14 +196,14 @@ namespace Dune::PDELab::inline Experimental {
 
       void bind(const Dune::Concept::Entity auto& entity) {
         // _padlocks_view = _constraints_container.getEntityLockHandlerSpan(entity);
-        forEachLeafNode(*_ltree, [&](auto& node){
+        Dune::PDELab::forEachLeafNode(*_ltree, [&](auto& node){
           node.bind(entity);
         });
       }
 
       void unbind() {
         // _padlocks_view = std::span<LockHandle>{};
-        forEachLeafNode(*_ltree, [&](auto& node){
+        Dune::PDELab::forEachLeafNode(*_ltree, [&](auto& node){
           node.unbind();
         });
       }
@@ -263,7 +263,7 @@ namespace Dune::PDELab::inline Experimental {
       bool constrained = false;
       bool intersection_constrained = false;
       this->clear();
-      forEachLeafNode(this->tree(), [&](const auto& container_node, auto path){
+      Dune::PDELab::forEachLeafNode(this->tree(), [&](const auto& container_node, auto path){
         intersection_constrained |= constraints_ops[path].doConstrainSkeleton() || constraints_ops[path].doConstrainBoundary();
         constrained |= intersection_constrained || constraints_ops[path].doConstrainVolume();
       });
@@ -271,7 +271,7 @@ namespace Dune::PDELab::inline Experimental {
       if (constrained) {
         for (const auto& entity : elements(basis.entitySet())) {
           lbasis_in.bind(entity);
-          forEachLeafNode(this->tree(), [&](auto& container_node, auto path){
+          Dune::PDELab::forEachLeafNode(this->tree(), [&](auto& container_node, auto path){
             auto& constraints_node = constraints_ops[path];
             const auto& lbasis_in_node = PDELab::containerEntry(lbasis_in.tree(), path);
             if (constraints_node.doConstrainVolume())
@@ -282,7 +282,7 @@ namespace Dune::PDELab::inline Experimental {
             for (const auto& intersection : intersections(basis.entitySet(), entity)) {
               if (intersection.neighbor()) {
                 lbasis_out.bind(intersection.outside());
-                forEachLeafNode(this->tree(), [&](auto& container_node, auto path){
+                Dune::PDELab::forEachLeafNode(this->tree(), [&](auto& container_node, auto path){
                   auto& constraints_node = constraints_ops[path];
                   const auto& lbasis_in_node = PDELab::containerEntry(lbasis_in.tree(), path);
                   const auto& lbasis_out_node = PDELab::containerEntry(lbasis_out.tree(), path);
@@ -291,7 +291,7 @@ namespace Dune::PDELab::inline Experimental {
                 });
                 lbasis_out.unbind();
               } else {
-                forEachLeafNode(this->tree(), [&](auto& container_node, auto path){
+                Dune::PDELab::forEachLeafNode(this->tree(), [&](auto& container_node, auto path){
                   auto& constraints_node = constraints_ops[path];
                   const auto& lbasis_in_node = PDELab::containerEntry(lbasis_in.tree(), path);
                   if (constraints_node.doConstrainBoundary())
@@ -307,7 +307,7 @@ namespace Dune::PDELab::inline Experimental {
     }
 
     void clear() {
-      forEachLeafNode(*_tree, [](auto& node){
+      Dune::PDELab::forEachLeafNode(*_tree, [](auto& node){
         node.clear();
       });
       _assembled = false;
@@ -315,13 +315,13 @@ namespace Dune::PDELab::inline Experimental {
 
     void compress(Concept::Basis auto basis) {
       // basis must be a root basis to map all entities and all sub basiss(i.e. no sub-basis)
-      forEachLeafNode(*_tree, [&](auto& node){
+      Dune::PDELab::forEachLeafNode(*_tree, [&](auto& node){
         node.globalCompress(basis);
       });
       auto lbasis = basis.localView();
       for (const auto& entity : elements(basis.entitySet())) {
         lbasis.bind(entity);
-        forEachLeafNode(*_tree, [&](auto& node, auto path){
+        Dune::PDELab::forEachLeafNode(*_tree, [&](auto& node, auto path){
           const auto& lbasis_node = PDELab::containerEntry(lbasis.tree(), path);
           node.localCompress(lbasis_node);
         });

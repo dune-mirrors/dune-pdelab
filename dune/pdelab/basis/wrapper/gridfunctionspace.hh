@@ -14,7 +14,7 @@
 #include <dune/pdelab/gridfunctionspace/localfunctionspace.hh>
 #include <dune/pdelab/gridfunctionspace/entityindexcache.hh>
 
-#include <dune/typetree/treecontainer.hh>
+#include <dune/common/typetree/treecontainer.hh>
 #include <dune/typetree/treepath.hh>
 
 #include <dune/grid/common/mcmgmapper.hh>

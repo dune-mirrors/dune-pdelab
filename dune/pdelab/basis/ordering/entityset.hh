@@ -15,7 +15,7 @@
 #include <dune/localfunctions/common/interfaceswitch.hh>
 
 #include <dune/typetree/traversal.hh>
-#include <dune/typetree/treecontainer.hh>
+#include <dune/common/typetree/treecontainer.hh>
 
 #include <dune/grid/concepts/gridview.hh>
 
@@ -295,7 +295,7 @@ namespace Dune::PDELab::inline Experimental::Impl {
       void bind(const AssemblyEntity& entity) noexcept {
         const auto& entity_set = _entity_set_ordering.entitySet();
         if (not entity_set.contains(entity)) {
-          forEachLeafNode(entityLocalIndexSet(), [&](auto& leaf_local_index_set, auto) {
+          Dune::PDELab::forEachLeafNode(entityLocalIndexSet(), [&](auto& leaf_local_index_set, auto) {
             leaf_local_index_set.indices().clear();
           });
           return;
@@ -303,7 +303,7 @@ namespace Dune::PDELab::inline Experimental::Impl {
 
         constexpr auto codim = std::integral_constant<std::size_t, AssemblyEntity::codimension>{};
         if (not (EntitySetOrdering::mayContainCodim(codim) and _entity_set_ordering.containsCodim(codim))) {
-          forEachLeafNode(entityLocalIndexSet(), [&](auto& leaf_local_index_set, auto) {
+          Dune::PDELab::forEachLeafNode(entityLocalIndexSet(), [&](auto& leaf_local_index_set, auto) {
             leaf_local_index_set.indices().clear();
           });
           return;
@@ -312,7 +312,7 @@ namespace Dune::PDELab::inline Experimental::Impl {
         _gt_index = GlobalGeometryTypeIndex::index(entity.type());
         _entity_index = entity_set.indexSet().index(entity);
 
-        forEachLeafNode(entityLocalIndexSet(), [&]<class LeafLocalIndex>(LeafLocalIndex& leaf_local_index_set, const auto& suffix) {
+        Dune::PDELab::forEachLeafNode(entityLocalIndexSet(), [&]<class LeafLocalIndex>(LeafLocalIndex& leaf_local_index_set, const auto& suffix) {
           auto ordering_path = join(_sub_space_path, leaf_local_index_set.orderingViewPath());
           const auto& leaf_ordering = PDELab::containerEntry(*_ordering, ordering_path);
 
@@ -432,7 +432,7 @@ namespace Dune::PDELab::inline Experimental::Impl {
         entityLocalView().bindElement(_entity_view);
 
 
-        forEachLeafNode(entityLocalView(), [&]<class LeafLocalView>(LeafLocalView& leaf_local_view, const auto& suffix) {
+        Dune::PDELab::forEachLeafNode(entityLocalView(), [&]<class LeafLocalView>(LeafLocalView& leaf_local_view, const auto& suffix) {
           // Here is the heart of binding:
           //   we need to fill the indices for the local space
           auto& indices = leaf_local_view.indices();
@@ -506,7 +506,7 @@ namespace Dune::PDELab::inline Experimental::Impl {
       void unbind() noexcept {
         _entity_view = nullptr;
         _index_cache.clear();
-        forEachLeafNode(entityLocalView(), [](auto& leaf_local_view) {
+        Dune::PDELab::forEachLeafNode(entityLocalView(), [](auto& leaf_local_view) {
           leaf_local_view.unbind();
         });
       }
