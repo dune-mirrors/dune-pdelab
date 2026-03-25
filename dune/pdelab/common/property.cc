@@ -15,6 +15,7 @@
 #include <utility>
 #include <iostream>
 #include <sstream>
+#include <typeindex>
 #include <unordered_map>
 
 #if __cpp_lib_stacktrace >= 202011L

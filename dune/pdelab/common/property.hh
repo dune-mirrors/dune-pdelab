@@ -12,6 +12,7 @@
 #include <vector>
 #include <typeinfo>
 #include <functional>
+#include <optional>
 #include <sstream>
 #include <set>
 #include <ranges>

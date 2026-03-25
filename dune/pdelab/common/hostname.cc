@@ -10,13 +10,16 @@
 #include <string>
 #include <vector>
 
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#else
 #include <unistd.h>
+#endif
 
 #include "hostname.hh"
-
-#ifdef __MINGW32__
-#include "windows.h"
-#endif
 
 namespace Dune {
   namespace PDELab {
@@ -24,7 +27,7 @@ namespace Dune {
     //! C++ friendly wrapper around POSIX' gethostname() or GetComputerName() when compiling for Windows applications
     std::string getHostName() {
 
-      #ifndef __MINGW32__
+#if !defined(_WIN32)
       std::size_t bufsize = 1024;
       std::vector<char> buf(bufsize);
       while(gethostname(&buf[0], buf.size()),
@@ -35,13 +38,11 @@ namespace Dune {
         buf.resize(bufsize*=2);
       }
       #else
-      long unsigned int bufsize = 1024;
+      DWORD bufsize = MAX_COMPUTERNAME_LENGTH + 1;
       std::vector<char> buf(bufsize);
-      while(!GetComputerName(&buf[0], &bufsize))
-      {
-        buf.clear();
-        buf.resize(bufsize);
-      }
+      if(!GetComputerNameA(&buf[0], &bufsize))
+        return {};
+      buf[bufsize] = '\0';
       #endif
 
       // ignore everything after the first '.', if any

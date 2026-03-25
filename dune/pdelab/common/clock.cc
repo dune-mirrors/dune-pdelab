@@ -19,15 +19,23 @@
 #endif
 
 #include <cerrno>
+#include <chrono>
 #include <iomanip>
 #include <ostream>
 #include <sstream>
 #include <string>
 
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#else
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
+#endif
 
 #include <dune/common/exceptions.hh>
 
@@ -53,6 +61,39 @@ namespace Dune {
     //  Wall time
     //
 
+#if defined(_WIN32)
+    namespace {
+      template<class Duration>
+      TimeSpec durationToTimeSpec(Duration duration) {
+        const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(duration);
+        const auto count = ns.count();
+        return TimeSpec{
+          static_cast<time_t>(count / 1000000000LL),
+          static_cast<long>(count % 1000000000LL)
+        };
+      }
+
+      TimeSpec fileTimeToTimeSpec(const FILETIME& value) {
+        ULARGE_INTEGER ticks;
+        ticks.LowPart = value.dwLowDateTime;
+        ticks.HighPart = value.dwHighDateTime;
+        return TimeSpec{
+          static_cast<time_t>(ticks.QuadPart / 10000000ULL),
+          static_cast<long>((ticks.QuadPart % 10000000ULL) * 100ULL)
+        };
+      }
+    } // anonymous namespace
+
+    TimeSpec gettimeofdayWallTime() {
+      return durationToTimeSpec(std::chrono::system_clock::now().time_since_epoch());
+    }
+
+    const TimeSpec &gettimeofdayWallTimeResolution() {
+      static const TimeSpec res = durationToTimeSpec(std::chrono::system_clock::duration{1});
+      return res;
+    }
+
+#else
 #if HAVE_POSIX_CLOCK
     TimeSpec posixGetWallTime() {
       timespec result;
@@ -93,6 +134,7 @@ namespace Dune {
       static const TimeSpec res = { 0, 1000 };
       return res;
     }
+#endif
 
     struct WallTimeClock {
       TimeSpec (*clock)();
@@ -133,6 +175,31 @@ namespace Dune {
     //  Process Time
     //
 
+#if defined(_WIN32)
+    TimeSpec getrusageProcessTime() {
+      FILETIME creation, exit, kernel, user;
+      if(!GetProcessTimes(GetCurrentProcess(), &creation, &exit, &kernel, &user))
+        DUNE_THROW(ClockError, "GetProcessTimes(...) failed: errno = " << GetLastError());
+
+      ULARGE_INTEGER kernelTicks, userTicks, totalTicks;
+      kernelTicks.LowPart = kernel.dwLowDateTime;
+      kernelTicks.HighPart = kernel.dwHighDateTime;
+      userTicks.LowPart = user.dwLowDateTime;
+      userTicks.HighPart = user.dwHighDateTime;
+      totalTicks.QuadPart = kernelTicks.QuadPart + userTicks.QuadPart;
+
+      FILETIME total;
+      total.dwLowDateTime = totalTicks.LowPart;
+      total.dwHighDateTime = totalTicks.HighPart;
+      return fileTimeToTimeSpec(total);
+    }
+
+    const TimeSpec &getrusageProcessTimeResolution() {
+      static const TimeSpec res = { 0, 100 };
+      return res;
+    }
+
+#else
 #if HAVE_POSIX_CLOCK && _POSIX_CPUTIME >= 0
     TimeSpec posixGetProcessTime() {
       // Use clock_gettime(CLOCK_PROCESS_CPUTIME_ID, ...) even though that may
@@ -181,6 +248,7 @@ namespace Dune {
       static const TimeSpec res = { 0, 1000 };
       return res;
     }
+#endif
 
     struct ProcessTimeClock {
       TimeSpec (*clock)();

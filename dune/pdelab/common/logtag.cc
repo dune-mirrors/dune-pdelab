@@ -12,7 +12,11 @@
 #include <memory>
 
 #include <sys/types.h>
+#if defined(_WIN32)
+#include <process.h>
+#else
 #include <unistd.h>
+#endif
 
 #if HAVE_MPI
 #include <mpi.h>
@@ -83,6 +87,14 @@ namespace Dune {
         static std::size_t pidwidth = 1;
         return pidwidth;
       }
+
+      int currentPid() {
+#if defined(_WIN32)
+        return _getpid();
+#else
+        return getpid();
+#endif
+      }
     } // anonymous namespace
 
     void logtagSetupMPI(bool syncWidthes) {
@@ -108,7 +120,7 @@ namespace Dune {
         // width of the pid part
         {
           std::ostringstream s;
-          s << getpid();
+          s << currentPid();
           unsigned width = s.str().size();
           MPI_Allreduce(MPI_IN_PLACE, &width, 1, MPI_UNSIGNED, MPI_MAX,
                         MPI_COMM_WORLD);
@@ -136,7 +148,7 @@ namespace Dune {
         try {
           s << std::setfill(' ') << std::setw(pidwidth())
             << std::setiosflags(std::ios_base::dec | std::ios_base::right)
-            << getpid();
+            << currentPid();
         }
         catch(...) { s.fill(fill); }
         s.fill(fill);
