@@ -126,12 +126,12 @@ void forEach(const PDELab::Execution::ParallelPolicy&, Container&& container, Ca
 
       auto tbb_range = forward_range{std::begin(container), std::end(container)};
       if constexpr (Concept::SparseDynamicRange<UContainer>) {
-        tbb::parallel_for(tbb_range ,[&](auto range){
+        tbb::parallel_for(tbb_range ,[&](const forward_range& range){
           for (auto it = std::begin(range); it != std::end(range); ++it)
             invoke(*it, it.index());
         });
       } else if constexpr (Concept::DenseDynamicRange<UContainer>) {
-        tbb::parallel_for(tbb_range, [&](auto range){
+        tbb::parallel_for(tbb_range, [&](const forward_range& range){
           std::size_t i = std::distance(std::begin(container), range.begin());
           for (auto&& entry : range)
             invoke(std::forward<decltype(entry)>(entry), i++);
