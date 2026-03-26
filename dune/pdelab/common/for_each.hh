@@ -132,7 +132,7 @@ void forEach(const PDELab::Execution::ParallelPolicy&, Container&& container, Ca
         });
       } else if constexpr (Concept::DenseDynamicRange<UContainer>) {
         tbb::parallel_for(tbb_range, [&](const forward_range& range){
-          std::size_t i = std::distance(std::begin(container), range.begin());
+          std::size_t i = static_cast<std::size_t>(std::distance(std::begin(container), range.begin()));
           for (auto&& entry : range)
             invoke(std::forward<decltype(entry)>(entry), i++);
         });
