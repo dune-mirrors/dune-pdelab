@@ -14,6 +14,7 @@
 #include <oneapi/tbb/task_group.h>
 #endif
 
+#include <iterator>
 #include <utility>
 
 namespace Dune {
@@ -111,7 +112,7 @@ void forEach(const PDELab::Execution::ParallelPolicy&, Container&& container, Ca
         T end() const {return _end;}
         bool empty() const {return _begin==_end;}
         bool is_divisible() const {return _size>1;}
-        forward_range( T first, T last ) : _begin(first), _end(last), _size(std::distance(first, last)) {}
+        forward_range( T first, T last ) : _begin(first), _end(last), _size(std::ranges::distance(first, last)) {}
         forward_range(forward_range& r, tbb::split) {
           size_t h = r._size/2;
           _end = r._end;
@@ -132,7 +133,7 @@ void forEach(const PDELab::Execution::ParallelPolicy&, Container&& container, Ca
         });
       } else if constexpr (Concept::DenseDynamicRange<UContainer>) {
         tbb::parallel_for(tbb_range, [&](const forward_range& range){
-          std::size_t i = static_cast<std::size_t>(std::distance(std::begin(container), range.begin()));
+          std::size_t i = static_cast<std::size_t>(std::ranges::distance(std::begin(container), range.begin()));
           for (auto&& entry : range)
             invoke(std::forward<decltype(entry)>(entry), i++);
         });
