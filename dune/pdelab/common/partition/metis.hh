@@ -181,7 +181,9 @@ protected:
     // create graph of elements and vertices
     int vertices = 0;
     cells.push_back(vertices);
-    for (const auto& element : entities(_entity_set, Dune::Codim<codim>{}, Dune::partitionSet<pit>())) {
+    for (const auto& element : entities(_entity_set,
+                                        Dune::Codim<codim>{},
+                                        Dune::PartitionSet<Dune::derive_partition_set<pit>::value>{})) {
       const auto& ref_element = referenceElement<double, dimension>(element.type());
       edgecut = std::min<idx_t>(edgecut, ref_element.size(1));
       vertices += ref_element.size(dimension);
