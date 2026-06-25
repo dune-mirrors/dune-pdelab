@@ -1107,11 +1107,30 @@ void BasisTopologicalInterleaving<Node>::collectEntitySizes(const Entity& entity
     using FESwitch = FiniteElementInterfaceSwitch<typename FEM::Traits::FiniteElement>;
     const auto& coeffs = FESwitch::coefficients(finite_element);
 
-    const auto& ref_el = referenceElement(sub_entity.geometry());
+    const auto& ref_el = referenceElement(sub_entity.type());
     for (std::size_t dof = 0; dof != coeffs.size(); ++dof) {
       const LocalKey& key = coeffs.localKey(dof);
-      const size_type gt_index = GlobalGeometryTypeIndex::index(ref_el.type(key.subEntity(), key.codim()));
-      const size_type entity_index = node().gridView().indexSet().subIndex(sub_entity, key.subEntity(), fem_codim + key.codim());
+      size_type gt_index, entity_index;
+
+      // if constexpr (Dune::Capabilities::hasEntity<Grid, codim>::v and fem_codim == 0) {
+        // Dune::Hybrid::switchCases(
+        //   std::make_index_sequence<dim+1>{},
+        //   key.codim(),
+        //   [&](const auto& codim) {
+        //     const auto& sub_entity = entity.template subEntity<codim>(s);
+        //     gt_index = GlobalGeometryTypeIndex::index(sub_entity.type());
+        //     entity_index = node().gridView().indexSet().index(sub_entity);
+        //   });
+      // } else {
+        // NOTE: reference element faces are not always an embedding of the sub-entity. Thus, this only works if all sub-entities have the same geometry type
+        using Grid = typename Node::GridView::Grid;
+        if constexpr (not Dune::Capabilities::hasSingleGeometryType<Grid>::v)
+          if (node().gridView().indexSet().types(fem_codim + key.codim()).size() == 1)
+            DUNE_THROW(NotImplemented, "PreBasisNode::bind does not support multiple geometry types in the same codimension if the grid does not provide entity access for that codimension.");
+        gt_index = GlobalGeometryTypeIndex::index(ref_el.type(key.subEntity(), key.codim()));
+        entity_index = node().gridView().indexSet().subIndex(sub_entity, key.subEntity(), fem_codim + key.codim());
+      // }
+
       const size_type index = asSizeType(geometryTypeOffsets()[gt_index]) + entity_index;
       const size_type next = key.index() + 1;
       validateEntityDofOffset(next);

@@ -256,12 +256,14 @@ namespace Dune::PDELab
   PreBasisNode<ProtoBasis>::PreBasisNode(LocalBasisViewTree<ProtoBasis> &&super, const ProtoBasis &proto_basis)
       : LocalBasisViewTree<ProtoBasis>{std::move(super)}, _proto_basis{proto_basis}
   {
+    std::fill(std::begin(codim_offsets_), std::end(codim_offsets_), 0);
+
     // prepare index cache for binding
     // we need to be able to store all sub-entities indices in the cache
     std::size_t max_entities = 0;
     for (auto gt : _proto_basis.gridView().indexSet().types(0))
     {
-      auto ref_el = referenceElement<double, Element::dimension>(gt);
+      const auto& ref_el = referenceElement<double, Element::dimension>(gt);
       std::size_t entities = 0;
       for (int codim = 0; codim <= Element::dimension; ++codim)
         entities += ref_el.size(codim);
@@ -274,26 +276,39 @@ namespace Dune::PDELab
   template <class ProtoBasis>
   void PreBasisNode<ProtoBasis>::bind(const Element &entity) noexcept
   {
+    std::fill(std::begin(codim_offsets_), std::end(codim_offsets_), 0);
     // find the sub entities with topological associativity
     if (_proto_basis.disjointCodimClosure())
     {
       // DG/FV branch
+      codim_offsets_.back() = 1;
       const size_type gt_index = GlobalGeometryTypeIndex::index(entity.type());
       const size_type entity_index = _proto_basis.gridView().indexSet().index(entity);
       index_cache_[0] = {gt_index, entity_index};
     }
     else
     {
-      std::fill(std::begin(codim_offsets_), std::end(codim_offsets_), 0);
       std::size_t codim_offset = 0;
       Hybrid::forEach(range(index_constant<Element::dimension + 1>{}), [&](auto codim) {
         std::size_t sub_entities = 0;
         if (ProtoBasis::mayContainCodim(codim) and _proto_basis.containsCodim(codim)) {
           sub_entities = entity.subEntities(codim);
+          [[maybe_unused]] const auto& ref_el = referenceElement<double, Element::dimension>(entity.type());
           for (std::size_t s = 0; s != sub_entities; ++s) {
-            const auto& sub_entity = entity.template subEntity<codim>(s);
-            const size_type gt_index = GlobalGeometryTypeIndex::index(sub_entity.type());
-            const size_type entity_index = _proto_basis.gridView().indexSet().index(sub_entity);
+            using Grid = typename ProtoBasis::GridView::Grid;
+            size_type gt_index, entity_index;
+            if constexpr (Dune::Capabilities::hasEntity<Grid, codim>::v) {
+              const auto& sub_entity = entity.template subEntity<codim>(s);
+              gt_index = GlobalGeometryTypeIndex::index(sub_entity.type());
+              entity_index = _proto_basis.gridView().indexSet().index(sub_entity);
+            } else {
+              // NOTE: reference element faces are not always an embedding of the sub-entity. Thus, this only works if all sub-entities have the same geometry type
+              if constexpr (not Dune::Capabilities::hasSingleGeometryType<Grid>::v)
+                if (_proto_basis.gridView().indexSet().types(codim).size() == 1)
+                  DUNE_THROW(NotImplemented, "PreBasisNode::bind does not support multiple geometry types in the same codimension if the grid does not provide entity access for that codimension.");
+              gt_index = GlobalGeometryTypeIndex::index(ref_el.type(s, codim));
+              entity_index = _proto_basis.gridView().indexSet().subIndex(entity, s, codim);
+            }
             index_cache_[codim_offset + s] = {gt_index, entity_index};
           }
         }
