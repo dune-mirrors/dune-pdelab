@@ -181,20 +181,20 @@ protected:
       }
       _patches = std::max<std::size_t>(1,entity_set.size(0) / entities_per_patch);
     }
-    if (_patches == 1) {
-      // all entities in one patch
-      _partition_set = std::make_shared<PartitionSet>();
-
-      // set entity seeds to each assigned patch
+    // all entities in one patch
+    auto set_single_patch = [&]() {
       std::vector<typename Element::EntitySeed> seeds;
       for (const auto& element : elements(_entity_set))
         seeds.emplace_back(element.seed());
 
       _partition_set = std::make_shared<PartitionSet>();
       (*_partition_set)[0] = LabelSet{PatchSet{_entity_set, std::move(seeds)}};
+    };
+
+    if (_patches == 1) {
+      set_single_patch();
       return;
     }
-
 
     const std::size_t dimension = EntitySet::dimension;
     using idx_t = Dune::Metis::idx_t;
@@ -209,7 +209,7 @@ protected:
     nodes.reserve(_entity_set.size(dimension));
 
     // create graph of elements and vertices
-    int vertices = 0;
+    idx_t vertices = 0;
     cells.push_back(vertices);
     for (const auto& element : elements(_entity_set)) {
       const auto& ref_element = referenceElement<double, dimension>(element.type());
@@ -219,11 +219,22 @@ protected:
       seeds.emplace_back(element.seed());
 
       for (int k = 0; k != ref_element.size(dimension); ++k)
-        nodes.push_back(_entity_set.indexSet().subIndex(element, k, dimension));
+        nodes.push_back(static_cast<idx_t>(_entity_set.indexSet().subIndex(element, k, dimension)));
     }
 
     idx_t element_count = cells.size()-1;
-    idx_t node_count = nodes.size();
+    idx_t node_count = static_cast<idx_t>(_entity_set.size(dimension));
+
+    // METIS cannot create more parts than there are graph vertices.
+    if (_patches > static_cast<std::size_t>(element_count))
+      _patches = element_count;
+
+    if (_patches <= 1) {
+      set_single_patch();
+      return;
+    }
+
+    parts = static_cast<idx_t>(_patches);
     element_part.assign(element_count, 0);
     node_part.assign(node_count, 0);
 
