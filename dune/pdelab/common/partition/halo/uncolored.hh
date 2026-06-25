@@ -40,11 +40,6 @@ public:
   template<Dune::Concept::Entity Entity>
   requires (Entity::codimension == 0)
   [[nodiscard]] HaloRegion haloRegion(const Entity& entity) const {
-    if (_halo_distance == all_overlap_halo_region)
-      return EntitySetPartition::HaloRegion::Overlap;
-    else if (_halo_distance == all_interior_halo_region)
-      return EntitySetPartition::HaloRegion::Interior;
-    else
       return (*_entity_in_halo)[_element_mapper->index(entity)]
                 ? EntitySetPartition::HaloRegion::Overlap
                 : EntitySetPartition::HaloRegion::Interior;
@@ -64,10 +59,12 @@ protected:
 
     _element_mapper = std::make_shared<Dune::MultipleCodimMultipleGeomTypeMapper<GV>>(super.entitySet(), mcmgElementLayout());
 
-    // if halo is too big or too small, no need to store region
-    if (_halo_distance == all_overlap_halo_region or _halo_distance == all_interior_halo_region) {
-      _entity_in_halo = nullptr;
-      _element_mapper = nullptr;
+    // if halo is too big or too small, no need to compute it, just fill the vector with the correct value
+    if (_halo_distance == all_overlap_halo_region) {
+      _entity_in_halo = std::make_shared<std::vector<bool>>(super.entitySet().size(0), true);
+      return;
+    } else if(_halo_distance == all_interior_halo_region) {
+      _entity_in_halo = std::make_shared<std::vector<bool>>(super.entitySet().size(0), false);
       return;
     }
 
