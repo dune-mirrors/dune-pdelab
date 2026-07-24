@@ -30,7 +30,7 @@ include:
   duneci-install-module https://gitlab.dune-project.org/core/dune-istl.git
   duneci-install-module https://gitlab.dune-project.org/staging/dune-typetree.git
   duneci-install-module https://gitlab.dune-project.org/staging/dune-functions.git
-  duneci-install-module https://gitlab.dune-project.org/extensions/dune-multidomaingrid.git
+  duneci-install-module https://gitlab.dune-project.org/extensions/dune-multidomaingrid.git -b master
 
 before_script:
   - *dune_setup
