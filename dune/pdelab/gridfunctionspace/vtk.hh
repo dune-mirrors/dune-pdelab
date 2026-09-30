@@ -690,4 +690,7 @@ namespace Dune {
   } // namespace PDELab
 } // namespace Dune
 
+// overloads for dune-functions bases
+#include <dune/pdelab/gridfunctionspace/functions/vtk.hh>
+
 #endif // DUNE_PDELAB_GRIDFUNCTIONSPACE_VTK_HH
