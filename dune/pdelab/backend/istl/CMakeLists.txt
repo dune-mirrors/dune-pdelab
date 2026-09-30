@@ -10,6 +10,7 @@ install(FILES
   descriptors.hh
   dunefunctions.hh
   forwarddeclarations.hh
+  istlsolver.hh
   istlsolverbackend.hh
   matrixhelpers.hh
   novlpistlsolverbackend.hh

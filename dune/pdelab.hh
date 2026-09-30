@@ -167,6 +167,7 @@
 #include <dune/pdelab/backend/istl/patternstatistics.hh>
 #include <dune/pdelab/backend/istl/blockmatrixdiagonal.hh>
 #include <dune/pdelab/backend/istl/dunefunctions.hh>
+#include <dune/pdelab/backend/istl/istlsolver.hh>
 #include <dune/pdelab/backend/istl/istlsolverbackend.hh>
 #include <dune/pdelab/backend/istl/matrixfree/assembledblockjacobipreconditioner.hh>
 #include <dune/pdelab/backend/istl/matrixfree/backends.hh>
