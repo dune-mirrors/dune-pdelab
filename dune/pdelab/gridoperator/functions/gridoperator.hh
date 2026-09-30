@@ -110,7 +110,7 @@ namespace Dune::PDELab {
    * \tparam DF, RF, JF field types of domain, range and jacobian
    * \tparam CU, CV constraints containers (BasisConstraintsContainer or EmptyTransformation)
    *
-   * Not supported (yet): parallel assembly, interpolate(), and local
+   * Not supported (yet): parallel assembly and local
    * operators using doSkeletonTwoSided or *_volume_post_skeleton.
    */
   template<typename GFSU, typename GFSV, typename LOP,
