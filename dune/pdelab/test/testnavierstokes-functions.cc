@@ -31,7 +31,6 @@
 #include <dune/grid/yaspgrid.hh>
 
 #include <dune/functions/functionspacebases/compositebasis.hh>
-#include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
@@ -205,8 +204,11 @@ int main(int argc, char** argv)
         u[0] = 1.0;
       return u;
     };
-    Dune::Functions::interpolate(Dune::Functions::subspaceBasis(basis, _0),
-                                 Dune::PDELab::Backend::native(coefficientVector), velocityLambda);
+    auto velocityFunction = Dune::PDELab::makeGridFunctionFromCallable(gridView, velocityLambda);
+    auto pressureFunction = Dune::PDELab::makeGridFunctionFromCallable(gridView, [](const auto& x){ return 0.0; });
+    Dune::PDELab::CompositeGridFunction<decltype(velocityFunction),decltype(pressureFunction)>
+      boundaryCondition(velocityFunction, pressureFunction);
+    Dune::PDELab::interpolate(boundaryCondition, basis, coefficientVector);
 
     // Create Newton solver
     using LinearSolver = Dune::PDELab::ISTLBackend_SEQ_SuperLU;

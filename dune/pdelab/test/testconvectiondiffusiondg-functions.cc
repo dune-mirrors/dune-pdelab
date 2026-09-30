@@ -6,33 +6,11 @@
 #endif
 
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
-#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 
 #include "dune/pdelab.hh"
 
 // Copy of testconvectiondiffusiondg.cc using a dune-functions basis instead of
 // a PDELab grid function space.
-
-// squared L2 difference of a PDELab grid function and a dune-functions grid function
-template<typename GridView, typename F, typename G>
-double l2DifferenceSquared(const GridView& gridView, const F& f, const G& g, int order)
-{
-  double result = 0.0;
-  auto localG = localFunction(g);
-  for (const auto& element : elements(gridView))
-  {
-    localG.bind(element);
-    const auto geometry = element.geometry();
-    for (const auto& qp : Dune::QuadratureRules<double,GridView::dimension>::rule(element.type(), order))
-    {
-      typename F::Traits::RangeType fValue;
-      f.evaluate(element, qp.position(), fValue);
-      const auto difference = fValue - localG(qp.position());
-      result += difference*difference * qp.weight() * geometry.integrationElement(qp.position());
-    }
-  }
-  return result;
-}
 
 template <typename GridView, typename RangeType>
 class PoissonProblem : public Dune::PDELab::ConvectionDiffusionModelProblem<GridView, RangeType>
@@ -171,9 +149,12 @@ int main(int argc, char** argv)
     //
     // Note: The problem is set up in such a way that the Dirichlet boundary
     // condition is the exact solution of the problem.
-    auto discreteGridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<RangeType>(
-      basis, Dune::PDELab::Backend::native(coefficientVector));
-    const double error = l2DifferenceSquared(gridView, dirichletExtension, discreteGridFunction, 10);
+    using DiscreteGridFunction = Dune::PDELab::DiscreteGridFunction<Basis, CoefficientVector>;
+    DiscreteGridFunction discreteGridFunction(basis, coefficientVector);
+    using DifferenceSquaredAdapter = Dune::PDELab::DifferenceSquaredAdapter<DirichletExtension, DiscreteGridFunction>;
+    DifferenceSquaredAdapter differenceSquaredAdapder(dirichletExtension, discreteGridFunction);
+    DifferenceSquaredAdapter::Traits::RangeType error(0.0);
+    Dune::PDELab::integrateGridFunction(differenceSquaredAdapder, error, 10);
     std::cout << "l2errorsquared matrix based: " << error << std::endl;
 
     // Let the test fail if the error is too large

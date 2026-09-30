@@ -15,9 +15,7 @@
 #include <dune/grid/yaspgrid.hh>
 #include <dune/grid/utility/structuredgridfactory.hh>
 
-#include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
-#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 
 #include <dune/pdelab.hh>
 
@@ -193,11 +191,9 @@ void poisson (const GV& gv, const Basis& basis, std::string filename, int q)
   }
 
   // initialize DOFs from Dirichlet extension
-  // (dune-functions interpolates functions of the global coordinate)
-  Dune::Functions::interpolate(basis,native(x0),[](auto xglobal){
-    xglobal -= 0.5;
-    return exp(-xglobal.two_norm2());
-  });
+  typedef Dune::PDELab::ConvectionDiffusionDirichletExtensionAdapter<Problem> G;
+  G g(gv,problem);
+  Dune::PDELab::interpolate(g,basis,x0);
   Dune::PDELab::set_nonconstrained_dofs(cg,0.0,x0);
 
 
@@ -246,8 +242,9 @@ void poisson (const GV& gv, const Basis& basis, std::string filename, int q)
 
   // output grid function with VTKWriter
   Dune::VTKWriter<GV> vtkwriter(gv,Dune::VTK::conforming);
-  vtkwriter.addVertexData(Dune::Functions::makeDiscreteGlobalBasisFunction<R>(basis,native(x)),
-                          Dune::VTK::FieldInfo("solution",Dune::VTK::FieldInfo::Type::scalar,1));
+  using DGF = Dune::PDELab::DiscreteGridFunction<Basis,DV>;
+  DGF dgf(basis,x);
+  vtkwriter.addVertexData(std::make_shared<Dune::PDELab::VTKGridFunctionAdapter<DGF>>(dgf,"solution"));
   vtkwriter.write(filename,Dune::VTK::ascii);
 }
 

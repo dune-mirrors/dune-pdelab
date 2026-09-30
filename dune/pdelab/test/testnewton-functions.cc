@@ -5,37 +5,14 @@
 #include "config.h"
 #endif
 
-#include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
-#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 
 #include "dune/pdelab.hh"
-
-#include "nonlinearpoissonfem.hh"
 
 // Copy of testnewton.cc using a dune-functions basis instead of a PDELab grid
 // function space.
 
-// squared L2 difference of a PDELab grid function and a dune-functions grid function
-template<typename GridView, typename F, typename G>
-double l2DifferenceSquared(const GridView& gridView, const F& f, const G& g, int order)
-{
-  double result = 0.0;
-  auto localG = localFunction(g);
-  for (const auto& element : elements(gridView))
-  {
-    localG.bind(element);
-    const auto geometry = element.geometry();
-    for (const auto& qp : Dune::QuadratureRules<double,GridView::dimension>::rule(element.type(), order))
-    {
-      typename F::Traits::RangeType fValue;
-      f.evaluate(element, qp.position(), fValue);
-      const auto difference = fValue - localG(qp.position());
-      result += difference*difference * qp.weight() * geometry.integrationElement(qp.position());
-    }
-  }
-  return result;
-}
+#include "nonlinearpoissonfem.hh"
 
 template<typename Number>
 class NonlinearPoissonProblem
@@ -124,8 +101,8 @@ int main(int argc, char** argv)
     CoefficientVector coefficientVector(basis);
 
     // Discrete grid function of solution vetor
-    auto discreteGridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<RangeType>(
-      basis, Dune::PDELab::Backend::native(coefficientVector));
+    using DiscreteGridFunction = Dune::PDELab::DiscreteGridFunction<Basis, CoefficientVector>;
+    DiscreteGridFunction discreteGridFunction(basis, coefficientVector);
 
     // Local operator (problem is nonlinear and problem class depends on the solution)
     using Problem = NonlinearPoissonProblem<RangeType>;
@@ -165,11 +142,9 @@ int main(int argc, char** argv)
                               matrixBackend);
 
     // Get grid function from Dirichlet boundary condition
-    // (dune-functions interpolates functions of the global coordinate)
     auto glambda = [&](const auto& e, const auto& x){return problem.g(e,x);};
     auto boundaryCondition = Dune::PDELab::makeGridFunctionFromCallable(gridView, glambda);
-    Dune::Functions::interpolate(basis, Dune::PDELab::Backend::native(coefficientVector),
-                                 [](const auto& x){ return x.two_norm2(); });
+    Dune::PDELab::interpolate(boundaryCondition, basis, coefficientVector);
     Dune::PDELab::set_nonconstrained_dofs(constraintsContainer, 0.0, coefficientVector);
 
     // Create Netwon solver
@@ -215,14 +190,19 @@ int main(int argc, char** argv)
     Dune::RefinementIntervals subint(2);
     VTKWriter vtkwriter(gridView, subint);
     std::string vtkfile("testnewton-functions");
-    vtkwriter.addVertexData(discreteGridFunction, Dune::VTK::FieldInfo("numerical_solution", Dune::VTK::FieldInfo::Type::scalar, 1));
+    vtkwriter.addVertexData(std::make_shared<Dune::PDELab::VTKGridFunctionAdapter<DiscreteGridFunction>>(
+      discreteGridFunction, "numerical_solution"));
     vtkwriter.write(vtkfile, Dune::VTK::ascii);
 
     // Calculate error
     //
     // Note: The problem is set up in such a way that the Dirichlet boundary
     // condition is the exact solution of the problem.
-    const double error = l2DifferenceSquared(gridView, boundaryCondition, discreteGridFunction, 10);
+    using DifferenceSquaredAdapter = Dune::PDELab::DifferenceSquaredAdapter<decltype(boundaryCondition),
+                                                                            DiscreteGridFunction>;
+    DifferenceSquaredAdapter differenceSquaredAdapder(boundaryCondition, discreteGridFunction);
+    DifferenceSquaredAdapter::Traits::RangeType error(0.0);
+    Dune::PDELab::integrateGridFunction(differenceSquaredAdapder, error, 10);
     std::cout << "l2errorsquared: " << error << std::endl;
 
     // Let the test fail if the error is too large
