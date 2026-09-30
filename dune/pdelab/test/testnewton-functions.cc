@@ -115,7 +115,7 @@ int main(int argc, char** argv)
     ConstraintsContainer constraintsContainer;
     auto blambda = [&](const auto& i, const auto& x){return problem.b(i,x);};
     auto bctype = Dune::PDELab::makeBoundaryConditionFromCallable(gridView, blambda);
-    Dune::PDELab::addBoundaryDirichletConstraints(basis, constraintsContainer, bctype);
+    Dune::PDELab::constraints(bctype, basis, constraintsContainer);
 
     // Print number of DOFs
     std::cout << "basis with " << basis.size() << " dofs generated  "<< std::endl;
@@ -190,8 +190,8 @@ int main(int argc, char** argv)
     Dune::RefinementIntervals subint(2);
     VTKWriter vtkwriter(gridView, subint);
     std::string vtkfile("testnewton-functions");
-    vtkwriter.addVertexData(std::make_shared<Dune::PDELab::VTKGridFunctionAdapter<DiscreteGridFunction>>(
-      discreteGridFunction, "numerical_solution"));
+    Dune::PDELab::addSolutionToVTKWriter(vtkwriter, basis, coefficientVector,
+                                         Dune::PDELab::vtk::defaultNameScheme());
     vtkwriter.write(vtkfile, Dune::VTK::ascii);
 
     // Calculate error

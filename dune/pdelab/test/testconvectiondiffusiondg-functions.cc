@@ -90,6 +90,7 @@ int main(int argc, char** argv)
     using ConstraintsContainer = Dune::PDELab::BasisConstraintsContainer<Basis, RangeType>;
     ConstraintsContainer constraintsContainer;
     constraintsContainer.clear();
+    Dune::PDELab::constraints(basis, constraintsContainer);
 
     // Grid operator
     using std::pow;

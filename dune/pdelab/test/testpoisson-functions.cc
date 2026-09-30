@@ -160,7 +160,7 @@ void poisson (const GV& gv, const Basis& basis, std::string filename, int q)
   C cg;
   cg.clear();
   Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<Problem> bctype(gv,problem);
-  Dune::PDELab::addBoundaryDirichletConstraints(basis,cg,bctype);
+  Dune::PDELab::constraints(bctype,basis,cg);
 
   // make local operator
   typedef Dune::PDELab::ConvectionDiffusionFEM<Problem,FEM> LOP;
@@ -242,9 +242,7 @@ void poisson (const GV& gv, const Basis& basis, std::string filename, int q)
 
   // output grid function with VTKWriter
   Dune::VTKWriter<GV> vtkwriter(gv,Dune::VTK::conforming);
-  using DGF = Dune::PDELab::DiscreteGridFunction<Basis,DV>;
-  DGF dgf(basis,x);
-  vtkwriter.addVertexData(std::make_shared<Dune::PDELab::VTKGridFunctionAdapter<DGF>>(dgf,"solution"));
+  Dune::PDELab::addSolutionToVTKWriter(vtkwriter,basis,x);
   vtkwriter.write(filename,Dune::VTK::ascii);
 }
 

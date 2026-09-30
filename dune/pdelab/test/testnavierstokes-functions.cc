@@ -34,7 +34,6 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
-#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 
 #include <dune/pdelab.hh>
 
@@ -105,14 +104,13 @@ template<typename GV, typename VelocityFunction>
 double kineticEnergy(const GV& gridView, const VelocityFunction& velocity)
 {
   double energy = 0.0;
-  auto localVelocity = localFunction(velocity);
   for (const auto& element : elements(gridView))
   {
     const auto geometry = element.geometry();
-    localVelocity.bind(element);
     for (const auto& qp : Dune::QuadratureRules<double,GV::dimension>::rule(element.type(), 6))
     {
-      auto u = localVelocity(qp.position());
+      typename VelocityFunction::Traits::RangeType u;
+      velocity.evaluate(element, qp.position(), u);
       energy += 0.5 * u.two_norm2() * qp.weight() * geometry.integrationElement(qp.position());
     }
   }
@@ -152,12 +150,12 @@ int main(int argc, char** argv)
     // Constraints: velocity Dirichlet on the whole boundary, no pressure boundary conditions
     auto bux = Dune::PDELab::makeBoundaryConditionFromCallable(gridView, [](const auto& x){ return true; });
     auto buy = Dune::PDELab::makeBoundaryConditionFromCallable(gridView, [](const auto& x){ return true; });
+    auto bu = Dune::PDELab::CompositeConstraintsParameters<decltype(bux),decltype(buy)>(bux, buy);
     auto bp = Dune::PDELab::makeBoundaryConditionFromCallable(gridView, [](const auto& x){ return false; });
+    auto bconstraints = Dune::PDELab::CompositeConstraintsParameters<decltype(bu),decltype(bp)>(bu, bp);
     using ConstraintsContainer = Dune::PDELab::BasisConstraintsContainer<Basis, RangeType>;
     ConstraintsContainer constraintsContainer;
-    Dune::PDELab::addBoundaryDirichletConstraints(Dune::Functions::subspaceBasis(basis, _0, 0), constraintsContainer, bux);
-    Dune::PDELab::addBoundaryDirichletConstraints(Dune::Functions::subspaceBasis(basis, _0, 1), constraintsContainer, buy);
-    Dune::PDELab::addBoundaryDirichletConstraints(Dune::Functions::subspaceBasis(basis, _1), constraintsContainer, bp);
+    Dune::PDELab::constraints(bconstraints, basis, constraintsContainer);
 
     // Fix the first pressure DOF of the first element (the pressure is determined up to a constant)
     {
@@ -226,15 +224,15 @@ int main(int argc, char** argv)
     Dune::RefinementIntervals subint(2);
     VTKWriter vtkwriter(gridView, subint);
     std::string vtkfile("testnavierstokes-functions");
-    auto velocity = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<RangeType,dim>>(
-      Dune::Functions::subspaceBasis(basis, _0), Dune::PDELab::Backend::native(coefficientVector));
-    auto pressure = Dune::Functions::makeDiscreteGlobalBasisFunction<RangeType>(
-      Dune::Functions::subspaceBasis(basis, _1), Dune::PDELab::Backend::native(coefficientVector));
-    vtkwriter.addVertexData(velocity, Dune::VTK::FieldInfo("velocity", Dune::VTK::FieldInfo::Type::vector, dim));
-    vtkwriter.addVertexData(pressure, Dune::VTK::FieldInfo("pressure", Dune::VTK::FieldInfo::Type::scalar, 1));
+    Dune::PDELab::addSolutionToVTKWriter(vtkwriter, basis, coefficientVector,
+                                         Dune::PDELab::vtk::defaultNameScheme());
     vtkwriter.write(vtkfile, Dune::VTK::ascii);
 
     // Kinetic energy of the solution
+    auto velocitySubGFS = Dune::Functions::subspaceBasis(basis, _0);
+    using VelocitySubGFS = decltype(velocitySubGFS);
+    using VelocityDGF = Dune::PDELab::VectorDiscreteGridFunction<VelocitySubGFS, CoefficientVector>;
+    VelocityDGF velocity(velocitySubGFS, coefficientVector);
     const double energy = kineticEnergy(gridView, velocity);
     std::cout << "kinetic energy: " << std::setprecision(12) << energy << std::endl;
 
