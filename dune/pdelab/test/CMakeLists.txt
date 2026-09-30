@@ -46,6 +46,11 @@ dune_add_test(SOURCES testdunefunctionsgfs.cc
               MPI_RANKS 1 2 4
               TIMEOUT 300)
 
+dune_add_test(SOURCES testgridoperator-functions-poisson.cc)
+dune_add_test(SOURCES testgridoperator-functions-stokes.cc)
+dune_add_test(SOURCES testgridoperator-functions-blocked.cc)
+dune_add_test(SOURCES testgridoperator-functions-solvers.cc)
+
 dune_add_test(SOURCES testelectrodynamic.cc
               CMD_ARGS "${CMAKE_CURRENT_SOURCE_DIR}/grids/circ_in_rect.msh"
               CMAKE_GUARD dune-alugrid_FOUND SUPERLU_FOUND)
