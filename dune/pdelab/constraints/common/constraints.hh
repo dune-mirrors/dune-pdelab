@@ -1044,4 +1044,7 @@ namespace Dune {
   } // namespace PDELab
 } // namespace Dune
 
+// overloads for dune-functions bases
+#include <dune/pdelab/constraints/common/functions/constraints.hh>
+
 #endif // DUNE_PDELAB_CONSTRAINTS_COMMON_CONSTRAINTS_HH

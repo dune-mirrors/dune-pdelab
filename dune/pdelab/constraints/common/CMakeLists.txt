@@ -1,3 +1,5 @@
+add_subdirectory(functions)
+
 install(FILES constraints.hh
               constraintsparameters.hh
               constraintstransformation.hh
