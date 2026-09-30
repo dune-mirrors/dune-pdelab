@@ -8,6 +8,8 @@
 
 #include <dune/common/exceptions.hh>
 
+#include <dune/geometry/referenceelements.hh>
+
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 
@@ -17,6 +19,7 @@
 
 #include <dune/pdelab/backend/common/spacetraits.hh>
 #include <dune/pdelab/backend/interface.hh>
+#include <dune/pdelab/common/geometrywrapper.hh>
 #include <dune/pdelab/constraints/common/constraints.hh>
 #include <dune/pdelab/constraints/common/constraintstransformation.hh>
 #include <dune/pdelab/gridoperator/common/assemblerutilities.hh>
@@ -54,6 +57,30 @@ namespace Dune::PDELab {
   {
     Dune::Functions::forEachBoundaryDOF(basis, [&](const auto& index) {
       constraints[index];
+    });
+  }
+
+  /** \brief Mark the DOFs on the Dirichlet part of the boundary as constrained
+   *
+   * \param basis        a global basis or a subspace basis
+   * \param constraints  constraints container indexed by the multi-indices of the root basis
+   * \param bc           PDELab boundary condition, e.g. from makeBoundaryConditionFromCallable()
+   *                     or ConvectionDiffusionBoundaryConditionAdapter
+   *
+   * As for ConformingDirichletConstraints, bc.isDirichlet(intersection, x) is evaluated at
+   * the center x of each boundary intersection, and all DOFs of Dirichlet intersections
+   * are constrained.
+   */
+  template<class Basis, class CC, class BC>
+  void addBoundaryDirichletConstraints(const Basis& basis, CC& constraints, const BC& bc)
+  {
+    using Intersection = typename Basis::GridView::Intersection;
+    Dune::Functions::forEachBoundaryDOF(basis, [&](auto&& localIndex, const auto& localView, const Intersection& intersection) {
+      IntersectionGeometry<Intersection> ig(intersection,
+        Impl::Functions::intersectionIndex(basis.gridView(), intersection));
+      const auto center = referenceElement(intersection.geometry()).position(0,0);
+      if (bc.isDirichlet(ig, center))
+        constraints[localView.index(localIndex)];
     });
   }
 
