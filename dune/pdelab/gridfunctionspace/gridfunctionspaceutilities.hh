@@ -1582,4 +1582,7 @@ namespace Dune {
   } // namespace PDELab
 } // namespace Dune
 
+// overloads for dune-functions bases
+#include <dune/pdelab/gridfunctionspace/functions/discretegridfunction.hh>
+
 #endif // DUNE_PDELAB_GRIDFUNCTIONSPACE_GRIDFUNCTIONSPACEUTILITIES_HH

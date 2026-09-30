@@ -219,4 +219,7 @@ namespace Dune {
   } // namespace PDELab
 } // namespace Dune
 
+// overloads for dune-functions bases
+#include <dune/pdelab/gridfunctionspace/functions/interpolate.hh>
+
 #endif // DUNE_PDELAB_GRIDFUNCTIONSPACE_INTERPOLATE_HH

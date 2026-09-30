@@ -1,3 +1,5 @@
+add_subdirectory(functions)
+
 install(FILES compositegridfunctionspace.hh
               dunefunctionsgridfunctionspace.hh
               dunefunctionslfsindexcache.hh
