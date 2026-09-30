@@ -32,6 +32,19 @@
  * \warning This is experimental.
  */
 
+namespace Dune::PDELab {
+
+  /** \brief Common base of the local function space adapter nodes
+   *
+   * Makes Dune::PDELab an associated namespace of the adapter nodes, so that
+   * unqualified calls of PDELab helpers with a local function space argument
+   * in local operators (e.g. makeJacobianContainer(lfsu)) are found by
+   * argument-dependent lookup, as for the PDELab local function spaces.
+   */
+  struct FunctionsBasisLocalFunctionSpaceTag {};
+
+} // namespace Dune::PDELab
+
 namespace Dune::PDELab::Impl::Functions {
 
   // Existing local operators call child(lfs,i) unqualified and rely on
@@ -102,6 +115,7 @@ namespace Dune::PDELab::Impl::Functions {
   //! Common part of all adapter nodes
   template<class Space, class Node>
   class LocalFunctionSpaceNodeBase
+    : public FunctionsBasisLocalFunctionSpaceTag
   {
   public:
     using size_type = std::size_t;
