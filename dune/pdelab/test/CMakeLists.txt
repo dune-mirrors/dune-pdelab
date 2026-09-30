@@ -15,6 +15,9 @@ dune_add_test(SOURCES testconvectiondiffusiondg.cc
 dune_add_test(SOURCES testnewton.cc
               CMAKE_GUARD SUPERLU_FOUND)
 
+dune_add_test(SOURCES testnavierstokes.cc
+              CMAKE_GUARD SUPERLU_FOUND)
+
 dune_add_test(SOURCES testoldnewton.cc
               CMAKE_GUARD SUPERLU_FOUND)
 
