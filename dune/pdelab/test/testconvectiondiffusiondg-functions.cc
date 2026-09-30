@@ -1,0 +1,195 @@
+// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+// vi: set et ts=4 sw=2 sts=2:
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <dune/functions/functionspacebases/lagrangedgbasis.hh>
+#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
+
+#include "dune/pdelab.hh"
+
+// Copy of testconvectiondiffusiondg.cc using a dune-functions basis instead of
+// a PDELab grid function space.
+
+// squared L2 difference of a PDELab grid function and a dune-functions grid function
+template<typename GridView, typename F, typename G>
+double l2DifferenceSquared(const GridView& gridView, const F& f, const G& g, int order)
+{
+  double result = 0.0;
+  auto localG = localFunction(g);
+  for (const auto& element : elements(gridView))
+  {
+    localG.bind(element);
+    const auto geometry = element.geometry();
+    for (const auto& qp : Dune::QuadratureRules<double,GridView::dimension>::rule(element.type(), order))
+    {
+      typename F::Traits::RangeType fValue;
+      f.evaluate(element, qp.position(), fValue);
+      const auto difference = fValue - localG(qp.position());
+      result += difference*difference * qp.weight() * geometry.integrationElement(qp.position());
+    }
+  }
+  return result;
+}
+
+template <typename GridView, typename RangeType>
+class PoissonProblem : public Dune::PDELab::ConvectionDiffusionModelProblem<GridView, RangeType>
+{
+public:
+  // Source term
+  template<typename Element, typename Coord>
+  auto f(const Element& element, const Coord& x) const
+  {
+    auto global = element.geometry().global(x);
+    auto c = (0.5-global[0])*(0.5-global[0]) + (0.5-global[1])*(0.5-global[1]);
+    using std::exp;
+    auto g = exp(-1.0*c);
+    auto f = 4*(1.0-c)*g;
+    return f;
+  }
+
+  // Boundary condition type
+  template<typename Element, typename Coord>
+  auto bctype(const Element& element, const Coord& x) const
+  {
+    return Dune::PDELab::ConvectionDiffusionBoundaryConditions::Dirichlet;
+  }
+
+  // Dirichlet extension
+  template<typename Element, typename Coord>
+  RangeType g (const Element& element, const Coord& x) const
+  {
+    auto global = element.geometry().global(x);
+    auto c = (0.5-global[0])*(0.5-global[0]) + (0.5-global[1])*(0.5-global[1]);
+    using std::exp;
+    auto g = exp(-1.0*c);
+    return g;
+  }
+};
+
+
+int main(int argc, char** argv)
+{
+  try{
+     // Maybe initialize mpi
+    Dune::MPIHelper::instance(argc, argv);
+
+    // Create grid
+    const int dim = 2;
+    Dune::FieldVector<double,dim> lowerleft(0.0);
+    Dune::FieldVector<double,dim> upperright(1.0);
+    auto cells = Dune::filledArray<dim,unsigned int>(16);
+    using Grid = Dune::YaspGrid<dim>;
+    auto grid = Dune::StructuredGridFactory<Grid>::createCubeGrid(lowerleft, upperright, cells);
+    grid -> globalRefine(0);
+    using GridView = Grid::LeafGridView;
+    GridView gridView = grid -> leafGridView();
+
+    // Basis (flat indices; there is no equivalent of the fixed blocking per element)
+    using DomainField = GridView::Grid::ctype;
+    using RangeType = double;
+    const int degree = 1;
+    auto basis = Dune::Functions::BasisFactory::makeBasis(gridView, Dune::Functions::BasisFactory::lagrangeDG<degree>());
+    using Basis = decltype(basis);
+    using FiniteElementMap = Dune::PDELab::FiniteElementMapFor<typename Basis::LocalView::Tree::FiniteElement>;
+
+    // Local operator
+    using Problem = PoissonProblem<GridView, RangeType>;
+    Problem problem;
+    using LocalOperator = Dune::PDELab::ConvectionDiffusionDG<Problem, FiniteElementMap>;
+    LocalOperator localOperator(problem);
+
+    // This were the old default values
+    //
+    // LocalOperator localOperator(problem,
+    //                             Dune::PDELab::ConvectionDiffusionDGMethod::NIPG,
+    //                             Dune::PDELab::ConvectionDiffusionDGWeights::weightsOff,
+    //                             0.0);
+
+   // Create constraints map
+    using ConstraintsContainer = Dune::PDELab::BasisConstraintsContainer<Basis, RangeType>;
+    ConstraintsContainer constraintsContainer;
+    constraintsContainer.clear();
+
+    // Grid operator
+    using std::pow;
+    const int dofestimate = pow(2, dim) * basis.localView().maxSize();
+    using MatrixBackend = Dune::PDELab::ISTL::BCRSMatrixBackend<>;
+    MatrixBackend matrixBackend(dofestimate);
+    using GridOperator = Dune::PDELab::GridOperator<Basis,
+                                                    Basis,
+                                                    LocalOperator,
+                                                    MatrixBackend,
+                                                    DomainField,
+                                                    RangeType,
+                                                    RangeType,
+                                                    ConstraintsContainer,
+                                                    ConstraintsContainer>;
+    GridOperator gridOperator(basis,
+                              constraintsContainer,
+                              basis,
+                              constraintsContainer,
+                              localOperator,
+                              matrixBackend);
+    std::cout << "basis with " << basis.size() << " dofs generated  "<< std::endl;
+    std::cout << "cc with " << constraintsContainer.size() << " dofs generated  "<< std::endl;
+
+    // Solution vector
+    //
+    // Note: In the DG case we do not need to set the boundary values to the
+    // Dirichlet boundary condition values. We create the DirichletExtension
+    // anyway since we use it as exact solution in the error calculation. We
+    // keep the code here to make it as similar to the non-DG case as possible.
+    using CoefficientVector = Dune::PDELab::Backend::Vector<Basis, DomainField>;
+    CoefficientVector coefficientVector(basis);
+    coefficientVector = 0.0;
+    using DirichletExtension = Dune::PDELab::ConvectionDiffusionDirichletExtensionAdapter<Problem>;
+    DirichletExtension dirichletExtension(gridView, problem);
+
+    // Solve matrix-based
+    const int verbosity = 0;
+    using LinearSolver = Dune::PDELab::ISTLBackend_SEQ_SuperLU;
+    LinearSolver linearSolver(verbosity);
+    using Solver = Dune::PDELab::StationaryLinearProblemSolver<GridOperator, LinearSolver, CoefficientVector>;
+
+    const double reduction = 1e-12;
+    Solver solver(gridOperator, linearSolver, coefficientVector, reduction);
+    solver.apply();
+
+    // // Visualization
+    // using VTKWriter = Dune::SubsamplingVTKWriter<GridView>;
+    // Dune::RefinementIntervals subint(1);
+    // VTKWriter vtkwriter(gridView, subint);
+    // std::string vtkfile("matrix_free_nonfast");
+    // Dune::PDELab::addSolutionToVTKWriter(vtkwriter, gridFunctionSpace, coefficientVector,
+    //                                      Dune::PDELab::vtk::defaultNameScheme());
+    // vtkwriter.write(vtkfile, Dune::VTK::ascii);
+
+    // Calculate error
+    //
+    // Note: The problem is set up in such a way that the Dirichlet boundary
+    // condition is the exact solution of the problem.
+    auto discreteGridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<RangeType>(
+      basis, Dune::PDELab::Backend::native(coefficientVector));
+    const double error = l2DifferenceSquared(gridView, dirichletExtension, discreteGridFunction, 10);
+    std::cout << "l2errorsquared matrix based: " << error << std::endl;
+
+    // Let the test fail if the error is too large
+    bool testfail(false);
+    using std::abs;
+    using std::isnan;
+    if (isnan(error) or abs(error)>1e-6)
+      testfail = true;
+    return testfail;
+  }
+  catch (Dune::Exception &e){
+    std::cerr << "Dune reported error: " << e << std::endl;
+        return 1;
+  }
+  catch (...){
+    std::cerr << "Unknown exception thrown!" << std::endl;
+        return 1;
+  }
+}

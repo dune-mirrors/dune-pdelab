@@ -11,11 +11,17 @@ dune_add_test(SOURCES testchecklopinterface.cc)
 
 dune_add_test(SOURCES testconvectiondiffusiondg.cc
               CMAKE_GUARD SUPERLU_FOUND)
+dune_add_test(SOURCES testconvectiondiffusiondg-functions.cc
+              CMAKE_GUARD SUPERLU_FOUND)
 
 dune_add_test(SOURCES testnewton.cc
               CMAKE_GUARD SUPERLU_FOUND)
+dune_add_test(SOURCES testnewton-functions.cc
+              CMAKE_GUARD SUPERLU_FOUND)
 
 dune_add_test(SOURCES testnavierstokes.cc
+              CMAKE_GUARD SUPERLU_FOUND)
+dune_add_test(SOURCES testnavierstokes-functions.cc
               CMAKE_GUARD SUPERLU_FOUND)
 
 dune_add_test(SOURCES testoldnewton.cc
@@ -52,7 +58,6 @@ dune_add_test(SOURCES testdunefunctionsgfs.cc
 dune_add_test(SOURCES testgridoperator-functions-poisson.cc)
 dune_add_test(SOURCES testgridoperator-functions-stokes.cc)
 dune_add_test(SOURCES testgridoperator-functions-blocked.cc)
-dune_add_test(SOURCES testgridoperator-functions-solvers.cc)
 
 dune_add_test(SOURCES testelectrodynamic.cc
               CMD_ARGS "${CMAKE_CURRENT_SOURCE_DIR}/grids/circ_in_rect.msh"
@@ -102,6 +107,9 @@ add_dune_alberta_flags(testpk WORLDDIM 2)
 dune_add_test(SOURCES testpoisson.cc
               COMPILE_DEFINITIONS GRIDSDIR=\"${CMAKE_CURRENT_SOURCE_DIR}/grids\")
 add_dune_alberta_flags(testpoisson WORLDDIM 2)
+dune_add_test(SOURCES testpoisson-functions.cc
+              COMPILE_DEFINITIONS GRIDSDIR=\"${CMAKE_CURRENT_SOURCE_DIR}/grids\")
+add_dune_alberta_flags(testpoisson-functions WORLDDIM 2)
 
 dune_add_test(SOURCES testpoisson-multidomain.cc
               COMPILE_DEFINITIONS
