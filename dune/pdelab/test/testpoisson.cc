@@ -407,15 +407,15 @@ int main(int argc, char** argv)
     }
 #endif
 
-	// test passed
-	return 0;
+    // test passed
+    return 0;
   }
   catch (Dune::Exception &e){
     std::cerr << "Dune reported error: " << e << std::endl;
-	return 1;
+    return 1;
   }
   catch (...){
     std::cerr << "Unknown exception thrown!" << std::endl;
-	return 1;
+    return 1;
   }
 }
