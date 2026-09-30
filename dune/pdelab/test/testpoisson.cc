@@ -166,13 +166,8 @@ void poisson (const GV& gv, const FEM& fem, std::string filename, int q)
   typedef Dune::PDELab::ConvectionDiffusionFEM<Problem,FEM> LOP;
   LOP lop(problem);
 
-#ifdef OLD_BACKEND
-  typedef Dune::PDELab::ISTLMatrixBackend MBE;
-  MBE mbe;
-#else
   typedef Dune::PDELab::ISTL::BCRSMatrixBackend<> MBE;
   MBE mbe(27); // 27 is too large / correct for all test cases, so should work fine
-#endif
 
   // make grid operator
   typedef Dune::PDELab::GridOperator<GFS,GFS,LOP,
@@ -212,9 +207,7 @@ void poisson (const GV& gv, const FEM& fem, std::string filename, int q)
     Dune::Timer patternTimer;
     M m1(gridoperator);
     std::cout << "pattern creation:" << patternTimer.elapsed() << std::endl;
-#ifndef OLD_BACKEND
     std::cout << m1.patternStatistics() << std::endl;
-#endif
     M m2(m1);
     m2 = 0.0;
     m = m1;
@@ -235,18 +228,6 @@ void poisson (const GV& gv, const FEM& fem, std::string filename, int q)
   Dune::SeqSSOR<typename M::Container,typename DV::Container,typename RV::Container> ssor(native(m),1,1.0);
   Dune::SeqILU<typename M::Container,typename DV::Container,typename RV::Container> ilu0(native(m),1.0);
   Dune::Richardson<typename DV::Container,typename RV::Container> richardson(1.0);
-
-//   typedef Dune::Amg::CoarsenCriterion<Dune::Amg::SymmetricCriterion<M,
-//     Dune::Amg::FirstDiagonal> > Criterion;
-//   typedef Dune::SeqSSOR<M,V,V> Smoother;
-//   typedef typename Dune::Amg::SmootherTraits<Smoother>::Arguments SmootherArgs;
-//   SmootherArgs smootherArgs;
-//   smootherArgs.iterations = 2;
-//   int maxlevel = 20, coarsenTarget = 100;
-//   Criterion criterion(maxlevel, coarsenTarget);
-//   criterion.setMaxDistance(2);
-//   typedef Dune::Amg::AMG<Dune::MatrixAdapter<M,V,V>,V,Smoother> AMG;
-//   AMG amg(opa,criterion,smootherArgs,1,1);
 
   Dune::CGSolver<typename DV::Container> solvera(opa,ilu0,1E-10,5000,2);
   // FIXME: Use ISTLOnTheFlyOperator in the second solver again
