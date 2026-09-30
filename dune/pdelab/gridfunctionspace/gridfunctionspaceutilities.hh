@@ -709,6 +709,17 @@ namespace Dune {
 
     };
 
+    namespace Impl {
+
+      //! Default number of components of a VectorDiscreteGridFunction on T
+      template<typename T>
+      struct VectorDiscreteGridFunctionDimension
+      {
+        static constexpr std::size_t value = TypeTree::StaticDegree<T>::value;
+      };
+
+    } // namespace Impl
+
     /** \brief DiscreteGridFunction for vector-valued functions
      *
      * convert a power function space of scalar function spaces into a
@@ -720,12 +731,7 @@ namespace Dune {
      * \tparam dimR Force a different number of components for the resulting
      *              GridFunction than the PowerGridFunctionSpace.
      */
-#ifdef __clang__
-    // clang is too stupid to correctly apply the constexpr qualifier of staticDegree in this context
-    template<typename T, typename X, std::size_t dimR = TypeTree::StaticDegree<T>::value>
-#else
-    template<typename T, typename X, std::size_t dimR = TypeTree::StaticDegree<T>::value>
-#endif
+    template<typename T, typename X, std::size_t dimR = Impl::VectorDiscreteGridFunctionDimension<T>::value>
     class VectorDiscreteGridFunction
       : public GridFunctionBase<
           GridFunctionTraits<
