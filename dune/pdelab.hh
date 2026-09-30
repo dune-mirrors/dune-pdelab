@@ -243,6 +243,7 @@
 #include <dune/pdelab/finiteelementmap/variablemonomfem.hh>
 #include <dune/pdelab/boilerplate/pdelab.hh>
 #include <dune/pdelab/gridoperator/gridoperator.hh>
+#include <dune/pdelab/gridoperator/legacy/gridoperator.hh>
 #include <dune/pdelab/gridoperator/onestep/residualengine.hh>
 #include <dune/pdelab/gridoperator/onestep/localassembler.hh>
 #include <dune/pdelab/gridoperator/onestep/jacobianengine.hh>
@@ -264,11 +265,11 @@
 #include <dune/pdelab/gridoperator/fastdg/patternengine.hh>
 #include <dune/pdelab/gridoperator/fastdg/jacobianapplyengine.hh>
 #include <dune/pdelab/gridoperator/onestep.hh>
-#include <dune/pdelab/gridoperator/default/residualengine.hh>
-#include <dune/pdelab/gridoperator/default/localassembler.hh>
-#include <dune/pdelab/gridoperator/default/jacobianengine.hh>
-#include <dune/pdelab/gridoperator/default/assembler.hh>
-#include <dune/pdelab/gridoperator/default/patternengine.hh>
-#include <dune/pdelab/gridoperator/default/jacobianapplyengine.hh>
+#include <dune/pdelab/gridoperator/legacy/residualengine.hh>
+#include <dune/pdelab/gridoperator/legacy/localassembler.hh>
+#include <dune/pdelab/gridoperator/legacy/jacobianengine.hh>
+#include <dune/pdelab/gridoperator/legacy/assembler.hh>
+#include <dune/pdelab/gridoperator/legacy/patternengine.hh>
+#include <dune/pdelab/gridoperator/legacy/jacobianapplyengine.hh>
 
 #endif // DUNE_PDELAB_HH

@@ -1,6 +1,7 @@
 add_subdirectory(common)
 add_subdirectory(default)
 add_subdirectory(fastdg)
+add_subdirectory(legacy)
 add_subdirectory(onestep)
 
 install(FILES fastdg.hh
