@@ -4,9 +4,15 @@
 
 #include <dune/common/typetraits.hh>
 #include <dune/common/shared_ptr.hh>
+#include <dune/common/version.hh>
 #if DUNE_VERSION_GTE(ISTL,2,8)
 #include <dune/istl/blocklevel.hh>
 #endif
+#include <dune/common/typetraits.hh>
+
+#include <dune/assembler/backends/istlmatrixbackend.hh>
+
+#include <dune/pdelab/backend/common/spacetraits.hh>
 #include <dune/pdelab/backend/common/tags.hh>
 #include <dune/pdelab/backend/common/uncachedmatrixview.hh>
 #include <dune/pdelab/backend/common/aliasedmatrixview.hh>
@@ -18,12 +24,79 @@ namespace Dune {
 
     namespace ISTL {
 
+#ifndef DOXYGEN
+      // pattern used for grid function spaces; bases set up the matrix via dune-assembler
+      template<typename C, typename GFSV, typename GFSU>
+      struct wrapper_pattern_type
+      {
+        typedef typename ISTL::build_pattern_type<C,GFSV,GFSU,typename GFSV::Ordering::ContainerAllocationTag>::type type;
+      };
+
+      template<typename C, typename GFSV, typename GFSU>
+        requires Dune::PDELab::Impl::DuneFunctionsBasis<GFSV>
+      struct wrapper_pattern_type<C,GFSV,GFSU>
+      {
+        typedef void type;
+      };
+
+      // Clear a row of a matrix addressed by an outer-to-inner multi-index
+      // (dune-functions bases) and write the diagonal entry if it exists.
+      // clearBlock clears the whole block row (as clear_row_block).
+      template<typename C, typename MI, typename E>
+      void clear_matrix_row_multiindex(C& c, const MI& ri, const E& diagonal_entry, bool clearBlock)
+      {
+        using Block = typename C::block_type;
+        auto& row = c[ri[0]];
+        auto diagonal = row.find(ri[0]);
+        if constexpr (Dune::IsNumber<Block>::value)
+        {
+          assert(ri.size() == 1);
+          for (auto& entry : row)
+            entry = 0.0;
+          if (diagonal != row.end())
+            *diagonal = diagonal_entry;
+        }
+        else
+        {
+          static_assert(Dune::IsNumber<typename Block::field_type>::value and requires { Block::rows; },
+            "clear_row is only implemented for BCRSMatrix with scalar or FieldMatrix blocks");
+          assert(ri.size() == 2);
+          for (auto& block : row)
+          {
+            if (clearBlock)
+              block = 0.0;
+            else
+              block[ri[1]] = 0.0;
+          }
+          if (diagonal != row.end())
+          {
+            if (clearBlock)
+              for (int i = 0; i < Block::rows; ++i)
+                (*diagonal)[i][i] = diagonal_entry;
+            else
+              (*diagonal)[ri[1]][ri[1]] = diagonal_entry;
+          }
+        }
+      }
+#endif // DOXYGEN
+
+      /** \brief PDELab wrapper around a native ISTL BCRS matrix
+       *
+       * \tparam GFSV test space (rows): PDELab grid function space or dune-functions basis
+       * \tparam GFSU trial space (columns): PDELab grid function space or dune-functions basis
+       *
+       * Element access is delegated to the dune-assembler ISTL matrix
+       * backend, see Impl::SpaceTraits for the index conventions.
+       */
       template<typename GFSV, typename GFSU, typename C, typename Stats>
       class BCRSMatrix
         : public Backend::impl::Wrapper<C>
       {
 
         friend Backend::impl::Wrapper<C>;
+
+        using RowTraits = Dune::PDELab::Impl::SpaceTraits<GFSV>;
+        using ColTraits = Dune::PDELab::Impl::SpaceTraits<GFSU>;
 
       public:
 
@@ -37,10 +110,10 @@ namespace Dune {
         typedef GFSU TrialGridFunctionSpace;
         typedef GFSV TestGridFunctionSpace;
 
-        typedef typename GFSV::Ordering::Traits::ContainerIndex RowIndex;
-        typedef typename GFSU::Ordering::Traits::ContainerIndex ColIndex;
+        typedef typename RowTraits::ContainerIndex RowIndex;
+        typedef typename ColTraits::ContainerIndex ColIndex;
 
-        typedef typename ISTL::build_pattern_type<C,GFSV,GFSU,typename GFSV::Ordering::ContainerAllocationTag>::type Pattern;
+        typedef typename ISTL::wrapper_pattern_type<C,GFSV,GFSU>::type Pattern;
 
         typedef Stats PatternStatistics;
 
@@ -211,12 +284,14 @@ namespace Dune {
 
         E& operator()(const RowIndex& ri, const ColIndex& ci)
         {
-          return ISTL::access_matrix_element(ISTL::container_tag(*_container),*_container,ri,ci,ri.size()-1,ci.size()-1);
+          return Dune::Assembler::ISTLMatrixBackend<Container>(*_container)(
+            RowTraits::upstreamIndex(ri, blockLevel<C>()), ColTraits::upstreamIndex(ci, blockLevel<C>()));
         }
 
         const E& operator()(const RowIndex& ri, const ColIndex& ci) const
         {
-          return ISTL::access_matrix_element(ISTL::container_tag(*_container),*_container,ri,ci,ri.size()-1,ci.size()-1);
+          const Dune::Assembler::ISTLMatrixBackend<Container> backend(*_container);
+          return backend(RowTraits::upstreamIndex(ri, blockLevel<C>()), ColTraits::upstreamIndex(ci, blockLevel<C>()));
         }
 
       private:
@@ -253,14 +328,24 @@ namespace Dune {
 
         void clear_row(const RowIndex& ri, const E& diagonal_entry)
         {
-          ISTL::clear_matrix_row(ISTL::container_tag(*_container),*_container,ri,ri.size()-1);
-          ISTL::write_matrix_element_if_exists(diagonal_entry,ISTL::container_tag(*_container),*_container,ri,ri,ri.size()-1,ri.size()-1);
+          if constexpr (Dune::PDELab::Impl::DuneFunctionsBasis<GFSV>)
+            ISTL::clear_matrix_row_multiindex(*_container,ri,diagonal_entry,false);
+          else
+          {
+            ISTL::clear_matrix_row(ISTL::container_tag(*_container),*_container,ri,ri.size()-1);
+            ISTL::write_matrix_element_if_exists(diagonal_entry,ISTL::container_tag(*_container),*_container,ri,ri,ri.size()-1,ri.size()-1);
+          }
         }
 
         void clear_row_block(const RowIndex& ri, const E& diagonal_entry)
         {
-          ISTL::clear_matrix_row_block(ISTL::container_tag(*_container),*_container,ri,ri.size()-1);
-          ISTL::write_matrix_element_if_exists_to_block(diagonal_entry,ISTL::container_tag(*_container),*_container,ri,ri,ri.size()-1,ri.size()-1);
+          if constexpr (Dune::PDELab::Impl::DuneFunctionsBasis<GFSV>)
+            ISTL::clear_matrix_row_multiindex(*_container,ri,diagonal_entry,true);
+          else
+          {
+            ISTL::clear_matrix_row_block(ISTL::container_tag(*_container),*_container,ri,ri.size()-1);
+            ISTL::write_matrix_element_if_exists_to_block(diagonal_entry,ISTL::container_tag(*_container),*_container,ri,ri,ri.size()-1,ri.size()-1);
+          }
         }
 
       private:

@@ -2,6 +2,10 @@
 #ifndef DUNE_PDELAB_BACKEND_ISTL_BCRSMATRIXBACKEND_HH
 #define DUNE_PDELAB_BACKEND_ISTL_BCRSMATRIXBACKEND_HH
 
+#include <algorithm>
+#include <type_traits>
+
+#include <dune/pdelab/backend/common/spacetraits.hh>
 #include <dune/pdelab/backend/istl/bcrsmatrix.hh>
 #include <dune/pdelab/backend/istl/bcrspattern.hh>
 #include <dune/pdelab/backend/istl/patternstatistics.hh>
@@ -224,6 +228,43 @@ namespace Dune {
         template<typename GridOperator, typename Matrix>
         std::vector<Statistics> buildPattern(const GridOperator& grid_operator, Matrix& matrix) const
         {
+          if constexpr (Dune::PDELab::Impl::DuneFunctionsBasis<typename GridOperator::Traits::TestGridFunctionSpace>)
+            return buildPatternFromGridOperator(grid_operator, matrix);
+          else
+            return buildPatternFromOrderings(grid_operator, matrix);
+        }
+
+        //! Constructs a BCRSMatrixBackend.
+        /**
+         * TODO: Document and flesh out the way this should work for nested matrices (use a nested array as entries_per_row).
+         *
+         * \param entries_per_row  The average number of nonzero entries per row in matrices created with this backend.
+         */
+        BCRSMatrixBackend(const EntriesPerRow& entries_per_row)
+          : _entries_per_row(entries_per_row)
+        {}
+
+      private:
+
+        // dune-functions bases: the grid operator sets up the native matrix (via dune-assembler)
+        template<typename GridOperator, typename Matrix>
+        std::vector<Statistics> buildPatternFromGridOperator(const GridOperator& grid_operator, Matrix& matrix) const
+        {
+          auto& native = Backend::native(matrix);
+          grid_operator.setupMatrixPattern(native);
+          size_type longestRow = 0;
+          for (auto row = native.begin(); row != native.end(); ++row)
+            longestRow = std::max<size_type>(longestRow, row->size());
+          size_type estimate = 0;
+          if constexpr (std::is_convertible_v<EntriesPerRow,size_type>)
+            estimate = _entries_per_row;
+          return {Statistics(native.nonzeroes(), longestRow, 0, estimate, native.N())};
+        }
+
+        // grid function spaces: pattern from the orderings
+        template<typename GridOperator, typename Matrix>
+        std::vector<Statistics> buildPatternFromOrderings(const GridOperator& grid_operator, Matrix& matrix) const
+        {
           Pattern<
             Matrix,
             typename GridOperator::Traits::TestGridFunctionSpace,
@@ -239,18 +280,6 @@ namespace Dune {
                                );
           return stats;
         }
-
-        //! Constructs a BCRSMatrixBackend.
-        /**
-         * TODO: Document and flesh out the way this should work for nested matrices (use a nested array as entries_per_row).
-         *
-         * \param entries_per_row  The average number of nonzero entries per row in matrices created with this backend.
-         */
-        BCRSMatrixBackend(const EntriesPerRow& entries_per_row)
-          : _entries_per_row(entries_per_row)
-        {}
-
-      private:
 
         EntriesPerRow _entries_per_row;
 

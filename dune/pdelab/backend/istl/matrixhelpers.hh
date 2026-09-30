@@ -9,6 +9,7 @@
 #include <unordered_set>
 
 #include <dune/common/fmatrix.hh>
+#include <dune/common/typetraits.hh>
 #include <dune/istl/bcrsmatrix.hh>
 
 #include <dune/pdelab/ordering/orderingbase.hh>
@@ -46,6 +47,14 @@ namespace Dune {
       struct recursive_build_matrix_type<E,RV,CV,1>
       {
         typedef Dune::FieldMatrix<E,RV::dimension,CV::dimension> type;
+      };
+
+      // vectors with scalar blocks, e.g. for flat dune-functions bases
+      template<typename E, typename B1, typename A1, typename B2, typename A2>
+        requires (Dune::IsNumber<B1>::value and Dune::IsNumber<B2>::value)
+      struct recursive_build_matrix_type<E,Dune::BlockVector<B1,A1>,Dune::BlockVector<B2,A2>,1>
+      {
+        typedef Dune::BCRSMatrix<E> type;
       };
 
 

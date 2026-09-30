@@ -10,6 +10,7 @@
 #include <dune/functions/backends/istlvectorbackend.hh>
 
 #include <dune/pdelab/backend/interface.hh>
+#include <dune/pdelab/backend/common/spacetraits.hh>
 #include <dune/pdelab/backend/common/tags.hh>
 #include <dune/pdelab/backend/common/uncachedvectorview.hh>
 #include <dune/pdelab/backend/common/aliasedvectorview.hh>
@@ -24,10 +25,22 @@ namespace Dune {
   namespace PDELab {
     namespace ISTL {
 
+      /** \brief PDELab wrapper around a native ISTL vector
+       *
+       * \tparam GFS PDELab grid function space or dune-functions global basis
+       * \tparam C   native ISTL vector type
+       *
+       * Sizing and element access are delegated to the dune-functions ISTL
+       * vector backend. Entries are addressed by the container indices of
+       * the grid function space (inner to outer) or the global multi-indices
+       * of the basis (outer to inner), see Impl::SpaceTraits.
+       */
       template<typename GFS, typename C>
       class BlockVector
         : public Backend::impl::Wrapper<C>
       {
+
+        using SpaceTraits = Dune::PDELab::Impl::SpaceTraits<GFS>;
 
         friend Backend::impl::Wrapper<C>;
 
@@ -42,7 +55,7 @@ namespace Dune {
 
         using value_type = E;
 
-        typedef typename GFS::Ordering::Traits::ContainerIndex ContainerIndex;
+        typedef typename SpaceTraits::ContainerIndex ContainerIndex;
 
         typedef ISTL::vector_iterator<C> iterator;
         typedef ISTL::vector_iterator<const C> const_iterator;
@@ -62,7 +75,7 @@ namespace Dune {
 
         BlockVector(const BlockVector& rhs)
           : _gfs(rhs._gfs)
-          , _container(std::make_shared<Container>(_gfs->ordering().blockCount()))
+          , _container(std::make_shared<Container>())
         {
           resize();
           (*_container) = rhs.native();
@@ -137,10 +150,7 @@ namespace Dune {
         void resize()
         {
           assert(_gfs);
-          auto b = Functions::istlVectorBackend(*_container);
-          SizeProviderAdapter size_provider{_gfs->orderingStorage()};
-          static_assert(decltype(size_provider)::ContainerIndexOrder == MultiIndexOrder::Outer2Inner);
-          b.resize(size_provider);
+          SpaceTraits::resize(*_gfs, *_container);
         }
 
         void detach()
@@ -238,12 +248,12 @@ namespace Dune {
 
         E& operator[](const ContainerIndex& ci)
         {
-          return ISTL::access_vector_element(ISTL::container_tag(*_container),*_container,ci,ci.size()-1);
+          return Dune::Functions::istlVectorBackend(*_container)[SpaceTraits::upstreamIndex(ci)];
         }
 
         const E& operator[](const ContainerIndex& ci) const
         {
-          return ISTL::access_vector_element(ISTL::container_tag(*_container),*_container,ci,ci.size()-1);
+          return Dune::Functions::istlVectorBackend(std::as_const(*_container))[SpaceTraits::upstreamIndex(ci)];
         }
 
         typename Dune::template FieldTraits<E>::real_type two_norm2() const
@@ -379,6 +389,17 @@ namespace Dune {
         struct BackendVectorSelectorHelper<ISTL::VectorBackend<blocking,block_size>, GFS, E>
           : public ISTL::BlockVectorSelectorHelper<GFS,E>
         {};
+
+        // dune-functions bases use ISTL vectors with the block structure given by the basis
+        template<typename Basis, typename E>
+          requires Dune::PDELab::Impl::DuneFunctionsBasis<Basis>
+        struct BackendVectorSelector<Basis, E>
+        {
+          using Native = typename Dune::PDELab::Impl::SpaceTraits<Basis>::template NativeVector<E>;
+          static_assert(requires { typename Native::block_type; },
+            "The container of this basis is not supported by the PDELab ISTL vector wrapper (e.g. MultiTypeBlockVector)");
+          using Type = ISTL::BlockVector<Basis, Native>;
+        };
 
       } // namespace impl
     } // namespace Backend
