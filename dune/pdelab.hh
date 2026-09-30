@@ -244,6 +244,7 @@
 #include <dune/pdelab/boilerplate/pdelab.hh>
 #include <dune/pdelab/gridoperator/gridoperator.hh>
 #include <dune/pdelab/gridoperator/legacy/gridoperator.hh>
+#include <dune/pdelab/gridoperator/functions/gridoperator.hh>
 #include <dune/pdelab/gridoperator/onestep/residualengine.hh>
 #include <dune/pdelab/gridoperator/onestep/localassembler.hh>
 #include <dune/pdelab/gridoperator/onestep/jacobianengine.hh>
