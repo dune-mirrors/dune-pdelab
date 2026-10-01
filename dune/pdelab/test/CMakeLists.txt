@@ -62,6 +62,8 @@ dune_add_test(SOURCES testgridoperator-functions-poisson.cc)
 dune_add_test(SOURCES testgridoperator-functions-stokes.cc)
 dune_add_test(SOURCES testgridoperator-functions-blocked.cc)
 
+dune_add_test(SOURCES testseqistlsolverbackends.cc)
+
 dune_add_test(SOURCES testgridoperator-functions-instationary.cc
               CMAKE_GUARD SUPERLU_FOUND)
 
