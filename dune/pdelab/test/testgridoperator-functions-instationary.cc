@@ -7,6 +7,11 @@
  * implicit method, explicit_jacobian_residual of an explicit method, and
  * complete time steps. Continuous Galerkin with Dirichlet constraints and
  * DG with skeleton terms, for a time dependent convection-diffusion problem.
+ *
+ * Multi-stage methods assemble the constant part of a stage (all previous
+ * stages) in one grid traversal; this is compared with the stage residual
+ * assembled by hand from the spatial and temporal grid operators, also for
+ * FastDGGridOperator.
  */
 
 #include "config.h"
@@ -28,7 +33,9 @@
 
 #include <dune/pdelab.hh>
 
+#include "convectiondiffusionfastdg.hh"
 #include "gridoperatorfunctionstesthelpers.hh"
+#include "l2fastdg.hh"
 
 using namespace Dune;
 using namespace Dune::PDELab::FunctionsBasisTest;
@@ -250,6 +257,63 @@ void implicitSteps(IGO& igo, const PDELab::TimeSteppingParameterInterface<double
   }
 }
 
+// The stage residual c_r + b_rr dt A(z,t_r) + M(z,t_r) of every stage, assembled
+// by hand from the spatial (go0) and temporal (go1) grid operators, compared
+// with the residual of the one step operator after preStage. Checks that the
+// constant part of all previous stages is assembled correctly (in one traversal).
+template<typename IGO, typename GO0, typename GO1, typename Space>
+void compareWithHandAssembly(Checker& checker, const std::string& name, IGO& igo, const GO0& go0, const GO1& go1,
+                             const PDELab::TimeSteppingParameterInterface<double>& method, const Space& space)
+{
+  using V = typename IGO::Traits::Domain;
+  auto& lop0 = go0.localAssembler().localOperator();
+  auto& lop1 = go1.localAssembler().localOperator();
+  const double t = 0.3, dt = 0.1;
+  igo.preStep(method, t, dt);
+
+  std::vector<V> x(method.s(), V(space, 0.0));
+  std::vector<V*> xp;
+  for (unsigned int s = 0; s < method.s(); ++s)
+  {
+    randomize(PDELab::Backend::native(x[s]), 30 + s);
+    xp.push_back(&x[s]);
+  }
+  V z(space);
+  randomize(PDELab::Backend::native(z), 40);
+  const auto n = flatValues(PDELab::Backend::native(z)).size();
+  std::vector<std::size_t> identity(n);
+  for (std::size_t i = 0; i < n; ++i)
+    identity[i] = i;
+
+  for (unsigned int r = 1; r <= method.s(); ++r)
+  {
+    V reference(space, 0.0), part(space, 0.0);
+    auto add = [&](const V& u, double time, double w0, double w1) {
+      lop0.setTime(time);
+      lop1.setTime(time);
+      part = 0.0;
+      go0.residual(u, part);
+      reference.axpy(w0, part);
+      part = 0.0;
+      go1.residual(u, part);
+      reference.axpy(w1, part);
+    };
+    for (unsigned int s = 0; s < r; ++s)
+      add(x[s], t + method.d(s)*dt, method.b(r,s)*dt, method.a(r,s));
+    add(z, t + method.d(r)*dt, method.b(r,r)*dt, 1.0);
+
+    std::vector<V*> previous(xp.begin(), xp.begin() + r);
+    igo.preStage(r, previous);
+    V residual(space, 0.0);
+    igo.residual(z, residual);
+    auto flat = flatValues(PDELab::Backend::native(residual));
+    checker.compareVectors(PDELab::Backend::native(reference), flat, identity,
+                           name + " " + method.name() + " stage " + std::to_string(r) + " residual vs. hand assembly");
+    igo.postStage();
+  }
+  igo.postStep();
+}
+
 template<typename GV>
 void testContinuousGalerkin(Checker& checker, const GV& gv)
 {
@@ -309,8 +373,14 @@ void testContinuousGalerkin(Checker& checker, const GV& gv)
     Pair<decltype(igo),decltype(figo),GFS,Basis> p{igo, figo, gfs, basis, perm};
     PDELab::OneStepThetaParameter<double> theta(0.5);
     PDELab::Alexander2Parameter<double> alexander2;
+    PDELab::Alexander3Parameter<double> alexander3;
+    PDELab::FractionalStepParameter<double> fractionalStep;
     compareImplicit(checker, "CG", p, theta);
     compareImplicit(checker, "CG", p, alexander2);
+    compareImplicit(checker, "CG", p, alexander3);
+    compareImplicit(checker, "CG", p, fractionalStep);
+    compareWithHandAssembly(checker, "CG grid function space", igo, go0, go1, alexander3, gfs);
+    compareWithHandAssembly(checker, "CG basis", figo, fgo0, fgo1, alexander3, basis);
 
     V x(gfs, 0.0);
     FV fx(basis, 0.0);
@@ -326,7 +396,9 @@ void testContinuousGalerkin(Checker& checker, const GV& gv)
     PDELab::OneStepGridOperator<FGO0,FGO1,false> figo(fgo0, fgo1);
     Pair<decltype(igo),decltype(figo),GFS,Basis> p{igo, figo, gfs, basis, perm};
     PDELab::HeunParameter<double> heun;
+    PDELab::RK4Parameter<double> rk4;
     compareExplicit(checker, "CG", p, heun);
+    compareExplicit(checker, "CG", p, rk4);
   }
 }
 
@@ -384,7 +456,11 @@ void testDG(Checker& checker, const GV& gv)
   PDELab::OneStepGridOperator<FGO0,FGO1> figo(fgo0, fgo1);
   Pair<decltype(igo),decltype(figo),GFS,Basis> p{igo, figo, gfs, basis, perm};
   PDELab::Alexander2Parameter<double> alexander2;
+  PDELab::Alexander3Parameter<double> alexander3;
   compareImplicit(checker, "DG", p, alexander2);
+  compareImplicit(checker, "DG", p, alexander3);
+  compareWithHandAssembly(checker, "DG grid function space", igo, go0, go1, alexander3, gfs);
+  compareWithHandAssembly(checker, "DG basis", figo, fgo0, fgo1, alexander3, basis);
 
   V x(gfs, 0.0);
   FV fx(basis, 0.0);
@@ -394,6 +470,62 @@ void testDG(Checker& checker, const GV& gv)
   implicitSteps(igo, alexander2, x, g);
   implicitSteps(figo, alexander2, fx, g);
   checker.compareVectors(PDELab::Backend::native(x), PDELab::Backend::native(fx), perm, "DG Alexander2 three time steps");
+}
+
+// FastDG and GridOperator assemble the same DG discretization on a grid function space
+template<typename GV>
+void testFastDG(Checker& checker, const GV& gv)
+{
+  std::cout << "=== FastDG vs. GridOperator, DG Q1" << std::endl;
+  const int dim = GV::dimension;
+  using P = Problem<GV,double>;
+  P problem;
+  using G = PDELab::ConvectionDiffusionDirichletExtensionAdapter<P>;
+  G g(gv, problem);
+  using MB = PDELab::ISTL::BCRSMatrixBackend<>;
+  MB mb(9);
+  using FEM = PDELab::QkDGLocalFiniteElementMap<typename GV::ctype,double,1,dim>;
+  FEM fem;
+  const int blocksize = QkStuff::QkSize<1,dim>::value;
+  using VBE = PDELab::ISTL::VectorBackend<PDELab::ISTL::Blocking::fixed, blocksize>;
+  using GFS = PDELab::GridFunctionSpace<GV,FEM,PDELab::NoConstraints,VBE>;
+  GFS gfs(gv, fem);
+  const auto method = PDELab::ConvectionDiffusionDGMethod::SIPG;
+  const auto weights = PDELab::ConvectionDiffusionDGWeights::weightsOn;
+
+  using LOP = PDELab::ConvectionDiffusionDG<P,FEM>;
+  LOP lop(problem, method, weights, 2.0);
+  PDELab::L2 mlop;
+  using FastLOP = PDELab::ConvectionDiffusionFastDG<P,FEM>;
+  FastLOP fastLop(problem, method, weights, 2.0);
+  PDELab::L2FastDG fastMlop(2);
+  using GO0 = PDELab::GridOperator<GFS,GFS,LOP,MB,double,double,double>;
+  using GO1 = PDELab::GridOperator<GFS,GFS,PDELab::L2,MB,double,double,double>;
+  using FastGO0 = PDELab::FastDGGridOperator<GFS,GFS,FastLOP,MB,double,double,double,PDELab::EmptyTransformation,PDELab::EmptyTransformation>;
+  using FastGO1 = PDELab::FastDGGridOperator<GFS,GFS,PDELab::L2FastDG,MB,double,double,double,PDELab::EmptyTransformation,PDELab::EmptyTransformation>;
+  GO0 go0(gfs, gfs, lop, mb);
+  GO1 go1(gfs, gfs, mlop, mb);
+  FastGO0 fastGo0(gfs, gfs, fastLop, mb);
+  FastGO1 fastGo1(gfs, gfs, fastMlop, mb);
+  PDELab::OneStepGridOperator<GO0,GO1> igo(go0, go1);
+  PDELab::OneStepGridOperator<FastGO0,FastGO1> fastIgo(fastGo0, fastGo1);
+
+  PDELab::Alexander3Parameter<double> alexander3;
+  compareWithHandAssembly(checker, "FastDG", fastIgo, fastGo0, fastGo1, alexander3, gfs);
+
+  using V = PDELab::Backend::Vector<GFS,double>;
+  V x(gfs, 0.0), fastX(gfs, 0.0);
+  problem.setTime(0.0);
+  PDELab::interpolate(g, gfs, x);
+  fastX = x;
+  implicitSteps(igo, alexander3, x, g);
+  implicitSteps(fastIgo, alexander3, fastX, g);
+  const auto values = flatValues(PDELab::Backend::native(x));
+  std::vector<std::size_t> identity(values.size());
+  for (std::size_t i = 0; i < values.size(); ++i)
+    identity[i] = i;
+  checker.compareVectors(PDELab::Backend::native(x), flatValues(PDELab::Backend::native(fastX)), identity,
+                         "FastDG vs. GridOperator Alexander3 three time steps");
 }
 
 int main(int argc, char** argv)
@@ -409,6 +541,7 @@ int main(int argc, char** argv)
     Checker checker(1e-10);
     testContinuousGalerkin(checker, gv);
     testDG(checker, gv);
+    testFastDG(checker, gv);
     return checker.result();
   }
   catch (Exception& e) {

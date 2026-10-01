@@ -19,6 +19,7 @@
 #include <map>
 #include <random>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -31,14 +32,17 @@
 
 namespace Dune::PDELab::FunctionsBasisTest {
 
-  //! entries of a PDELab ISTL vector (native BlockVector<FieldVector<K,1>>), flattened
+  //! entries of an ISTL vector of scalars or blocks (e.g. native BlockVector<FieldVector<K,n>>), flattened
   template<class NativeVector>
   std::vector<double> flatValues(const NativeVector& v)
   {
     std::vector<double> result;
     for (const auto& block : v)
-      for (const auto& entry : block)
-        result.push_back(entry);
+      if constexpr (std::is_arithmetic_v<std::decay_t<decltype(block)>>)
+        result.push_back(block);
+      else
+        for (const auto& entry : block)
+          result.push_back(entry);
     return result;
   }
 
@@ -140,8 +144,11 @@ namespace Dune::PDELab::FunctionsBasisTest {
     std::mt19937 gen(seed);
     std::uniform_real_distribution<double> dist(-1.0,1.0);
     for (auto& block : v)
-      for (auto& entry : block)
-        entry = dist(gen);
+      if constexpr (std::is_arithmetic_v<std::decay_t<decltype(block)>>)
+        block = dist(gen);
+      else
+        for (auto& entry : block)
+          entry = dist(gen);
   }
 
   //! transfer a PDELab native vector to a flat dune-functions vector using perm
