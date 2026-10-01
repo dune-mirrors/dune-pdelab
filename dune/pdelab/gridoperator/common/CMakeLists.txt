@@ -5,4 +5,5 @@ install(FILES assembler.hh
               gridoperatorutilities.hh
               localassemblerenginebase.hh
               localmatrix.hh
+              multiresidual.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/pdelab/gridoperator/common)
