@@ -7,6 +7,7 @@
 #include <optional>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include <dune/common/exceptions.hh>
 
@@ -348,6 +349,89 @@ namespace Dune::PDELab::Impl::Functions {
     std::optional<TestSpace> lfsv_, lfsvn_;
     LocalVector<Field,TrialSpaceTag> xl_, xn_;
     LocalVector<Field,TestSpaceTag> rl_, rn_;
+  };
+
+
+  /** \brief dune-assembler vector assembler for the sum of residuals of several coefficient vectors
+   *
+   * Combines one ResidualLocalAssembler per coefficient vector in a single
+   * grid traversal: the local views are bound once, every copy gathers its
+   * coefficients, and before copy j evaluates the local operator, prepare(j)
+   * is called (e.g. to set the time and the weights of the local operator).
+   * All copies add into the same local vector.
+   *
+   * \tparam Single  ResidualLocalAssembler for one coefficient vector
+   * \tparam Prepare callable prepare(std::size_t j)
+   */
+  template<class Single, class Prepare>
+  class MultiResidualLocalAssembler
+  {
+  public:
+    MultiResidualLocalAssembler(std::vector<Single> copies, Prepare& prepare)
+      : copies_(std::move(copies)), prepare_(&prepare)
+    {}
+
+    template<class LocalView>
+    void bindLocalView(const LocalView& localView)
+    {
+      for (auto& copy : copies_)
+        copy.bindLocalView(localView);
+    }
+
+    template<class LocalView>
+      requires requires(Single& copy, const LocalView& localView) { copy.bindOutsideLocalView(localView); }
+    void bindOutsideLocalView(const LocalView& localView)
+    {
+      for (auto& copy : copies_)
+        copy.bindOutsideLocalView(localView);
+    }
+
+    template<class Element>
+    void bindElement(const Element& element)
+    {
+      for (auto& copy : copies_)
+        copy.bindElement(element);
+    }
+
+    template<class Element, class TargetVector>
+    void assembleElementVector(const Element& element, TargetVector& localVector)
+    {
+      for (std::size_t j = 0; j < copies_.size(); ++j)
+      {
+        (*prepare_)(j);
+        copies_[j].assembleElementVector(element, localVector);
+      }
+    }
+
+    template<class Intersection, class TargetVector>
+      requires requires(Single& copy, const Intersection& intersection, TargetVector& localVector) {
+        copy.assembleBoundaryIntersectionVector(intersection, localVector);
+      }
+    void assembleBoundaryIntersectionVector(const Intersection& intersection, TargetVector& localVector)
+    {
+      for (std::size_t j = 0; j < copies_.size(); ++j)
+      {
+        (*prepare_)(j);
+        copies_[j].assembleBoundaryIntersectionVector(intersection, localVector);
+      }
+    }
+
+    template<class Intersection, class TargetVectors>
+      requires requires(Single& copy, const Intersection& intersection, TargetVectors& localVectors) {
+        copy.assembleInteriorIntersectionVector(intersection, localVectors);
+      }
+    void assembleInteriorIntersectionVector(const Intersection& intersection, TargetVectors& localVectors)
+    {
+      for (std::size_t j = 0; j < copies_.size(); ++j)
+      {
+        (*prepare_)(j);
+        copies_[j].assembleInteriorIntersectionVector(intersection, localVectors);
+      }
+    }
+
+  private:
+    std::vector<Single> copies_;
+    Prepare* prepare_;
   };
 
 

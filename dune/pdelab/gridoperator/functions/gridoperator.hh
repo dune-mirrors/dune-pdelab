@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <type_traits>
+#include <vector>
 
 #include <dune/common/exceptions.hh>
 
@@ -269,6 +270,41 @@ namespace Dune::PDELab {
     mutable LocalAssembler local_assembler_;
     MB backend_;
   };
+
+  namespace Impl {
+
+    /** \brief Add the residuals of several coefficient vectors to r in a single grid traversal
+     *
+     * GridOperator on dune-functions bases, see gridoperator/common/multiresidual.hh.
+     * prepare(j) is called before the contributions of xs[j] are evaluated.
+     */
+    template<typename GFSU, typename GFSV, typename LOP,
+             typename MB, typename DF, typename RF, typename JF,
+             typename CU, typename CV, typename Prepare>
+      requires (Impl::DuneFunctionsBasis<GFSU> and Impl::DuneFunctionsBasis<GFSV>)
+    void accumulateResiduals(const GridOperator<GFSU,GFSV,LOP,MB,DF,RF,JF,CU,CV>& go,
+                             const std::vector<const typename GridOperator<GFSU,GFSV,LOP,MB,DF,RF,JF,CU,CV>::Traits::Domain*>& xs,
+                             typename GridOperator<GFSU,GFSV,LOP,MB,DF,RF,JF,CU,CV>::Traits::Range& r,
+                             Prepare& prepare)
+    {
+      if (xs.empty())
+        return;
+      const auto& gfsu = go.trialGridFunctionSpace();
+      const auto& gfsv = go.testGridFunctionSpace();
+      const auto& lop = go.localAssembler().localOperator();
+      using X = decltype(Dune::Functions::istlVectorBackend(Backend::native(*xs.front())));
+      using Single = Impl::Functions::ResidualLocalAssembler<LOP, X, GFSV, GFSU>;
+      std::vector<Single> copies;
+      copies.reserve(xs.size());
+      for (const auto* x : xs)
+        copies.push_back(Impl::Functions::makeResidualAssembler(lop, Dune::Functions::istlVectorBackend(Backend::native(*x)), gfsv, gfsu));
+      Impl::Functions::MultiResidualLocalAssembler<Single, Prepare> localAssembler(std::move(copies), prepare);
+      auto rBackend = Dune::Assembler::ISTLVectorBackend(Backend::native(r));
+      Dune::Assembler::Assembler<GFSV,GFSU>(gfsv, gfsu).assembleVectorEntries(localAssembler, rBackend);
+      constrain_residual(go.localAssembler().testConstraints(), r);
+    }
+
+  } // namespace Impl
 
 } // namespace Dune::PDELab
 
