@@ -30,6 +30,9 @@ dune_add_test(SOURCES testoldnewton.cc
 dune_add_test(SOURCES testinstationary.cc
               CMAKE_GUARD SUPERLU_FOUND)
 
+dune_add_test(SOURCES testinstationary-functions.cc
+              CMAKE_GUARD SUPERLU_FOUND)
+
 dune_add_test(SOURCES testanalytic.cc)
 
 dune_add_test(SOURCES testbindtime.cc)
@@ -58,6 +61,9 @@ dune_add_test(SOURCES testdunefunctionsgfs.cc
 dune_add_test(SOURCES testgridoperator-functions-poisson.cc)
 dune_add_test(SOURCES testgridoperator-functions-stokes.cc)
 dune_add_test(SOURCES testgridoperator-functions-blocked.cc)
+
+dune_add_test(SOURCES testgridoperator-functions-instationary.cc
+              CMAKE_GUARD SUPERLU_FOUND)
 
 dune_add_test(SOURCES testelectrodynamic.cc
               CMD_ARGS "${CMAKE_CURRENT_SOURCE_DIR}/grids/circ_in_rect.msh"
