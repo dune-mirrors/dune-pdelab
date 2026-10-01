@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <tuple>
 #include <vector>
 
@@ -13,6 +14,7 @@
 #include <dune/pdelab/constraints/common/constraints.hh>
 #include <dune/pdelab/gridfunctionspace/genericdatahandle.hh>
 #include <dune/pdelab/gridoperator/common/gridoperatorutilities.hh>
+#include <dune/pdelab/gridoperator/common/multiresidual.hh>
 #include <dune/pdelab/gridoperator/gridoperator.hh>
 #include <dune/pdelab/instationary/onestep.hh>
 #include <dune/pdelab/instationary/onestepparameter.hh>
@@ -192,19 +194,18 @@ namespace Dune{
         lop0_.preStage(timeAtStage(stage), stage);
         lop1_.preStage(timeAtStage(stage), stage);
 
-        constResidual_ = 0.0;
-        // TODO: one grid traversal per previous stage; a local assembler for
-        // several coefficient vectors would need only one traversal.
+        // all previous stages in one grid traversal
+        std::vector<Contribution> contributions;
         for (unsigned int s = 0; s < stage; ++s)
         {
           const Real b = method().b(stage, s);
           const Real a = method().a(stage, s);
-          if (not nonzero(b) and not nonzero(a))
-            continue;
-          setTime(timeAtStage(s));
-          setWeights(nonzero(b) ? b * dtFactor0_ : 0.0, nonzero(a) ? a * dtFactor1_ : 0.0);
-          inner_.residual(*x[s], constResidual_);
+          if (nonzero(b) or nonzero(a))
+            contributions.push_back({x[s], timeAtStage(s),
+                                     nonzero(b) ? b * dtFactor0_ : 0.0, nonzero(a) ? a * dtFactor1_ : 0.0});
         }
+        constResidual_ = 0.0;
+        accumulate(contributions, constResidual_);
       }
 
       //! Assemble the residual of the current stage
@@ -259,26 +260,23 @@ namespace Dune{
         lop0_.preStage(timeAtStage(stage), stage);
         lop1_.preStage(timeAtStage(stage), stage);
 
-        r0 = 0.0;
-        r1 = 0.0;
-        // TODO: up to 2r+1 grid traversals; with a system assembly for a
-        // matrix and two vectors this would need a single traversal.
+        // spatial and temporal parts of the previous stages, one grid traversal each
+        // TODO: with a system assembly (a matrix and two vectors) the stage would
+        // need a single traversal instead of three.
+        std::vector<Contribution> spatial, temporal;
         for (unsigned int s = 0; s < stage; ++s)
         {
           const Real b = method().b(stage, s);
           const Real a_rs = method().a(stage, s);
-          setTime(timeAtStage(s));
           if (nonzero(b))
-          {
-            setWeights(b * dtFactor0_, 0.0);
-            inner_.residual(*x[s], r0);
-          }
+            spatial.push_back({x[s], timeAtStage(s), b * dtFactor0_, 0.0});
           if (nonzero(a_rs))
-          {
-            setWeights(0.0, a_rs * dtFactor1_);
-            inner_.residual(*x[s], r1);
-          }
+            temporal.push_back({x[s], timeAtStage(s), 0.0, a_rs * dtFactor1_});
         }
+        r0 = 0.0;
+        r1 = 0.0;
+        accumulate(spatial, r0);
+        accumulate(temporal, r1);
 
         lop1_.setTime(timeAtStage(stage));
         setWeights(0.0, -1.0);
@@ -392,6 +390,36 @@ namespace Dune{
     private:
 
       enum DTAssemblingMode { DivideOperator1ByDT, MultiplyOperator0ByDT, DoNotAssembleDT };
+
+      // contribution of a previous stage: solution, time, weights of both local operators
+      struct Contribution
+      {
+        const Domain* x;
+        Real time;
+        Real w0;
+        Real w1;
+      };
+
+      // r += sum of the residuals of the contributions, in one grid traversal if
+      // the inner grid operator supports it
+      void accumulate(const std::vector<Contribution>& contributions, Range& r) const
+      {
+        std::vector<const Domain*> xs;
+        for (const auto& contribution : contributions)
+          xs.push_back(contribution.x);
+        auto prepare = [&](std::size_t j) {
+          setTime(contributions[j].time);
+          setWeights(contributions[j].w0, contributions[j].w1);
+        };
+        if constexpr (requires { Impl::accumulateResiduals(inner_, xs, r, prepare); })
+          Impl::accumulateResiduals(inner_, xs, r, prepare);
+        else
+          for (std::size_t j = 0; j < xs.size(); ++j)
+          {
+            prepare(j);
+            inner_.residual(*xs[j], r);
+          }
+      }
 
       static bool nonzero(Real w)
       {
