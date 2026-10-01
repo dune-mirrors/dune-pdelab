@@ -4,6 +4,7 @@
 #define DUNE_PDELAB_GRIDOPERATOR_FUNCTIONS_GRIDOPERATOR_HH
 
 #include <memory>
+#include <optional>
 #include <type_traits>
 
 #include <dune/common/exceptions.hh>
@@ -22,6 +23,7 @@
 #include <dune/pdelab/common/geometrywrapper.hh>
 #include <dune/pdelab/constraints/common/constraints.hh>
 #include <dune/pdelab/constraints/common/constraintstransformation.hh>
+#include <dune/pdelab/gridfunctionspace/interpolate.hh>
 #include <dune/pdelab/gridoperator/common/assemblerutilities.hh>
 #include <dune/pdelab/gridoperator/common/gridoperatorutilities.hh>
 #include <dune/pdelab/gridoperator/functions/localoperatorassembler.hh>
@@ -86,16 +88,37 @@ namespace Dune::PDELab {
 
   namespace Impl::Functions {
 
-    //! Constraints of the grid operator; as for grid function spaces derived from LocalAssemblerBase
-    template<typename MB, typename CU, typename CV>
+    /** \brief Local assembler of the grid operator
+     *
+     * The assembly itself is done by dune-assembler. As for grid function
+     * spaces, this class provides the constraints and their application
+     * (derived from LocalAssemblerBase) and access to the local operator.
+     */
+    template<typename MB, typename CU, typename CV, typename LOP>
     class ConstraintsAssembler
       : public LocalAssemblerBase<MB,CU,CV>
     {
       using Base = LocalAssemblerBase<MB,CU,CV>;
 
     public:
-      using Base::Base;
+      using LocalOperator = LOP;
+
+      explicit ConstraintsAssembler(LOP& lop)
+        : Base(), lop_(&lop)
+      {}
+
+      ConstraintsAssembler(LOP& lop, const CU& cu, const CV& cv)
+        : Base(cu, cv), lop_(&lop)
+      {}
+
       using Base::handle_dirichlet_constraints;
+
+      LOP& localOperator() const { return *lop_; }
+
+      static constexpr bool isLinear() { return LOP::isLinear; }
+
+    private:
+      LOP* lop_;
     };
 
   } // namespace Impl::Functions
@@ -125,7 +148,7 @@ namespace Dune::PDELab {
     using Assembler = Dune::Assembler::Assembler<GFSV,GFSU>;
 
     //! Provides the constraints and their application, as in the GridOperator on grid function spaces
-    using LocalAssembler = Impl::Functions::ConstraintsAssembler<MB,CU,CV>;
+    using LocalAssembler = Impl::Functions::ConstraintsAssembler<MB,CU,CV,LOP>;
 
     using Domain = Dune::PDELab::Backend::Vector<GFSU,DF>;
     using Range = Dune::PDELab::Backend::Vector<GFSV,RF>;
@@ -140,11 +163,11 @@ namespace Dune::PDELab {
     };
 
     GridOperator(const GFSU& gfsu, const CU& cu, const GFSV& gfsv, const CV& cv, LOP& lop, const MB& mb = MB())
-      : gfsu_(&gfsu), gfsv_(&gfsv), lop_(&lop), local_assembler_(cu, cv), backend_(mb)
+      : gfsu_(&gfsu), gfsv_(&gfsv), lop_(&lop), local_assembler_(lop, cu, cv), backend_(mb)
     {}
 
     GridOperator(const GFSU& gfsu, const GFSV& gfsv, LOP& lop, const MB& mb = MB())
-      : gfsu_(&gfsu), gfsv_(&gfsv), lop_(&lop), local_assembler_(), backend_(mb)
+      : gfsu_(&gfsu), gfsv_(&gfsv), lop_(&lop), local_assembler_(lop), backend_(mb)
     {}
 
     const GFSU& trialGridFunctionSpace() const { return *gfsu_; }
@@ -189,6 +212,16 @@ namespace Dune::PDELab {
       if (lop_->isLinear)
         DUNE_THROW(Dune::Exception, "Your trying to use a non linear jacobian apply for a linear problem.");
       jacobianApply(solution, update, result);
+    }
+
+    //! Interpolate the constrained DOFs from f, copy the others from xold (xold and x may be the same vector)
+    template<typename F, typename X>
+    void interpolate(const X& xold, F& f, X& x) const
+    {
+      std::optional<X> tmp;
+      const X& source = (&xold == &x) ? tmp.emplace(xold) : xold;
+      Dune::PDELab::interpolate(f, *gfsu_, x);
+      Dune::PDELab::copy_nonconstrained_dofs(local_assembler_.trialConstraints(), source, x);
     }
 
     //! Only sequential assembly is supported, hence there is nothing to update.
