@@ -3,6 +3,9 @@
 #ifndef DUNE_PDELAB_BACKEND_ISTL_SEQISTLSOLVERBACKEND_HH
 #define DUNE_PDELAB_BACKEND_ISTL_SEQISTLSOLVERBACKEND_HH
 
+#include <type_traits>
+#include <utility>
+
 #include <dune/common/deprecated.hh>
 #include <dune/common/parallel/mpihelper.hh>
 
@@ -721,6 +724,8 @@ namespace Dune {
     class ISTLBackend_SEQ_AMG : public LinearResultStorage
     {
       typedef typename GO::Traits::TrialGridFunctionSpace GFS;
+      // grid function spaces and dune-functions bases both provide gridView()
+      static constexpr int dim = std::decay_t<decltype(std::declval<const GFS&>().gridView())>::dimension;
       typedef typename GO::Traits::Jacobian M;
       typedef Backend::Native<M> MatrixType;
       typedef typename GO::Traits::Domain V;
@@ -737,7 +742,7 @@ namespace Dune {
         : maxiter(maxiter_), params(15,2000), verbose(verbose_),
           reuse(reuse_), firstapply(true), usesuperlu(usesuperlu_)
       {
-        params.setDefaultValuesIsotropic(GFS::Traits::GridViewType::Traits::Grid::dimension);
+        params.setDefaultValuesIsotropic(dim);
         params.setDebugLevel(verbose_);
 #if !HAVE_SUPERLU
         if (usesuperlu == true)
