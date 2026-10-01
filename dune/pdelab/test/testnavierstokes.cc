@@ -153,7 +153,7 @@ int main(int argc, char** argv)
     auto bu = Dune::PDELab::CompositeConstraintsParameters<decltype(bux),decltype(buy)>(bux, buy);
     auto bp = Dune::PDELab::makeBoundaryConditionFromCallable(gridView, [](const auto& x){ return false; });
     auto bconstraints = Dune::PDELab::CompositeConstraintsParameters<decltype(bu),decltype(bp)>(bu, bp);
-    using ConstraintsContainer = typename GridFunctionSpace::template ConstraintsContainer<RangeType>::Type;
+    using ConstraintsContainer = Dune::PDELab::ConstraintsContainer<GridFunctionSpace, RangeType>;
     ConstraintsContainer constraintsContainer;
     Dune::PDELab::constraints(bconstraints, gridFunctionSpace, constraintsContainer);
 
@@ -168,7 +168,7 @@ int main(int argc, char** argv)
     }
 
     // Print number of DOFs
-    std::cout << "gfs with " << gridFunctionSpace.size() << " dofs generated  "<< std::endl;
+    std::cout << "gfs with " << Dune::PDELab::globalSize(gridFunctionSpace) << " dofs generated  "<< std::endl;
     std::cout << "cc with " << constraintsContainer.size() << " dofs generated  "<< std::endl;
 
     // Local operator

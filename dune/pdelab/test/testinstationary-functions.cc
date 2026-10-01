@@ -102,7 +102,7 @@ int main(int argc, char** argv)
     LocalOperatorTime localOperatorTime;
 
     // Create constraints map
-    using ConstraintsContainer = Dune::PDELab::BasisConstraintsContainer<Basis, RangeType>;
+    using ConstraintsContainer = Dune::PDELab::ConstraintsContainer<Basis, RangeType>;
     ConstraintsContainer constraintsContainer;
     constraintsContainer.clear();
     Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<Problem> bctype(gridView, problem);
@@ -110,7 +110,7 @@ int main(int argc, char** argv)
 
     // Grid operator for spatial discretization
     using MatrixBackend = Dune::PDELab::ISTL::BCRSMatrixBackend<>;
-    const int dofestimate = 4 * basis.localView().maxSize();
+    const int dofestimate = 4 * Dune::PDELab::maxLocalSize(basis);
     MatrixBackend matrixBackend(dofestimate);
     using GridOperator = Dune::PDELab::GridOperator<Basis,
                                                     Basis,

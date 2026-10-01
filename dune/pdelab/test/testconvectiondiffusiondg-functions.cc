@@ -87,14 +87,14 @@ int main(int argc, char** argv)
     //                             0.0);
 
    // Create constraints map
-    using ConstraintsContainer = Dune::PDELab::BasisConstraintsContainer<Basis, RangeType>;
+    using ConstraintsContainer = Dune::PDELab::ConstraintsContainer<Basis, RangeType>;
     ConstraintsContainer constraintsContainer;
     constraintsContainer.clear();
     Dune::PDELab::constraints(basis, constraintsContainer);
 
     // Grid operator
     using std::pow;
-    const int dofestimate = pow(2, dim) * basis.localView().maxSize();
+    const int dofestimate = pow(2, dim) * Dune::PDELab::maxLocalSize(basis);
     using MatrixBackend = Dune::PDELab::ISTL::BCRSMatrixBackend<>;
     MatrixBackend matrixBackend(dofestimate);
     using GridOperator = Dune::PDELab::GridOperator<Basis,
@@ -112,7 +112,7 @@ int main(int argc, char** argv)
                               constraintsContainer,
                               localOperator,
                               matrixBackend);
-    std::cout << "basis with " << basis.size() << " dofs generated  "<< std::endl;
+    std::cout << "basis with " << Dune::PDELab::globalSize(basis) << " dofs generated  "<< std::endl;
     std::cout << "cc with " << constraintsContainer.size() << " dofs generated  "<< std::endl;
 
     // Solution vector

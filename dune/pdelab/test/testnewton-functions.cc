@@ -111,19 +111,19 @@ int main(int argc, char** argv)
     LocalOperator localOperator(problem);
 
     // Create constraints map
-    using ConstraintsContainer = Dune::PDELab::BasisConstraintsContainer<Basis, RangeType>;
+    using ConstraintsContainer = Dune::PDELab::ConstraintsContainer<Basis, RangeType>;
     ConstraintsContainer constraintsContainer;
     auto blambda = [&](const auto& i, const auto& x){return problem.b(i,x);};
     auto bctype = Dune::PDELab::makeBoundaryConditionFromCallable(gridView, blambda);
     Dune::PDELab::constraints(bctype, basis, constraintsContainer);
 
     // Print number of DOFs
-    std::cout << "basis with " << basis.size() << " dofs generated  "<< std::endl;
+    std::cout << "basis with " << Dune::PDELab::globalSize(basis) << " dofs generated  "<< std::endl;
     std::cout << "cc with " << constraintsContainer.size() << " dofs generated  "<< std::endl;
 
     // Grid operator
     using MatrixBackend = Dune::PDELab::ISTL::BCRSMatrixBackend<>;
-    const int dofestimate = 4 * basis.localView().maxSize();
+    const int dofestimate = 4 * Dune::PDELab::maxLocalSize(basis);
     MatrixBackend matrixBackend(dofestimate);
     using GridOperator = Dune::PDELab::GridOperator<Basis,
                                                     Basis,

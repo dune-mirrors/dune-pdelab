@@ -331,7 +331,7 @@ void testContinuousGalerkin(Checker& checker, const GV& gv)
   FEM fem(gv);
   using GFS = PDELab::GridFunctionSpace<GV,FEM,PDELab::ConformingDirichletConstraints,PDELab::ISTL::VectorBackend<>>;
   GFS gfs(gv, fem);
-  using CC = typename GFS::template ConstraintsContainer<double>::Type;
+  using CC = Dune::PDELab::ConstraintsContainer<GFS, double>;
   CC cc;
   PDELab::constraints(bctype, gfs, cc);
   using LOP = PDELab::ConvectionDiffusionFEM<P,FEM>;
@@ -345,7 +345,7 @@ void testContinuousGalerkin(Checker& checker, const GV& gv)
   // basis
   auto basis = Functions::BasisFactory::makeBasis(gv, Functions::BasisFactory::lagrange<2>());
   using Basis = decltype(basis);
-  using FCC = PDELab::BasisConstraintsContainer<Basis,double>;
+  using FCC = PDELab::ConstraintsContainer<Basis,double>;
   FCC fcc;
   PDELab::constraints(bctype, basis, fcc);
   using FLOP = PDELab::ConvectionDiffusionFEM<P,PDELab::FiniteElementMapFor<typename Basis::LocalView::Tree::FiniteElement>>;

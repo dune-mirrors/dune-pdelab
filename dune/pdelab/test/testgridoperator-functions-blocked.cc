@@ -193,7 +193,7 @@ int testBlocked(const GV& gv)
   }
 
   // Dirichlet constraints for both components on the boundary x = 0
-  using CC = PDELab::BasisConstraintsContainer<Basis>;
+  using CC = PDELab::ConstraintsContainer<Basis>;
   CC cc;
   Functions::forEachBoundaryDOF(basis, [&](auto&& localIndex, const auto& localView, const auto& intersection) {
     if (intersection.geometry().center()[0] < 1e-8)

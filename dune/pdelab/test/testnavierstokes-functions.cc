@@ -153,7 +153,7 @@ int main(int argc, char** argv)
     auto bu = Dune::PDELab::CompositeConstraintsParameters<decltype(bux),decltype(buy)>(bux, buy);
     auto bp = Dune::PDELab::makeBoundaryConditionFromCallable(gridView, [](const auto& x){ return false; });
     auto bconstraints = Dune::PDELab::CompositeConstraintsParameters<decltype(bu),decltype(bp)>(bu, bp);
-    using ConstraintsContainer = Dune::PDELab::BasisConstraintsContainer<Basis, RangeType>;
+    using ConstraintsContainer = Dune::PDELab::ConstraintsContainer<Basis, RangeType>;
     ConstraintsContainer constraintsContainer;
     Dune::PDELab::constraints(bconstraints, basis, constraintsContainer);
 
@@ -165,7 +165,7 @@ int main(int argc, char** argv)
     }
 
     // Print number of DOFs
-    std::cout << "basis with " << basis.size() << " dofs generated  "<< std::endl;
+    std::cout << "basis with " << Dune::PDELab::globalSize(basis) << " dofs generated  "<< std::endl;
     std::cout << "cc with " << constraintsContainer.size() << " dofs generated  "<< std::endl;
 
     // Local operator

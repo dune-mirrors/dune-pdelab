@@ -156,7 +156,7 @@ void poisson (const GV& gv, const Basis& basis, std::string filename, int q)
   Problem problem;
 
   // make constraints map and initialize it from a function
-  typedef Dune::PDELab::BasisConstraintsContainer<Basis,R> C;
+  typedef Dune::PDELab::ConstraintsContainer<Basis, R> C;
   C cg;
   cg.clear();
   Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<Problem> bctype(gv,problem);

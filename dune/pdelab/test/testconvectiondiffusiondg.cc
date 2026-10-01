@@ -88,7 +88,7 @@ int main(int argc, char** argv)
     //                             0.0);
 
    // Create constraints map
-    using ConstraintsContainer = typename GridFunctionSpace::template ConstraintsContainer<RangeType>::Type;
+    using ConstraintsContainer = Dune::PDELab::ConstraintsContainer<GridFunctionSpace, RangeType>;
     ConstraintsContainer constraintsContainer;
     constraintsContainer.clear();
     Dune::PDELab::constraints(gridFunctionSpace, constraintsContainer);
@@ -96,7 +96,7 @@ int main(int argc, char** argv)
     // Grid operator
     gridFunctionSpace.update();
     using std::pow;
-    const int dofestimate = pow(2, dim) * gridFunctionSpace.maxLocalSize();
+    const int dofestimate = pow(2, dim) * Dune::PDELab::maxLocalSize(gridFunctionSpace);
     using MatrixBackend = Dune::PDELab::ISTL::BCRSMatrixBackend<>;
     MatrixBackend matrixBackend(dofestimate);
     using GridOperator = Dune::PDELab::GridOperator<GridFunctionSpace,
@@ -114,7 +114,7 @@ int main(int argc, char** argv)
                               constraintsContainer,
                               localOperator,
                               matrixBackend);
-    std::cout << "gfs with " << gridFunctionSpace.size() << " dofs generated  "<< std::endl;
+    std::cout << "gfs with " << Dune::PDELab::globalSize(gridFunctionSpace) << " dofs generated  "<< std::endl;
     std::cout << "cc with " << constraintsContainer.size() << " dofs generated  "<< std::endl;
 
     // Solution vector
