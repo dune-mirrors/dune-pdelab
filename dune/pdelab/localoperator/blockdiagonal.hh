@@ -5,8 +5,8 @@
 #include <memory>
 #include <utility>
 
-#include <dune/typetree/traversal.hh>
-#include <dune/typetree/childextraction.hh>
+#include <dune/common/typetree/childaccess.hh>
+#include <dune/common/typetree/traversal.hh>
 
 #include <dune/pdelab/localoperator/flags.hh>
 #include <dune/pdelab/localoperator/pattern.hh>
@@ -18,34 +18,13 @@ namespace Dune {
 
     namespace impl {
 
-      // TypeTree visitor for applying an operation to a pair of ansatz and test local function space
-      template<typename LFSV, typename Operation>
-      struct ApplyBlockOperation
-        : public TypeTree::TreeVisitor
-        , public TypeTree::StaticTraversal
+      // apply an operation to all leaves of the ansatz and the matching leaves of the test local function space
+      template<typename LFSU, typename LFSV, typename Operation>
+      void applyBlockOperation(const LFSU& lfsu, const LFSV& lfsv, Operation operation)
       {
-
-        template<typename LeafLFSU, typename TreePath>
-        void leaf(LeafLFSU& leaf_lfsu, TreePath tree_path)
-        {
-          auto& leaf_lfsv = child(_lfsv,tree_path);
-          _operation(tree_path,leaf_lfsu,leaf_lfsv);
-        }
-
-        ApplyBlockOperation(const LFSV& lfsv, Operation operation)
-          : _lfsv(lfsv)
-          , _operation(operation)
-        {}
-
-        const LFSV& _lfsv;
-        Operation _operation;
-
-      };
-
-      template<typename LFSV, typename Operation>
-      auto applyBlockOperation(const LFSV& lfsv, Operation operation)
-      {
-        return ApplyBlockOperation<LFSV,Operation>(lfsv,operation);
+        Dune::TypeTree::forEachLeafNode(lfsu, [&](const auto& leaf_lfsu, auto tree_path) {
+          operation(tree_path, leaf_lfsu, Dune::TypeTree::child(lfsv, tree_path));
+        });
       }
 
     } // namespace impl
@@ -103,37 +82,34 @@ namespace Dune {
       template<typename EG, typename LFSU, typename X, typename LFSV, typename R>
       void alpha_volume(const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, R& r) const
       {
-        auto visitor = impl::applyBlockOperation(
-          lfsv,
-          [&](auto tree_path, auto& lfsu, auto& lfsv)
+        impl::applyBlockOperation(
+          lfsu, lfsv,
+          [&](auto tree_path, const auto& lfsu, const auto& lfsv)
           {
             _scalar_lop->alpha_volume(eg,lfsu,x,lfsv,r);
           });
-        TypeTree::applyToTree(lfsu,visitor);
       }
 
       template<typename EG, typename LFSU, typename X, typename LFSV, typename Y>
       void jacobian_apply_volume(const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, Y& y) const
       {
-        auto visitor = impl::applyBlockOperation(
-          lfsv,
-          [&](auto tree_path, auto& lfsu, auto& lfsv)
+        impl::applyBlockOperation(
+          lfsu, lfsv,
+          [&](auto tree_path, const auto& lfsu, const auto& lfsv)
           {
             _scalar_lop->jacobian_apply_volume(eg,lfsu,x,lfsv,y);
           });
-        TypeTree::applyToTree(lfsu,visitor);
       }
 
       template<typename EG, typename LFSU, typename X, typename LFSV, typename M>
       void jacobian_volume(const EG& eg, const LFSU& lfsu, const X& x, const LFSV& lfsv, M& mat) const
       {
-        auto visitor = impl::applyBlockOperation(
-          lfsv,
-          [&](auto tree_path, auto& lfsu, auto& lfsv)
+        impl::applyBlockOperation(
+          lfsu, lfsv,
+          [&](auto tree_path, const auto& lfsu, const auto& lfsv)
           {
             _scalar_lop->jacobian_volume(eg,lfsu,x,lfsv,mat);
           });
-        TypeTree::applyToTree(lfsu,visitor);
       }
 
       void setTime(RealType t)
