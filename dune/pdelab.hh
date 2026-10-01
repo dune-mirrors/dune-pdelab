@@ -246,13 +246,6 @@
 #include <dune/pdelab/gridoperator/gridoperator.hh>
 #include <dune/pdelab/gridoperator/legacy/gridoperator.hh>
 #include <dune/pdelab/gridoperator/functions/gridoperator.hh>
-#include <dune/pdelab/gridoperator/onestep/residualengine.hh>
-#include <dune/pdelab/gridoperator/onestep/localassembler.hh>
-#include <dune/pdelab/gridoperator/onestep/jacobianengine.hh>
-#include <dune/pdelab/gridoperator/onestep/patternengine.hh>
-#include <dune/pdelab/gridoperator/onestep/prestageengine.hh>
-#include <dune/pdelab/gridoperator/onestep/jacobianresidualengine.hh>
-#include <dune/pdelab/gridoperator/onestep/enginebase.hh>
 #include <dune/pdelab/gridoperator/fastdg.hh>
 #include <dune/pdelab/gridoperator/common/assemblerutilities.hh>
 #include <dune/pdelab/gridoperator/common/diagonallocalmatrix.hh>

@@ -3,7 +3,6 @@ add_subdirectory(default)
 add_subdirectory(fastdg)
 add_subdirectory(functions)
 add_subdirectory(legacy)
-add_subdirectory(onestep)
 
 install(FILES fastdg.hh
               gridoperator.hh

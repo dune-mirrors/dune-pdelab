@@ -59,9 +59,6 @@ dune_add_test(SOURCES testgridoperator-functions-poisson.cc)
 dune_add_test(SOURCES testgridoperator-functions-stokes.cc)
 dune_add_test(SOURCES testgridoperator-functions-blocked.cc)
 
-dune_add_test(SOURCES testgridoperator-onestep-generic.cc
-              CMAKE_GUARD SUPERLU_FOUND)
-
 dune_add_test(SOURCES testelectrodynamic.cc
               CMD_ARGS "${CMAKE_CURRENT_SOURCE_DIR}/grids/circ_in_rect.msh"
               CMAKE_GUARD dune-alugrid_FOUND SUPERLU_FOUND)
