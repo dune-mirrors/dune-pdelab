@@ -82,7 +82,7 @@ namespace Dune::PDELab {
    *
    * \param p       constraints parameters, e.g. from makeBoundaryConditionFromCallable(), or a tree of them
    * \param basis   dune-functions global basis
-   * \param cg      constraints container, e.g. BasisConstraintsContainer<Basis>
+   * \param cg      constraints container, e.g. ConstraintsContainer<Basis>
    * \param verbose print the constraints at the end
    */
   template<typename P, typename Basis, typename CG>

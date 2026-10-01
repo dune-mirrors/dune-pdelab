@@ -25,6 +25,7 @@
 #include <dune/pdelab/constraints/common/constraints.hh>
 #include <dune/pdelab/constraints/common/constraintstransformation.hh>
 #include <dune/pdelab/gridfunctionspace/interpolate.hh>
+#include <dune/pdelab/gridfunctionspace/spaceutilities.hh>
 #include <dune/pdelab/gridoperator/common/assemblerutilities.hh>
 #include <dune/pdelab/gridoperator/common/gridoperatorutilities.hh>
 #include <dune/pdelab/gridoperator/functions/localoperatorassembler.hh>
@@ -45,10 +46,6 @@
  */
 
 namespace Dune::PDELab {
-
-  //! Constraints container for Dirichlet-type constraints on a dune-functions basis
-  template<class Basis, class F = double>
-  using BasisConstraintsContainer = ConstraintsTransformation<typename Basis::MultiIndex, typename Basis::MultiIndex, F>;
 
   /** \brief Mark all DOFs of a basis associated with the boundary as Dirichlet constrained
    *
@@ -132,7 +129,7 @@ namespace Dune::PDELab {
    * \tparam LOP  PDELab local operator
    * \tparam MB   matrix backend, e.g. ISTL::BCRSMatrixBackend<>
    * \tparam DF, RF, JF field types of domain, range and jacobian
-   * \tparam CU, CV constraints containers (BasisConstraintsContainer or EmptyTransformation)
+   * \tparam CU, CV constraints containers (ConstraintsContainer<Basis,F> or EmptyTransformation)
    *
    * Not supported (yet): parallel assembly and local
    * operators using doSkeletonTwoSided or *_volume_post_skeleton.

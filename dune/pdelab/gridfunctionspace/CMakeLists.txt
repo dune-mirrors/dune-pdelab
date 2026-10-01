@@ -17,6 +17,7 @@ install(FILES compositegridfunctionspace.hh
               localfunctionspace.hh
               localfunctionspacetags.hh
               localvector.hh
+              spaceutilities.hh
               powercompositegridfunctionspacebase.hh
               powergridfunctionspace.hh
               subspace.hh
