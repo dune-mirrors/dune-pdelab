@@ -282,7 +282,7 @@ namespace Dune {
         weight_ = weight;
       }
 
-      weight_type weight()
+      weight_type weight() const
       {
         return weight_;
       }
