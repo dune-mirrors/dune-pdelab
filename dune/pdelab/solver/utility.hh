@@ -1,6 +1,8 @@
 #ifndef DUNE_PDELAB_SOLVER_UTILITY_HH
 #define DUNE_PDELAB_SOLVER_UTILITY_HH
 
+#include <dune/pdelab/backend/solver.hh>
+
 namespace Dune {
   namespace PDELab {
 

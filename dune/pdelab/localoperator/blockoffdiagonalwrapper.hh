@@ -3,6 +3,7 @@
 #ifndef DUNE_PDELAB_LOCALOPERATOR_BLOCKOFFDIAGONALWRAPPER_HH
 #define DUNE_PDELAB_LOCALOPERATOR_BLOCKOFFDIAGONALWRAPPER_HH
 
+#include <dune/pdelab/backend/common/aliasedvectorview.hh>
 #include <dune/pdelab/common/intersectiontype.hh>
 #include <dune/pdelab/localoperator/blockdiagonalwrapper.hh>
 namespace Dune {

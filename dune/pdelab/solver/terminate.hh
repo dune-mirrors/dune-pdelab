@@ -3,6 +3,11 @@
 #ifndef DUNE_PDELAB_SOLVER_TERMINATE_HH
 #define DUNE_PDELAB_SOLVER_TERMINATE_HH
 
+#include <iostream>
+#include <memory>
+
+#include <dune/common/parametertree.hh>
+
 #include <dune/pdelab/solver/newtonerrors.hh>
 
 namespace Dune::PDELab

@@ -3,8 +3,16 @@
 #ifndef DUNE_PDELAB_SOLVER_NEWTON_HH
 #define DUNE_PDELAB_SOLVER_NEWTON_HH
 
+#include <chrono>
+#include <cmath>
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <string>
+
 #include <dune/common/exceptions.hh>
 #include <dune/common/ios_state.hh>
+#include <dune/common/parametertree.hh>
 
 #include <dune/pdelab/constraints/common/constraints.hh>
 #include <dune/pdelab/solver/newtonerrors.hh>

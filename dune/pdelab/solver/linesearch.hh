@@ -3,6 +3,15 @@
 #ifndef DUNE_PDELAB_SOLVER_LINESEARCH_HH
 #define DUNE_PDELAB_SOLVER_LINESEARCH_HH
 
+#include <cmath>
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <string>
+
+#include <dune/common/exceptions.hh>
+#include <dune/common/parametertree.hh>
+
 #include <dune/pdelab/solver/newtonerrors.hh>
 
 
