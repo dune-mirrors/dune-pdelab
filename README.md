@@ -35,6 +35,10 @@ PDELab depends on the following software packages:
 * The dune-typetree library, version 2.10-git. You can obtain a [source package][0] or
   clone the [repository][10].
 
+* The dune-functions library, version 2.10-git, and the dune-assembler library
+  (staging module, https://gitlab.dune-project.org/staging/dune-assembler), which
+  PDELab uses to assemble local operators on dune-functions bases.
+
 * PDELab's compiler requirements differ slightly from the underlying DUNE
   libraries: We require at least GCC 5 in C++14 mode. PDELab should also work
   with very recent versions of ICC (icpc 18.0.0+) and current clang (5+).
