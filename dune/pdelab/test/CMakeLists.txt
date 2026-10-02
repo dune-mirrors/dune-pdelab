@@ -54,9 +54,6 @@ dune_add_test(NAME testcomplexnumbers-istlbackend
 dune_add_test(SOURCES testconstraints.cc
               COMPILE_DEFINITIONS GRIDSDIR=\"${CMAKE_CURRENT_SOURCE_DIR}/grids\")
 
-dune_add_test(SOURCES testdunefunctionsgfs.cc
-              MPI_RANKS 1 2 4
-              TIMEOUT 300)
 
 dune_add_test(SOURCES testgridoperator-functions-poisson.cc)
 dune_add_test(SOURCES testgridoperator-functions-stokes.cc)

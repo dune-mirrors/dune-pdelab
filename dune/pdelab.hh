@@ -1,7 +1,6 @@
 #ifndef DUNE_PDELAB_HH
 #define DUNE_PDELAB_HH
 
-#include <dune/pdelab/gridfunctionspace/dunefunctionslfsindexcache.hh>
 #include <dune/pdelab/gridfunctionspace/gridfunctionspaceutilities.hh>
 #include <dune/pdelab/gridfunctionspace/interpolate.hh>
 #include <dune/pdelab/gridfunctionspace/spaceutilities.hh>
@@ -14,9 +13,7 @@
 #include <dune/pdelab/gridfunctionspace/gridfunctionspace.hh>
 #include <dune/pdelab/gridfunctionspace/compositegridfunctionspace.hh>
 #include <dune/pdelab/gridfunctionspace/entityindexcache.hh>
-#include <dune/pdelab/gridfunctionspace/dunefunctionsgridfunctionspace.hh>
 #include <dune/pdelab/gridfunctionspace/localfunctionspacetags.hh>
-#include <dune/pdelab/gridfunctionspace/dunefunctionslocalfunctionspace.hh>
 #include <dune/pdelab/gridfunctionspace/subspace.hh>
 #include <dune/pdelab/gridfunctionspace/loadbalance.hh>
 #include <dune/pdelab/gridfunctionspace/gridfunctionadapter.hh>
@@ -167,7 +164,6 @@
 #include <dune/pdelab/backend/istl/tags.hh>
 #include <dune/pdelab/backend/istl/patternstatistics.hh>
 #include <dune/pdelab/backend/istl/blockmatrixdiagonal.hh>
-#include <dune/pdelab/backend/istl/dunefunctions.hh>
 #include <dune/pdelab/backend/istl/istlsolver.hh>
 #include <dune/pdelab/backend/istl/istlsolverbackend.hh>
 #include <dune/pdelab/backend/istl/matrixfree/assembledblockjacobipreconditioner.hh>

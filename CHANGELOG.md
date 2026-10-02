@@ -16,6 +16,12 @@ Master (will become release 2.11)
 
 - Subspaces learned to handle dynamic tree paths
 
+- The experimental wrapper of dune-functions bases as PDELab grid function spaces
+  (`Experimental::GridFunctionSpace` in `gridfunctionspace/dunefunctionsgridfunctionspace.hh`,
+  its local function space and index cache, and `ISTL::SimpleVectorBackend` in
+  `backend/istl/dunefunctions.hh`) has been removed without deprecation. dune-functions
+  bases can now be used directly with `GridOperator`.
+
 PDELab 2.9
 --------------------------------------
 
