@@ -1,4 +1,4 @@
-INPUT   += @srcdir@/mainpage.txt \
+INPUT   += @srcdir@/Mainpage.md \
            @srcdir@/modules.txt \
            @top_srcdir@/dune \
            @top_srcdir@/doc/Recipes \
@@ -6,3 +6,7 @@ INPUT   += @srcdir@/mainpage.txt \
 EXCLUDE += @top_srcdir@/dune/pdelab/test
 EXTRA_PACKAGES = amsmath, amssymb
 EXAMPLE_PATH += @top_srcdir@/doc/Recipes
+
+USE_MDFILE_AS_MAINPAGE = @srcdir@/Mainpage.md
+CITE_BIB_FILES        += @srcdir@/bibliography.bib
+PROJECT_NAME           = PDELab

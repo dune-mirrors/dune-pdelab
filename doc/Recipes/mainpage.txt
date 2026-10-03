@@ -3,29 +3,32 @@
  * @defgroup pdelab_recipes PDELab Recipes
  * @{
  * \page all_pdelab_recipes PDELab Recipes
- * These recipes are short examples on how to achieve common tasks in PDELab.
  *
- * <br>For complete examples on solving various types of PDEs along with the respective math background, please refer to the dune-pdelab-tutorials module at https://www.dune-project.org/modules/dune-pdelab-tutorials/.
+ * These recipes are short examples showing how to achieve common tasks in PDELab.
+ * Each recipe explains a few lines of code taken from a complete program, which
+ * is compiled and run as part of the PDELab test suite. The complete programs
+ * are listed under [Examples](examples.html). For complete examples of solving
+ * various types of PDEs, along with the mathematical background, see the
+ * [dune-pdelab-tutorials](https://www.dune-project.org/modules/dune-pdelab-tutorials/)
+ * module.
  *
- * Meshing
- * ==============
+ * \tableofcontents
+ *
+ * \section recipes_meshing Meshing
  * - \subpage recipe-geometry-grid
  *
- * Grid functions
- * ==============
+ * \section recipes_grid_functions Grid functions
  * - \subpage recipe-integrating-grid-functions
  * - \subpage recipe-grid-function-operations
  * - \subpage recipe-blocking
  *
- * PDE discretization
- * ==============
+ * \section recipes_discretization PDE discretization
  * - \subpage recipe-linear-system-assembly
  * - \subpage recipe-linear-system-solution-pdelab
  * - \subpage recipe-linear-system-solution-istl
  * - \subpage recipe-operator-splitting
  *
- * Parallelism
- * ==============
+ * \section recipes_parallelism Parallelism
  * - \subpage recipe-communication
  *
  * @}

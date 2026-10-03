@@ -7,14 +7,37 @@
     @defgroup FiniteElementMap Finite Element Map
     @ingroup  GridFunctionSpace
 
+      @defgroup Constraints Constraints
+      @ingroup  FiniteElementMap
+
+      @brief Constraints restricting grid function spaces, e.g., for
+      Dirichlet boundary conditions, hanging nodes, and parallel runs.
+
     @defgroup Ordering Ordering
     @ingroup  GridFunctionSpace
 
   @defgroup PDELab_Function PDELab Function
   @ingroup  PDELab
 
-  @defgroup Operator Grid Operator
+    @defgroup GridFunctionTree Grid Function Trees
+    @ingroup  PDELab_Function
+
+  @defgroup LocalOperator Local Operators
   @ingroup  PDELab
+
+  @brief Local operators implementing the weak formulation of PDEs
+  element by element.
+
+    @defgroup LocalOperatorDefaultImp Default Implementations
+    @ingroup  LocalOperator
+
+    @brief Default implementations of local operator methods, e.g.,
+    Jacobians by numerical differentiation.
+
+  @defgroup Operator Instationary Problems
+  @ingroup  PDELab
+
+  @brief Time stepping methods for instationary problems.
 
     @defgroup OneStepMethod One-step methods
     @ingroup  Operator
@@ -24,9 +47,6 @@
     Use the class OneStepMethod to create a one step method.
     the actual method is chosen by providing the constructor
     with the correct parameter class, e.g. ExplicitEulerParameter.
-
-    @defgroup MultiStepMethods Multi-step methods
-    @ingroup  Operator
 
   @defgroup Partition Entity Set Partitions
   @{
