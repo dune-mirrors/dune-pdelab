@@ -373,9 +373,7 @@ int main(int argc, char** argv)
     }
 #endif
 
-    // Disabled: constructing the dune-functions LagrangeBasis of order 3 on this
-    // ALUGrid crashes inside dune-functions (independent of PDELab).
-#if 0 && HAVE_DUNE_ALUGRID
+#if HAVE_DUNE_ALUGRID
     {
       using ALUType = Dune::ALUGrid<2, 2, Dune::simplex, Dune::nonconforming>;
       auto alugrid = Dune::StructuredGridFactory<ALUType>::createSimplexGrid(Dune::FieldVector<ALUType::ctype, 2>(0.0), Dune::FieldVector<ALUType::ctype, 2>(1.0), std::array<uint,2>{1u, 1u});
