@@ -16,21 +16,64 @@ Master (will become release 2.11)
 
 - Subspaces learned to handle dynamic tree paths
 
-- Grid adaptation (`adapt_grid`, `transferSolutions`/`adaptGrid`, `mark_grid`,
-  `mark_grid_for_coarsening`) also works with dune-functions bases (sequential only). The
-  solution transfer is implemented once for grid function spaces and bases; trees of spaces
-  (e.g. Taylor-Hood) are transferred leaf by leaf.
-- The ISTL vector wrapper can iterate over `BlockVector`s of scalars, as used by flat
-  dune-functions bases.
-- `LocalFunctionSpace<Basis>` and `LFSIndexCache` also accept dune-functions bases. Code
-  that accesses single DOFs through a local function space (`bind`, `child`, `localIndex`,
-  `containerIndex`) works unchanged; the container indices are the basis multi-indices.
+- PDELab local operators, grid operators and solvers run on dune-functions bases
+  (sequential). The assembly is done by dune-assembler, which is now a required
+  dependency (like dune-functions). Switching from a grid function space to a basis only
+  changes the construction of the space:
+  - `GridOperator<Basis,Basis,LOP,MB,DF,RF,JF,CU,CV>` is specialized for dune-functions
+    bases (residual, jacobian, jacobian_apply, pattern, `interpolate`). Leaf, power,
+    dynamic power and composite bases are supported, flat and one-level blocked.
+  - `Backend::Vector<Basis,E>` and `Backend::Matrix<…>` wrap ISTL containers through the
+    dune-functions/dune-assembler backends; the ISTL vector wrapper can iterate over
+    `BlockVector`s of scalars, as used by flat bases.
+  - Constraints: `constraints(bc, basis, cc)` with leaf, power and composite constraints
+    parameters, and `addBoundaryDirichletConstraints(basis, cc[, bc])`.
+  - `interpolate(f, basis, x)` (also for trees of functions such as
+    `CompositeGridFunction`), `DiscreteGridFunction` and `VectorDiscreteGridFunction` on
+    bases and subspace bases, and `addSolutionToVTKWriter(writer, basis, x)` (generated
+    names `solution_…`).
+  - `PDELab::ConstraintsContainer<Space,E>`, `PDELab::maxLocalSize(space)` and
+    `PDELab::globalSize(space)` (`gridfunctionspace/spaceutilities.hh`) work for grid
+    function spaces and bases alike.
+  - `LocalFunctionSpace<Basis>` and `LFSIndexCache` also accept bases. Code that accesses
+    single DOFs through a local function space (`bind`, `child`, `localIndex`,
+    `containerIndex`) works unchanged; the container indices are the basis multi-indices.
+  - `NewtonMethod`, `StationaryLinearProblemSolver`, `OneStepMethod`,
+    `ExplicitOneStepMethod` and the sequential `ISTLBackend_SEQ_*` solver backends
+    (including the AMG backends) work with bases.
+  - Grid adaptation (`adapt_grid`, `transferSolutions`/`adaptGrid`, `mark_grid`,
+    `mark_grid_for_coarsening`). The solution transfer is implemented once for grid
+    function spaces and bases; trees of spaces (e.g. Taylor-Hood) are transferred leaf by
+    leaf.
+  - Local operators with a `FiniteElementMap` template parameter can be instantiated with
+    `FiniteElementMapFor<…>` of the basis finite element.
+
+  Not supported yet on bases: parallel runs, hanging-node constraints, local operators that
+  need two-sided skeleton or `*_volume_post_skeleton` terms, global-valued finite elements
+  (RT, BDM, Nédélec), nested `MultiTypeBlockVector` containers, non-ISTL backends.
+- `ISTLSolver` (`backend/istl/istlsolver.hh`) is a linear solver backend for arbitrary
+  dune-istl inverse operators, e.g. from the dune-istl solver factory.
+- `OneStepGridOperator` has one generic implementation for grid function spaces, FastDG
+  and bases: it delegates to a grid operator of the weighted sum of the spatial and the
+  temporal local operator. The constant part of a stage of a multi-stage method is
+  assembled in one grid traversal for all previous stages.
+- Block diagonal local operators (e.g. `L2`) can be used with bases.
+- The default grid operator moved to `gridoperator/legacy/`. The old headers in
+  `gridoperator/default/` forward to the new location; `gridoperator/gridoperator.hh`
+  includes both the legacy and the basis grid operator.
+- Bug fixes: `CombinedOperator` called `alpha_volume_post_skeleton` instead of
+  `alpha_boundary` and did not forward `jacobian_apply` correctly; `weight()` of the
+  aliased local views is now `const`; the sequential AMG backends took the dimension
+  from grid function space internals and did not compile with bases.
 
 - The experimental wrapper of dune-functions bases as PDELab grid function spaces
   (`Experimental::GridFunctionSpace` in `gridfunctionspace/dunefunctionsgridfunctionspace.hh`,
   its local function space and index cache, and `ISTL::SimpleVectorBackend` in
   `backend/istl/dunefunctions.hh`) has been removed without deprecation. dune-functions
   bases can now be used directly with `GridOperator`.
+- The local assembler engines of the one-step grid operator (`gridoperator/onestep/*.hh`)
+  have been removed without deprecation. They were an implementation detail of
+  `OneStepGridOperator`, which keeps its interface.
 
 PDELab 2.9
 --------------------------------------
