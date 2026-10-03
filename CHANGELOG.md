@@ -22,6 +22,9 @@ Master (will become release 2.11)
   (e.g. Taylor-Hood) are transferred leaf by leaf.
 - The ISTL vector wrapper can iterate over `BlockVector`s of scalars, as used by flat
   dune-functions bases.
+- `LocalFunctionSpace<Basis>` and `LFSIndexCache` also accept dune-functions bases. Code
+  that accesses single DOFs through a local function space (`bind`, `child`, `localIndex`,
+  `containerIndex`) works unchanged; the container indices are the basis multi-indices.
 
 - The experimental wrapper of dune-functions bases as PDELab grid function spaces
   (`Experimental::GridFunctionSpace` in `gridfunctionspace/dunefunctionsgridfunctionspace.hh`,

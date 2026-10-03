@@ -997,4 +997,7 @@ namespace Dune {
   } // namespace PDELab
 } // namespace Dune
 
+// LocalFunctionSpace and LFSIndexCache for dune-functions bases
+#include <dune/pdelab/gridfunctionspace/functions/localfunctionspace.hh>
+
 #endif // DUNE_PDELAB_GRIDFUNCTIONSPACE_LFSINDEXCACHE_HH
