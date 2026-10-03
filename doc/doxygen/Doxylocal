@@ -1,5 +1,6 @@
 INPUT   += @srcdir@/mainpage.txt \
            @srcdir@/modules.txt \
+           @srcdir@/functionsbases.txt \
            @top_srcdir@/dune \
            @top_srcdir@/doc/Recipes \
            @top_srcdir@/doc/Recipes/mainpage.txt

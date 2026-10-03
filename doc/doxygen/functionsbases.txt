@@ -1,0 +1,256 @@
+/** \page pdelab_functions_bases Using dune-functions bases with PDELab
+
+\section functions_bases_overview Overview
+
+PDELab local operators, grid operators and solvers can work on a
+<a href="https://dune-project.org/modules/dune-functions/">dune-functions</a>
+basis instead of a grid function space.
+The local operators stay unchanged.
+Switching from a grid function space to a basis mainly changes how the space
+is constructed.
+The assembly is done by dune-assembler, which is a required dependency
+(like dune-functions).
+
+Everything on this page is <b>sequential only</b>.
+Leaf, power, dynamic power and composite bases work, with flat or one-level
+blocked index merging.
+See \ref functions_bases_unsupported for what does not work yet.
+
+The code on this page is taken from tests in `dune/pdelab/test`.
+The tests named `*-functions` are copies of the legacy tests that use a basis.
+Compare a legacy test with its copy to see exactly what changes, for example
+`testpoisson.cc` and `testpoisson-functions.cc`.
+
+\section functions_bases_example Minimal example: Poisson problem
+
+\code
+// Taken from testpoisson-functions.cc, testconvectiondiffusiondg-functions.cc
+// and testseqistlsolverbackends.cc.
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
+#include <dune/pdelab.hh>
+
+// The basis replaces the finite element map and the grid function space.
+auto basis = Dune::Functions::BasisFactory::makeBasis(
+  gv, Dune::Functions::BasisFactory::lagrange<2>());
+using Basis = decltype(basis);
+
+// Some local operators need a finite element map type.
+// FiniteElementMapFor extracts it from the finite element of the basis.
+using FEM = Dune::PDELab::FiniteElementMapFor<
+  typename Basis::LocalView::Tree::FiniteElement>;
+using LOP = Dune::PDELab::ConvectionDiffusionFEM<Problem,FEM>;
+LOP lop(problem);
+
+// Constraints: same container type for spaces and bases.
+using CC = Dune::PDELab::ConstraintsContainer<Basis,double>;
+CC cc;
+cc.clear();
+Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<Problem> bctype(gv,problem);
+Dune::PDELab::constraints(bctype,basis,cc);
+
+// Grid operator: the basis is used as trial and test space.
+using MBE = Dune::PDELab::ISTL::BCRSMatrixBackend<>;
+MBE mbe(4 * Dune::PDELab::maxLocalSize(basis));
+using GO = Dune::PDELab::GridOperator<Basis,Basis,LOP,MBE,
+                                      double,double,double,CC,CC>;
+GO go(basis,cc,basis,cc,lop,mbe);
+
+// Coefficient vector and Dirichlet extension.
+using V = Dune::PDELab::Backend::Vector<Basis,double>;
+V x(basis,0.0);
+Dune::PDELab::ConvectionDiffusionDirichletExtensionAdapter<Problem> g(gv,problem);
+Dune::PDELab::interpolate(g,basis,x);
+
+// Linear solver and stationary linear problem solver.
+// The AMG backends are templated on the grid operator.
+using LS = Dune::PDELab::ISTLBackend_SEQ_CG_AMG_SSOR<GO>;
+LS ls(5000,1);
+using SLP = Dune::PDELab::StationaryLinearProblemSolver<GO,LS,V>;
+SLP slp(go,ls,x,1e-10);
+slp.apply();
+
+// VTK output.
+Dune::VTKWriter<GV> vtkwriter(gv,Dune::VTK::conforming);
+Dune::PDELab::addSolutionToVTKWriter(vtkwriter,basis,x);
+vtkwriter.write("poisson",Dune::VTK::ascii);
+\endcode
+
+Other sequential solver backends (`ISTLBackend_SEQ_SuperLU`,
+`ISTLBackend_SEQ_CG_SSOR`, ...) are used in the same way,
+e.g. in `testconvectiondiffusiondg-functions.cc`.
+`testseqistlsolverbackends.cc` applies all backends of
+`seqistlsolverbackend.hh` with a grid function space and with a basis.
+
+`ISTLSolver` (`backend/istl/istlsolver.hh`) is an experimental backend for
+arbitrary dune-istl inverse operators.
+It is constructed from a factory that creates the inverse operator for a given
+matrix, and works with `NewtonMethod` and `StationaryLinearProblemSolver`.
+`makeUMFPackSolver` and `makeBiCGSTABILU0Solver` are ready-made examples.
+No test uses it yet.
+
+\section functions_bases_differences What changes compared to a grid function space
+
+<table>
+<tr><th>Topic</th><th>Grid function space</th><th>Basis</th></tr>
+<tr>
+  <td>Construction</td>
+  <td>finite element map, constraints type, vector backend,
+      `GridFunctionSpace<GV,FEM,CON,VBE>`, `name()`</td>
+  <td>`makeBasis(gv, lagrange<k>())`; this difference is intended</td>
+</tr>
+<tr>
+  <td>Constraints container</td>
+  <td>`typename GFS::template ConstraintsContainer<R>::Type`</td>
+  <td>`PDELab::ConstraintsContainer<Space,R>` works for both</td>
+</tr>
+<tr>
+  <td>Sizes</td>
+  <td>`gfs.maxLocalSize()`, `gfs.globalSize()`</td>
+  <td>`PDELab::maxLocalSize(space)`, `PDELab::globalSize(space)` work for both
+      (`gridfunctionspace/spaceutilities.hh`)</td>
+</tr>
+<tr>
+  <td>Number of DOFs</td>
+  <td>`gfs.globalSize()`</td>
+  <td>`basis.size()` is the number of top-level blocks for blocked bases,
+      not the number of DOFs. Use `PDELab::globalSize(basis)` (`basis.dimension()`).</td>
+</tr>
+<tr>
+  <td>VTK names</td>
+  <td>`gfs.name("solution")`, children named by the tree</td>
+  <td>bases have no names; components are called `solution`, `solution_0`,
+      `solution_0_1`, ... (the tree path). The name scheme still applies.</td>
+</tr>
+<tr>
+  <td>Local operators with a `FiniteElementMap` parameter</td>
+  <td>the finite element map of the space</td>
+  <td>`FiniteElementMapFor<typename Basis::LocalView::Tree::FiniteElement>`,
+      see the example above</td>
+</tr>
+<tr>
+  <td>Blocking</td>
+  <td>`ISTL::VectorBackend<Blocking>`</td>
+  <td>decided by the index merging strategy of the basis, see below</td>
+</tr>
+</table>
+
+\subsection functions_bases_blocking Blocking
+
+The container types follow the index merging strategies of the basis.
+A flat basis (e.g. `lagrange<k>()`, `lagrangeDG<k>()`, or `flatInterleaved()`
+and `flatLexicographic()`) gives a `BlockVector` of scalars.
+A basis with one blocked level, e.g.
+`power<2>(lagrange<1>(), blockedInterleaved())`, gives
+`BlockVector<FieldVector<double,2>>` and `BCRSMatrix<FieldMatrix<double,2,2>>`
+(`testgridoperator-functions-blocked.cc`).
+Use this to get block structure for block preconditioners.
+Nested blocking (blocked at more than one level) is not supported yet.
+
+\section functions_bases_systems Systems
+
+Power and composite bases describe systems.
+A Taylor-Hood basis (`testnavierstokes-functions.cc`):
+
+\code
+using namespace Dune::Functions::BasisFactory;
+auto basis = makeBasis(gridView,
+                       composite(power<dim>(lagrange<2>(), flatInterleaved()),
+                                 lagrange<1>(),
+                                 flatLexicographic()));
+using Basis = decltype(basis);
+\endcode
+
+Dirichlet conditions per component are given with the same constraints
+parameter classes as for grid function spaces:
+
+\code
+// Taken from testnavierstokes-functions.cc.
+auto bu = Dune::PDELab::CompositeConstraintsParameters<decltype(bux),decltype(buy)>(bux, buy);
+auto bconstraints = Dune::PDELab::CompositeConstraintsParameters<decltype(bu),decltype(bp)>(bu, bp);
+Dune::PDELab::constraints(bconstraints, basis, constraintsContainer);
+\endcode
+
+The same holds for `interpolate(f,basis,x)`: use a `CompositeGridFunction` for
+a composite basis.
+Subspaces are taken with `Dune::Functions::subspaceBasis(basis, _0)` and
+can be used in `DiscreteGridFunction` and `VectorDiscreteGridFunction`:
+
+\code
+// Taken from testnavierstokes-functions.cc.
+auto velocityBasis = Dune::Functions::subspaceBasis(basis, Dune::Indices::_0);
+using VelocityDGF = Dune::PDELab::VectorDiscreteGridFunction<decltype(velocityBasis), CoefficientVector>;
+VelocityDGF velocity(velocityBasis, coefficientVector);
+\endcode
+
+\subsection functions_bases_lfs Access to single DOFs
+
+`LocalFunctionSpace<Basis>` and `LFSIndexCache<LFS>` accept bases.
+Code that uses `bind`, `child`, `localIndex` and `containerIndex` runs
+unchanged.
+The container indices are the multi-indices of the basis.
+For example, to constrain one pressure DOF in the Navier-Stokes problem:
+
+\code
+// Taken from testnavierstokes-functions.cc.
+using LFS = Dune::PDELab::LocalFunctionSpace<Basis>;
+LFS lfs(basis);
+Dune::PDELab::LFSIndexCache<LFS> lfsCache(lfs);
+lfs.bind(*gridView.template begin<0>());
+lfsCache.update();
+constraintsContainer[lfsCache.containerIndex(lfs.child(Dune::Indices::_1).localIndex(0))];
+\endcode
+
+\section functions_bases_instationary Instationary problems and adaptivity
+
+`OneStepGridOperator` combines the grid operators of the spatial and the
+temporal local operator, for grid function spaces and bases alike.
+`OneStepMethod`, `ExplicitOneStepMethod` and `NewtonMethod` work as before
+(`testinstationary-functions.cc`):
+
+\code
+using InstationaryGridOperator = Dune::PDELab::OneStepGridOperator<GridOperator, GridOperatorTime>;
+InstationaryGridOperator instationaryGridOperator(gridOperator, gridOperatorTime);
+using Solver = Dune::PDELab::NewtonMethod<InstationaryGridOperator, LinearSolver>;
+Solver solver(instationaryGridOperator, linearSolver);
+using OneStepMethod = Dune::PDELab::OneStepMethod<RangeType, InstationaryGridOperator,
+                                                  Solver, CoefficientVector, CoefficientVector>;
+OneStepMethod oneStepMethod(timeSteppingMethod, instationaryGridOperator, solver);
+\endcode
+
+Grid adaptation uses the same functions as for grid function spaces
+(`testadaptivity-adaptivity-functions.hh`, `testgridadaptation-functions.cc`):
+
+\code
+Dune::PDELab::mark_grid(grid, eta, eta_alpha, 0.0, 0, 100, verbose);
+Dune::PDELab::adapt_grid(grid, basis, u, 2);   // 2: integration order of the L2 projection
+
+// several vectors on one or more spaces
+auto pack = Dune::PDELab::transferSolutions(basis, intorder, x);
+Dune::PDELab::adaptGrid(grid, pack);
+\endcode
+
+The basis is updated with the new leaf grid view by `adapt_grid` and
+`adaptGrid`, so pass it as a non-const lvalue.
+Constraints, grid operators and other vectors on the basis must be set up again
+after the adaptation (as in the adaptivity test, which does this in every
+iteration).
+Trees of bases are transferred leaf by leaf.
+
+\section functions_bases_unsupported Not supported yet
+
+- parallel runs (overlapping and nonoverlapping), including parallel solvers
+  and load balancing of bases
+- hanging-node constraints and other non-Dirichlet constraints
+- local operators that need two-sided skeleton or `*_volume_post_skeleton` terms
+  (dune-assembler visits each interior face once)
+- global-valued finite elements (RT, BDM, Nedelec)
+- nested `MultiTypeBlockVector` / `MultiTypeBlockMatrix` containers, e.g. a
+  Taylor-Hood basis with `blockedLexicographic` at the top level
+- linear algebra backends other than ISTL (Eigen, PETSc, PDELab's simple backends)
+- the matrix-free preconditioner backends of `backend/istl/matrixfree/backends.hh`
+  and `ISTLBackend_SEQ_AMG_4_DG`
+- grid function adapters such as `DiscreteGridFunctionGradient` and
+  `DiscreteGridFunctionCurl`
+- `boilerplate/pdelab.hh`
+
+*/
