@@ -159,9 +159,12 @@ int main(int argc, char** argv)
 
     // Fix the first pressure DOF of the first element (the pressure is determined up to a constant)
     {
-      auto localView = basis.localView();
-      localView.bind(*gridView.template begin<0>());
-      constraintsContainer[localView.index(localView.tree().child(_1).localIndex(0))];
+      using LFS = Dune::PDELab::LocalFunctionSpace<Basis>;
+      LFS lfs(basis);
+      Dune::PDELab::LFSIndexCache<LFS> lfsCache(lfs);
+      lfs.bind(*gridView.template begin<0>());
+      lfsCache.update();
+      constraintsContainer[lfsCache.containerIndex(lfs.child(Dune::Indices::_1).localIndex(0))];
     }
 
     // Print number of DOFs
