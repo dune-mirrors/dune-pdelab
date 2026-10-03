@@ -24,6 +24,11 @@
  * - \subpage recipe-linear-system-solution-istl
  * - \subpage recipe-operator-splitting
  *
+ * dune-functions bases
+ * ==============
+ * - \subpage recipe-functions-poisson
+ * - \subpage recipe-functions-navier-stokes
+ *
  * Parallelism
  * ==============
  * - \subpage recipe-communication

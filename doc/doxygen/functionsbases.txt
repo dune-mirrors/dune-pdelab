@@ -23,57 +23,34 @@ Compare a legacy test with its copy to see exactly what changes, for example
 
 \section functions_bases_example Minimal example: Poisson problem
 
-\code
-// Taken from testpoisson-functions.cc, testconvectiondiffusiondg-functions.cc
-// and testseqistlsolverbackends.cc.
-#include <dune/functions/functionspacebases/lagrangebasis.hh>
-#include <dune/pdelab.hh>
+The full, compiled example is \ref recipe-functions-poisson.
+These are its main steps.
+The basis replaces the finite element map and the grid function space:
 
-// The basis replaces the finite element map and the grid function space.
-auto basis = Dune::Functions::BasisFactory::makeBasis(
-  gv, Dune::Functions::BasisFactory::lagrange<2>());
-using Basis = decltype(basis);
+\snippet recipe-functions-poisson.cc Basis
 
-// Some local operators need a finite element map type.
-// FiniteElementMapFor extracts it from the finite element of the basis.
-using FEM = Dune::PDELab::FiniteElementMapFor<
-  typename Basis::LocalView::Tree::FiniteElement>;
-using LOP = Dune::PDELab::ConvectionDiffusionFEM<Problem,FEM>;
-LOP lop(problem);
+Some local operators need a finite element map type.
+`FiniteElementMapFor` extracts it from the finite element of the basis:
 
-// Constraints: same container type for spaces and bases.
-using CC = Dune::PDELab::ConstraintsContainer<Basis,double>;
-CC cc;
-cc.clear();
-Dune::PDELab::ConvectionDiffusionBoundaryConditionAdapter<Problem> bctype(gv,problem);
-Dune::PDELab::constraints(bctype,basis,cc);
+\snippet recipe-functions-poisson.cc Local operator
 
-// Grid operator: the basis is used as trial and test space.
-using MBE = Dune::PDELab::ISTL::BCRSMatrixBackend<>;
-MBE mbe(4 * Dune::PDELab::maxLocalSize(basis));
-using GO = Dune::PDELab::GridOperator<Basis,Basis,LOP,MBE,
-                                      double,double,double,CC,CC>;
-GO go(basis,cc,basis,cc,lop,mbe);
+The constraints container has the same type for spaces and bases:
 
-// Coefficient vector and Dirichlet extension.
-using V = Dune::PDELab::Backend::Vector<Basis,double>;
-V x(basis,0.0);
-Dune::PDELab::ConvectionDiffusionDirichletExtensionAdapter<Problem> g(gv,problem);
-Dune::PDELab::interpolate(g,basis,x);
+\snippet recipe-functions-poisson.cc Constraints
 
-// Linear solver and stationary linear problem solver.
-// The AMG backends are templated on the grid operator.
-using LS = Dune::PDELab::ISTLBackend_SEQ_CG_AMG_SSOR<GO>;
-LS ls(5000,1);
-using SLP = Dune::PDELab::StationaryLinearProblemSolver<GO,LS,V>;
-SLP slp(go,ls,x,1e-10);
-slp.apply();
+The basis is used as trial and test space of the grid operator:
 
-// VTK output.
-Dune::VTKWriter<GV> vtkwriter(gv,Dune::VTK::conforming);
-Dune::PDELab::addSolutionToVTKWriter(vtkwriter,basis,x);
-vtkwriter.write("poisson",Dune::VTK::ascii);
-\endcode
+\snippet recipe-functions-poisson.cc Grid operator
+
+Coefficient vector and Dirichlet extension, then the solver
+(the AMG backends are templated on the grid operator):
+
+\snippet recipe-functions-poisson.cc Vector
+\snippet recipe-functions-poisson.cc Solve
+
+The result can be used with other dune-functions code:
+
+\snippet recipe-functions-poisson.cc Interoperability
 
 Other sequential solver backends (`ISTLBackend_SEQ_SuperLU`,
 `ISTLBackend_SEQ_CG_SSOR`, ...) are used in the same way,
@@ -149,16 +126,10 @@ Nested blocking (blocked at more than one level) is not supported yet.
 \section functions_bases_systems Systems
 
 Power and composite bases describe systems.
-A Taylor-Hood basis (`testnavierstokes-functions.cc`):
+A Taylor-Hood basis (the full example is \ref recipe-functions-navier-stokes,
+see also `testnavierstokes-functions.cc`):
 
-\code
-using namespace Dune::Functions::BasisFactory;
-auto basis = makeBasis(gridView,
-                       composite(power<dim>(lagrange<2>(), flatInterleaved()),
-                                 lagrange<1>(),
-                                 flatLexicographic()));
-using Basis = decltype(basis);
-\endcode
+\snippet recipe-functions-navier-stokes.cc Basis
 
 Dirichlet conditions per component are given with the same constraints
 parameter classes as for grid function spaces:
