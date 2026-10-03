@@ -3,6 +3,8 @@
 #ifndef DUNE_PDELAB_BACKEND_ISTL_TAGS_HH
 #define DUNE_PDELAB_BACKEND_ISTL_TAGS_HH
 
+#include <type_traits>
+
 #include <dune/common/documentation.hh>
 #include <dune/pdelab/backend/istl/forwarddeclarations.hh>
 #include <cstddef>
@@ -156,6 +158,15 @@ namespace Dune {
         struct container<Dune::BlockVector<Block,Alloc> >
         {
           typedef block_vector type;
+        };
+
+        // BlockVector of scalars (e.g. the coefficient vectors of flat
+        // dune-functions bases): a leaf vector like DynamicVector
+        template<typename Block, typename Alloc>
+          requires std::is_arithmetic_v<Block>
+        struct container<Dune::BlockVector<Block,Alloc> >
+        {
+          typedef dynamic_vector type;
         };
 
 
