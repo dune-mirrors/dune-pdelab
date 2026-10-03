@@ -50,7 +50,7 @@ Coefficient vector and Dirichlet extension, then the solver
 
 The result can be used with other dune-functions code:
 
-\snippet recipe-functions-poisson.cc Interoperability
+\snippet recipe-functions-poisson.cc Error
 
 Other sequential solver backends (`ISTLBackend_SEQ_SuperLU`,
 `ISTLBackend_SEQ_CG_SSOR`, ...) are used in the same way,
