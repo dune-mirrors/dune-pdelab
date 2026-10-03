@@ -16,6 +16,10 @@ Master (will become release 2.11)
 
 - Subspaces learned to handle dynamic tree paths
 
+- The Doxygen documentation has a new landing page for new users, describing
+  what PDELab offers and linking to tutorials, recipes, and further resources.
+  It uses the `awesome` Doxygen theme of dune-common, if available.
+
 PDELab 2.9
 --------------------------------------
 
