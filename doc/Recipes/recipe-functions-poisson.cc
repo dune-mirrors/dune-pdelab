@@ -25,7 +25,6 @@
  * This recipe solves the Poisson equation with PDELab. The finite element space
  * is described by a basis from
  * <a href="https://www.dune-project.org/modules/dune-functions/">dune-functions</a>.
- * You do not need to know anything about grid function spaces.
  *
  * \section recipe-functions-poisson-problem Problem and weak form
  *
