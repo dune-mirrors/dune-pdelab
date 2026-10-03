@@ -16,6 +16,13 @@ Master (will become release 2.11)
 
 - Subspaces learned to handle dynamic tree paths
 
+- Grid adaptation (`adapt_grid`, `transferSolutions`/`adaptGrid`, `mark_grid`,
+  `mark_grid_for_coarsening`) also works with dune-functions bases (sequential only). The
+  solution transfer is implemented once for grid function spaces and bases; trees of spaces
+  (e.g. Taylor-Hood) are transferred leaf by leaf.
+- The ISTL vector wrapper can iterate over `BlockVector`s of scalars, as used by flat
+  dune-functions bases.
+
 - The experimental wrapper of dune-functions bases as PDELab grid function spaces
   (`Experimental::GridFunctionSpace` in `gridfunctionspace/dunefunctionsgridfunctionspace.hh`,
   its local function space and index cache, and `ISTL::SimpleVectorBackend` in
