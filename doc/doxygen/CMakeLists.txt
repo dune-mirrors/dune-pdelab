@@ -1,2 +1,2 @@
 # Create and install doxygen documentation
-add_doxygen_target()
+add_doxygen_target(THEME awesome)
