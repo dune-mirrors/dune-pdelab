@@ -200,7 +200,7 @@ namespace Dune::PDELab {
         node.finiteElement().localBasis().evaluateFunction(x, values_);
         y[k] = 0.0;
         for (std::size_t i = 0; i < node.size(); ++i)
-          y[k] += (*x_)[localView_.index(node.localIndex(i))] * values_[i];
+          y[k] += (*x_)[localView_.index(node.localIndex(i))] * values_[i][0];
       }
     }
 
