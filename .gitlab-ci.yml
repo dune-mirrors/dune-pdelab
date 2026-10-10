@@ -35,7 +35,92 @@ include:
 before_script:
   - *dune_setup
 
+# ---------------------------------------------------------------------------
+# Reuse the standard debian:12 gcc-12-20 / clang-15-20 test jobs to also build
+# and install a reusable DUNE prefix (all dependencies plus dune-pdelab), so
+# that the downstream tutorials pipeline does not have to rebuild everything
+# from scratch. The publish step is opt-in via DUNECI_PUBLISH_INSTALL_PREFIX
+# and is attached to the shared `.common` template so it can be enabled per
+# job (and is a no-op everywhere else).
+#
+# DUNECI_INSTALL_STAGE makes the dependencies installed (and their sources
+# removed) into /duneci/install in `before_script`; DUNECI_TEST_INSTALL makes
+# duneci-standard-test install dune-pdelab itself. PKG_CONFIG_PATH and
+# CMAKE_PREFIX_PATH let the subsequent dunecontrol invocations find the
+# installed modules, whichever detection mechanism (pkg-config or CMake,
+# cf. MR !1509) is in use.
+#
+# Note: this locally overrides the `.common` template from core/ci-config and
+# must be kept in sync with it (before_script/script/stage/tags/artifacts).
+# The dotenv report is intentionally *not* added here so that jobs overriding
+# `after_script` (e.g. the coverage job) are unaffected.
+.common:
+  # DUNECI_INSTALL_STAGE=1 installs the dependencies into /duneci/install and
+  # removes their sources. That removes dune-common's `dune-ctest`, breaking the
+  # `/duneci/bin/duneci-ctest` symlink used by `duneci-standard-test`. Since
+  # dune-common installs `dune-ctest` into /duneci/install/bin, repoint the
+  # symlink there (no-op for jobs that do not install the dependencies).
+  before_script:
+    - *dune_setup
+    - |
+      if [ -x /duneci/install/bin/dune-ctest ]; then
+        ln -sf /duneci/install/bin/dune-ctest /duneci/bin/dune-ctest
+      fi
+  script: duneci-standard-test
+  stage: test
+  tags: [duneci]
+  artifacts:
+    expire_in: 2 years
+    reports:
+      junit: junit/*.xml
+  after_script:
+    - |
+      if [ "${DUNECI_PUBLISH_INSTALL_PREFIX:-}" = "true" ]; then
+        echo "Publishing DUNE install prefix"
+        # The suffix keeps the two jobs' job-ids apart (INSTALL_JOB_ID_GCC / _CLANG).
+        echo "INSTALL_JOB_ID_${DUNECI_PUBLISH_SUFFIX}=${CI_JOB_ID}" > install.env
+        mkdir -p "${CI_PROJECT_DIR}/install-prefix"
+        cp -a /duneci/install/. "${CI_PROJECT_DIR}/install-prefix/"
+      fi
 
+# ---------------------------------------------------------------------------
+# Reuse the standard build jobs, but additionally build/install the DUNE
+# prefix and publish it as an artifact for the downstream tutorials pipeline.
+# Only `variables` and `artifacts` are extended here; `image`, `extends`,
+# toolchain and cmake flags are taken over from the included core/ci-config
+# jobs via the include-override deep merge.
+
+"debian:12 clang-15-20 (release, require bindings)":
+  variables:
+    DUNECI_INSTALL_STAGE: "1"
+    DUNECI_TEST_INSTALL: "1"
+    DUNECI_PUBLISH_INSTALL_PREFIX: true
+    DUNECI_PUBLISH_SUFFIX: "CLANG"
+    PKG_CONFIG_PATH: /duneci/install/lib/pkgconfig:/duneci/install/lib/x86_64-linux-gnu/pkgconfig
+    CMAKE_PREFIX_PATH: /duneci/install
+  artifacts:
+    paths:
+      - install-prefix/
+    reports:
+      dotenv: install.env
+    expire_in: 7 days
+
+"debian:12 gcc-12-20 (release, with mpi)":
+  variables:
+    DUNECI_INSTALL_STAGE: "1"
+    DUNECI_TEST_INSTALL: "1"
+    DUNECI_PUBLISH_INSTALL_PREFIX: true
+    DUNECI_PUBLISH_SUFFIX: "GCC"
+    PKG_CONFIG_PATH: /duneci/install/lib/pkgconfig:/duneci/install/lib/x86_64-linux-gnu/pkgconfig
+    CMAKE_PREFIX_PATH: /duneci/install
+  artifacts:
+    paths:
+      - install-prefix/
+    reports:
+      dotenv: install.env
+    expire_in: 7 days
+
+# ---------------------------------------------------------------------------
 # test tutorials as well
 pdelab-tutorials:
   stage: downstream
