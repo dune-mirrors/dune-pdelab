@@ -122,11 +122,65 @@ before_script:
 
 # ---------------------------------------------------------------------------
 # test tutorials as well
-pdelab-tutorials:
+#
+# The branch of the tutorials project is chosen at runtime: in general there is
+# no matching branch in the tutorials project, so master is used. Only when a
+# branch with the same name exists (coordinated feature development) is it used
+# so the feature can be tested together. A `trigger:branch` cannot use a value
+# computed in a job (dotenv variables are not expanded in trigger jobs), so the
+# setup job writes a small child pipeline that contains the actual multi-project
+# trigger with a literal branch. The INSTALL_JOB_ID_* values come from the
+# dotenv reports of the two install jobs listed in `needs`.
+pdelab-tutorials-setup:
   stage: downstream
-  trigger:
-    project: pdelab/dune-pdelab-tutorials
-    strategy: depend
+  image: registry.dune-project.org/docker/ci/debian:12
+  tags: [duneci]
+  # This job only generates the trigger configuration; it must not inherit the
+  # global dependency build before_script.
+  before_script: ""
+  needs:
+    - "debian:12 clang-15-20 (release, require bindings)"
+    - "debian:12 gcc-12-20 (release, with mpi)"
+  script:
+    - |
+      set -e
+      TUTORIALS_BRANCH="master"
+      if git ls-remote --exit-code --heads \
+           https://gitlab.dune-project.org/pdelab/dune-pdelab-tutorials.git \
+           "${CI_COMMIT_REF_NAME}" >/dev/null; then
+        TUTORIALS_BRANCH="${CI_COMMIT_REF_NAME}"
+      fi
+      echo "Triggering dune-pdelab-tutorials on branch '${TUTORIALS_BRANCH}'"
+      cat > tutorials-trigger.yml <<EOF
+      pdelab-tutorials:
+        variables:
+          INSTALL_JOB_ID_GCC: "${INSTALL_JOB_ID_GCC}"
+          INSTALL_JOB_ID_CLANG: "${INSTALL_JOB_ID_CLANG}"
+          UPSTREAM_PIPELINE_ID: "${CI_PIPELINE_ID}"
+        trigger:
+          project: pdelab/dune-pdelab-tutorials
+          branch: "${TUTORIALS_BRANCH}"
+          strategy: depend
+        # Without rules the job would fall back to only:[branches,tags] and
+        # the child pipeline of a merge request pipeline would be empty.
+        rules:
+          - when: on_success
+      EOF
+      cat tutorials-trigger.yml
+  artifacts:
+    paths:
+      - tutorials-trigger.yml
+    expire_in: 7 days
   rules:
     - when: manual
       allow_failure: false
+
+pdelab-tutorials:
+  stage: downstream
+  needs:
+    - pdelab-tutorials-setup
+  trigger:
+    include:
+      - artifact: tutorials-trigger.yml
+        job: pdelab-tutorials-setup
+    strategy: depend
